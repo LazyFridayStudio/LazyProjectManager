@@ -12,6 +12,16 @@ to the code rather than scattered.
 Those are the two forms, and a blank issue is switched off: the forms ask where in
 the product a thing lands, which is the first question every issue gets asked.
 
+**Five open issues each.** One person can have five issues open at a time. A sixth is closed with a
+note saying so, and closing one of your own frees the slot — the limit is on how much somebody asks
+for at once, not on how much they can ever report. Members of the studio are not counted.
+
+**A security problem is not an issue.** An issue is public the moment it is opened, so report a
+vulnerability privately instead, as **[Security](SECURITY.md)** describes.
+
+Everybody taking part — in issues, pull requests and review — is expected to follow the
+**[Code of Conduct](CODE_OF_CONDUCT.md)**.
+
 ## Before you write any code
 
 Read the two documents that govern every line, not just new files:
@@ -29,9 +39,9 @@ something that was never going to land.
 
 ## Pull requests
 
-`main` is protected. **Every change arrives as a pull request, and needs a green CI run before it can
-be merged.** Pull requests are squash-merged, so write the title and description as the commit
-message you want on `main`.
+`main` is protected. **Every change arrives as a pull request, and needs a green CI run and an
+approving review from a maintainer before it can be merged.** Pull requests are squash-merged, so
+write the title and description as the commit message you want on `main`.
 
 1. Open or comment on an issue first, so the approach can be agreed before you write it.
 2. Branch off `main`, and make the change.
@@ -41,12 +51,14 @@ message you want on `main`.
    pnpm lint && pnpm typecheck && pnpm format:check && pnpm test
    ```
 
-4. Open the pull request.
+4. Open the pull request. Checks on one from outside the studio wait until a maintainer approves
+   them to run.
 
 **Every pull request bumps the version**, because the release tag is read from `package.json` and a
 change that reaches `main` without moving it leaves no way to release it. `pnpm bump patch` — or
-`minor` for a feature, `major` for a breaking change. A workflow bumps anything that forgot; see
-[How to run it](docs/How-To-Run.md#4-ship-a-version) for what that costs you.
+`minor` for a feature, `major` for a breaking change. A workflow bumps a branch of this repository
+that forgot — see [How to run it](docs/How-To-Run.md#4-ship-a-version) for what that costs you — but
+it cannot push to a fork, so a pull request from one has to bump its own.
 
 ## Tests
 

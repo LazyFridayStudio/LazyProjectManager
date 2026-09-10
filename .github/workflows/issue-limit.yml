@@ -1,0 +1,97 @@
+name: issue limit
+
+# Keeps one person from filling the issue list.
+#
+# Five open issues each: more than anybody reporting in good faith has open at
+# once, and few enough that a flood stops at the sixth. Closing one of your own
+# frees a slot, so the limit is on how much somebody asks for at a time rather
+# than on how much they can ever report.
+#
+# Maintainers and members of the organisation are not counted — the people
+# working the list are the ones filing its work.
+#
+# github-script rather than a shell step, so nothing from an issue — its title,
+# its body, its author's name — is ever written into a script.
+on:
+  issues:
+    types: [opened, reopened]
+
+permissions:
+  issues: write
+
+jobs:
+  limit:
+    name: limit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/github-script@v9
+        with:
+          script: |
+            const LIMIT = 5;
+            const issue = context.payload.issue;
+            const action = context.payload.action;
+
+            // The people who work the list, and anything that is not a person.
+            const exempt = ['OWNER', 'MEMBER', 'COLLABORATOR'];
+            if (exempt.includes(issue.author_association) || issue.user.type === 'Bot') {
+              core.info(`${issue.user.login} is ${issue.author_association}; not counted.`);
+              return;
+            }
+
+            // The issues endpoint answers with pull requests too. They are not issues.
+            const open = (
+              await github.paginate(github.rest.issues.listForRepo, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                creator: issue.user.login,
+                state: 'open',
+                per_page: 100,
+              })
+            ).filter((candidate) => !candidate.pull_request);
+
+            /*
+             * Opened: this issue's place among the author's open issues, oldest
+             * first. Deciding by position rather than by count is what keeps a
+             * burst fair — issues opened at once are all judged against the same
+             * order, so the first five stay and only the rest are closed,
+             * whichever run happens to finish first.
+             *
+             * Reopened: an old issue coming back sits early in that order, so
+             * position would always let it through. What matters then is how
+             * many others are already open.
+             */
+            const tooMany =
+              action === 'reopened'
+                ? open.filter((other) => other.number !== issue.number).length >= LIMIT
+                : open
+                    .map((candidate) => candidate.number)
+                    .sort((left, right) => left - right)
+                    .indexOf(issue.number) >= LIMIT;
+
+            if (!tooMany) {
+              core.info(`${issue.user.login} has ${open.length} open; within the limit.`);
+              return;
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: [
+                `Thanks for this. You already have ${LIMIT} open issues here, which is the most one person can have open at a time, so this one has been closed to keep the list readable.`,
+                '',
+                'Close one of your others, or add this to one of them, and then reopen this issue.',
+              ].join('\n'),
+            });
+
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              state: 'closed',
+              state_reason: 'not_planned',
+            });
+
+            core.info(`Closed #${issue.number}: ${issue.user.login} has ${open.length} open.`);
