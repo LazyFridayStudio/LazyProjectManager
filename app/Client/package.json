@@ -1,6 +1,6 @@
 {
   "name": "@lpm/client",
-  "version": "0.91.18",
+  "version": "0.91.19",
   "private": true,
   "type": "module",
   "scripts": {
@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.5",
+    "@types/react-dom": "19.2.7",
     "@vitejs/plugin-react": "4.7.0",
     "vite": "6.4.3"
   }
