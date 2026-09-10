@@ -1,6 +1,6 @@
 {
   "name": "@lpm/client",
-  "version": "0.91.18",
+  "version": "0.91.19",
   "private": true,
   "type": "module",
   "scripts": {

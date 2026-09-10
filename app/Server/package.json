@@ -1,6 +1,6 @@
 {
   "name": "@lpm/server",
-  "version": "0.81.16",
+  "version": "0.81.17",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
