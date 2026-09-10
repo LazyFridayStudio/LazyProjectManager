@@ -1,0 +1,27 @@
+.setting {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* The whole row, so the words are as easy to press as the box beside them. */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+/* The half that stops "only open issues" reading as "throw the rest away". */
+.explanation {
+  margin: 0;
+  font-size: var(--font-size-small);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.problem {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}

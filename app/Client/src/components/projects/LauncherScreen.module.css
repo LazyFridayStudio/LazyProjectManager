@@ -1,0 +1,131 @@
+/* The slate: filter chips, then a tile for every project on it. */
+
+.search {
+  width: 200px;
+  height: 34px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.search:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 5px 10px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--font-size-small);
+  cursor: pointer;
+}
+
+.chipSelected {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.chip:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.chipCount {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  opacity: 0.55;
+}
+
+.total {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/*
+ * A rack of doors, and the doors are the art.
+ *
+ * 560 rather than the 620 that doubling 310 would give. The number that matters
+ * is not the minimum but what gets painted at the widths people actually have,
+ * and 620 puts a 1280-wide window on one tile per row — a slate you scroll
+ * through one project at a time, which is worse than the small tiles it
+ * replaced. 560 keeps two columns there and paints a tile around 610 wide at
+ * 1280, 1920 and 2560 alike, which is where the art starts being legible at a
+ * glance.
+ *
+ * `1fr` as the maximum rather than a second pixel width: `auto-fill` counts the
+ * columns from a definite maximum, so `minmax(560px, 720px)` would ask for
+ * 720-wide tracks and drop 1280 back to the one column this is avoiding.
+ */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(560px, 1fr));
+  gap: 16px;
+}
+
+.newTile {
+  /* Top of the row and only as tall as what it says. Matched to a project's
+     full height it was the biggest thing on a slate of one project, which read
+     as the launcher being mostly empty. */
+  align-self: start;
+  padding: 14px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px dashed var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.newTile:hover {
+  background: var(--hover-tile);
+}
+
+.newTile:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.newTileHeading {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h3);
+}
+
+.newTileBody {
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.message {
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+}
+
+.problem {
+  font-size: var(--font-size-base);
+  color: var(--color-danger);
+}

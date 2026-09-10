@@ -1,0 +1,41 @@
+/*
+ * The same segmented control the timeline groups its rows with: one bordered
+ * box, hairlines between the options, and the current one tinted rather than
+ * underlined.
+ */
+.tabs {
+  display: flex;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  overflow: hidden;
+}
+
+.tab {
+  padding: 6px 12px;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-small);
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tab + .tab {
+  border-left: 1px solid var(--color-divider);
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+.tab[aria-current='page'] {
+  background: var(--color-accent-100);
+  color: var(--color-accent);
+}
+
+.tab:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: calc(var(--focus-ring-offset) * -1);
+}

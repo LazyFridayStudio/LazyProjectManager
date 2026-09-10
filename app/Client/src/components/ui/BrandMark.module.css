@@ -1,0 +1,9 @@
+/*
+ * Never squashed by the row it sits in.
+ *
+ * A flex row shrinks an image before it shrinks text, which on the sign-in
+ * panel would squeeze the mark to make room for a long studio name.
+ */
+.mark {
+  flex: none;
+}

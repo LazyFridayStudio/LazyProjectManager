@@ -1,0 +1,62 @@
+export {
+  assetCategoryColorSchema,
+  assetCategoryNameSchema,
+  assetCostMinorSchema,
+  assetFileLabelSchema,
+  assetFileUrlSchema,
+  assetNameSchema,
+  assetStatusSchema,
+  assetTagSchema,
+  describeAssetStatus,
+  ASSET_KEY_PREFIX,
+  ASSET_STATUSES,
+  DEFAULT_ASSET_CATEGORY,
+  MAXIMUM_TAGS_PER_ASSET,
+  type AssetStatus,
+} from './asset-vocabulary.js';
+
+export {
+  addAssetSubtaskCommand,
+  createAssetCategoryCommand,
+  createAssetCommand,
+  deleteAssetCategoryCommand,
+  linkAssetCommand,
+  linkAssetFileCommand,
+  moveAssetCategoryCommand,
+  moveAssetCommand,
+  moveAssetReferenceCommand,
+  promoteAssetReferenceCommand,
+  removeAssetFileCommand,
+  removeAssetReferenceCommand,
+  removeAssetSubtaskCommand,
+  tagAssetCommand,
+  unlinkAssetCommand,
+  untagAssetCommand,
+  updateAssetCategoryCommand,
+  updateAssetCommand,
+  updateAssetSubtaskCommand,
+} from './commands/asset-commands.js';
+
+export {
+  assetCardLinkSchema,
+  assetDetailQuery,
+  assetDetailViewSchema,
+  assetFileSchema,
+  assetReferenceSchema,
+  type AssetCardLink,
+  type AssetDetailView,
+  type AssetFile,
+  type AssetReference,
+} from './queries/asset-detail.js';
+
+export {
+  assetCategorySchema,
+  assetLibraryFilterSchema,
+  assetLibraryQuery,
+  assetLibraryViewSchema,
+  assetTileSchema,
+  MAXIMUM_ASSETS_PER_CATEGORY,
+  type AssetCategory,
+  type AssetLibraryView,
+  type AssetTile,
+} from './queries/asset-library.js';

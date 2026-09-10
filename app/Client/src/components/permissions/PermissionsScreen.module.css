@@ -1,0 +1,228 @@
+/*
+ * The group being read: everything filed under it, in one column.
+ *
+ * No hover and no focus ring. It had both from when a group was a tile in a
+ * grid that you clicked to open — and once the list moved to the side, the tile
+ * became a plain `<section>` holding every catalogue. Hovering one action then
+ * greyed the whole panel, which reads as "all of this is about to happen".
+ * What responds to a pointer is what a pointer can press: the heading, the
+ * Allow, the Deny.
+ */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/*
+ * A heading, and everything filed under it.
+ *
+ * Shut by default. Nineteen actions each carrying a sentence is a wall; three
+ * headings that say what they add up to is a page somebody can read.
+ */
+.catalogue {
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+.catalogueRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 6px 10px;
+}
+
+.catalogueName {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 1;
+  min-width: 0;
+  padding: 8px 6px 8px 0;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-heading-weight);
+  text-align: left;
+  cursor: pointer;
+}
+
+.catalogueName:hover {
+  color: var(--color-accent);
+}
+
+.catalogueName:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.chevron {
+  flex: none;
+  color: var(--color-text-faint);
+}
+
+/* What the children add up to, so a heading reads without being opened. */
+.summary {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-small);
+  font-weight: normal;
+  color: var(--color-text-faint);
+}
+
+/*
+ * Some allowed and some denied.
+ *
+ * The accent, which is this product's orange and what it uses everywhere for
+ * "this one". Neither of the two answers, and reading it as one of them is the
+ * mistake worth making impossible — `--color-warn` was a pale yellow that read
+ * as neither anything nor a warning.
+ */
+.custom {
+  color: var(--color-accent);
+  font-weight: var(--font-heading-weight);
+}
+
+/*
+ * The same three colours the switch beneath it uses.
+ *
+ * The heading and the buttons answer the same question, so reading them as two
+ * different scales is the mistake worth removing. The text weights of each pair
+ * rather than the button grounds — `--color-ok-500` is a background with dark
+ * type on it, and the same value as type on a panel is a green nobody can read.
+ */
+.allAllowed {
+  color: var(--color-ok);
+  font-weight: var(--font-heading-weight);
+}
+
+.allDenied {
+  color: var(--color-danger);
+  font-weight: var(--font-heading-weight);
+}
+
+/* The absence of an answer rather than a third one, so it stays out of the way. */
+.nothingSet {
+  color: var(--color-text-faint);
+}
+
+/*
+ * The rule between the two halves of a custom summary.
+ *
+ * A line rather than a comma: the counts are two answers rather than one list,
+ * and a comma reads as though the second continues the first.
+ */
+.separator {
+  margin: 0 7px;
+  color: var(--color-divider);
+}
+
+.catalogueAbout {
+  margin: 0;
+  padding: 0 10px 8px 26px;
+  max-width: 80ch;
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+}
+
+.rules {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0 10px 8px 26px;
+  list-style: none;
+}
+
+.rule {
+  padding: 6px 0;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.ruleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.ruleName {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-base);
+}
+
+.ruleDescription {
+  margin: 2px 0 0;
+  max-width: 80ch;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+/*
+ * Three states, not two.
+ *
+ * "Not set" is not "denied": a group that says nothing about an action leaves
+ * it as it was, and that is what makes a new group safe to make. A checkbox
+ * cannot say that.
+ */
+.switch {
+  display: flex;
+  flex: none;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  overflow: hidden;
+}
+
+.choice {
+  padding: 7px 14px;
+  border: none;
+  background: none;
+  color: var(--color-text-faint);
+  font: inherit;
+  font-size: var(--font-size-small);
+  cursor: pointer;
+}
+
+.choice:hover {
+  background: var(--hover-row);
+  color: var(--color-text);
+}
+
+.choice:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: calc(var(--focus-ring-offset) * -1);
+}
+
+.choice[aria-checked='true'] {
+  background: var(--color-panel);
+  color: var(--color-text);
+}
+
+/* Green for the one that lets work happen, red for the one that stops it —
+   and the word beside the colour, for anybody who cannot separate the two. */
+.allow[aria-checked='true'] {
+  background: var(--color-ok-500);
+  color: var(--color-text-on-accent);
+}
+
+.deny[aria-checked='true'] {
+  background: var(--color-danger-500);
+  color: var(--color-text-on-accent);
+}
+
+.empty {
+  margin: 0;
+  max-width: 70ch;
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+}
+
+.problem {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}

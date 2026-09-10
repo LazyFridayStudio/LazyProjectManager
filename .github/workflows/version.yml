@@ -1,0 +1,112 @@
+name: version
+
+# Bumps the version on any pull request that has not bumped it, so nobody has to
+# remember. A bump already on the branch is left alone: running `pnpm bump minor`
+# yourself is how you say a change is more than a patch.
+#
+# The project version always moves. A package under app/ only moves when
+# something inside it changed, so a package version stays a statement about that
+# package rather than a copy of the release number.
+#
+# Separate from ci.yml because this one needs write access, and a pull_request
+# workflow gets a read-only token on pull requests from Dependabot — exactly the
+# case that cannot run the command itself. A pull_request_target workflow runs in
+# the base repository's context and can write.
+#
+# That context is privileged, so this workflow never executes anything from the
+# pull request: it copies the version script out of the base branch and runs that
+# copy, and it never installs dependencies. The only head content it touches is
+# the version field it rewrites, and nothing the pull request chose — not even its
+# branch name — is ever written into a script.
+#
+# A pull request from a fork is checked and never pushed to. This token cannot
+# reach a fork, so one that has not bumped its version is told to.
+#
+# On every push, including `synchronize`, and that is deliberate even though it
+# is a billed minute a time. `version bump` is a required check, and a required
+# check is matched against the head commit: drop `synchronize` and any push to
+# an open pull request leaves the new commit without the context, so the pull
+# request waits for a run that will never happen.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  version:
+    name: version bump
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out the base branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+
+      - name: Keep a trusted copy of the version script
+        run: cp scripts/version.mjs "${RUNNER_TEMP}/version.mjs"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Read the base version
+        id: base
+        run: echo "version=$(node "${RUNNER_TEMP}/version.mjs" current)" >> "$GITHUB_OUTPUT"
+
+      # By number, never by branch name. Whoever opens a pull request chooses its
+      # branch name, and git allows `$`, `(` and `|` in one — so a name written
+      # into this script with an expression is a command this job would run, with
+      # a token that can write to the repository: push branches and tags, or
+      # publish a release with anything attached. The number is an integer GitHub
+      # assigns.
+      - name: Check out the pull request
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git fetch origin "refs/pull/${PR_NUMBER}/head"
+          git checkout --detach FETCH_HEAD
+
+      - name: Bump the version unless the branch already did
+        # Everything the pull request chose arrives as an environment variable,
+        # which the shell reads as a value rather than as more script.
+        env:
+          BASE_VERSION: ${{ steps.base.outputs.version }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          FROM_A_FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
+        run: |
+          if node "${RUNNER_TEMP}/version.mjs" check "$BASE_VERSION"; then
+            echo "The branch set its own version. Leaving it alone."
+            exit 0
+          fi
+
+          if [ "$FROM_A_FORK" = "true" ]; then
+            echo "::error::This pull request does not bump the version. Run pnpm bump patch on the branch, commit it and push. A workflow cannot push to a fork."
+            exit 1
+          fi
+
+          # A patch is the safe default: it is what a change is unless someone
+          # says otherwise, and `pnpm bump minor` on the branch overrides it.
+          #
+          # The base sha is passed so the script bumps only the packages this
+          # branch touched, rather than every package on every pull request.
+          echo "No version bump on this branch — applying a patch bump."
+          node "${RUNNER_TEMP}/version.mjs" bump patch "$BASE_SHA"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -am 'chore: bump version'
+          git push origin "HEAD:refs/heads/${HEAD_REF}"
+
+          # A push made with GITHUB_TOKEN deliberately does not start new workflow
+          # runs, so the other required checks still point at the previous commit
+          # and the pull request waits for them. Re-running them does not help: a
+          # re-run repeats the run against the commit it first ran on. Only a push
+          # of your own starts runs on the new head.
+          echo "::notice::Version bumped to the next patch. Push a commit of your own to run this pull request's checks on it; re-running them repeats the old commit."

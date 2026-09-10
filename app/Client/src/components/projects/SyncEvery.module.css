@@ -1,0 +1,19 @@
+.setting {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* The half that says what Off does not switch off. */
+.explanation {
+  margin: 0;
+  font-size: var(--font-size-small);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.problem {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}

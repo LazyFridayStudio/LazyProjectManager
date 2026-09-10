@@ -1,0 +1,143 @@
+.card {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  touch-action: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 9px 9px 9px 11px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-divider);
+  border-left: 3px solid var(--list-color);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--panel-inset-highlight);
+  background: var(--color-surface);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.typeDot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  background: var(--type-color);
+}
+
+.key {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/*
+ * Whoever the card is on, drawn beside its key.
+ *
+ * A box with a size, because the picture inside it has none of its own. An
+ * `img` handed no width renders at whatever the file happens to be, and a
+ * photograph off a phone is three thousand pixels across — which is what this
+ * class was missing, and what it looked like on a board.
+ *
+ * Sized to the key it sits next to rather than to a face: the head row names
+ * the card, and a portrait twice the height of the text it is beside would
+ * make the row about the person.
+ */
+.assignee {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--color-divider);
+  border-radius: 50%;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-muted);
+}
+
+.type {
+  margin-left: auto;
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-base);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.blocked {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-tag);
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-danger);
+}
+
+/*
+ * Finished, said in a word.
+ *
+ * The same shape as `.blocked` because it answers the same kind of question
+ * about a chip, in the tone the product already keeps for work that came good.
+ * A word rather than a dimming: opacity is not a colour anybody can name, and a
+ * dimmed chip on a board being scanned reads as a dimmed screen.
+ */
+.closed {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border: 1px solid var(--color-ok);
+  border-radius: var(--radius-tag);
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-ok);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.points {
+  margin-left: auto;
+}
+
+/* A date that has already passed is the one thing on this row worth noticing. */
+.overdue {
+  color: var(--color-danger);
+}
+
+/* The space a lifted card came from: it keeps its shape so the list does not
+   jump, but stops competing with the card under the pointer. */
+.dragging {
+  opacity: 0.35;
+}
+
+/* The card under the pointer, drawn above everything. */
+.lifted {
+  cursor: grabbing;
+  box-shadow: var(--shadow-lg);
+  transform: rotate(1.5deg);
+}

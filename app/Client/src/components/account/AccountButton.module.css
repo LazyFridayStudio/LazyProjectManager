@@ -1,0 +1,84 @@
+/*
+ * You, as something you can press.
+ *
+ * It replaces a block of text at the foot of the sidebar that looked exactly
+ * like this and did nothing, so it keeps that shape — and gains the hover and
+ * the focus ring that say a thing can be pressed.
+ */
+.account {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-panel);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.account:hover {
+  background: var(--hover-tile);
+  border-color: var(--color-divider);
+}
+
+.account:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * In a header, where the row of places has already spent the width.
+ *
+ * The picture alone, and no wider than it: a name here would be a third thing
+ * competing with the screen's own controls for the end of the bar.
+ */
+.compact {
+  width: auto;
+  padding: 4px;
+}
+
+/*
+ * Round, because it is a face.
+ *
+ * The square with initials in it was the same shape as a project's mark, and
+ * the two sat a sidebar apart looking like the same kind of thing. A person is
+ * not a project.
+ */
+.face {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-divider);
+  border-radius: 50%;
+  background: var(--color-bg);
+  object-fit: cover;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-micro);
+}
+
+.names {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  font-size: var(--font-size-small);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.role {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+  text-transform: capitalize;
+}

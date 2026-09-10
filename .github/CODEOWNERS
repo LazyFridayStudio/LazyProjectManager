@@ -1,0 +1,12 @@
+# Every change needs a review from the repository owner. GitHub applies the last
+# matching rule, so the catch-all comes first and the specific paths follow.
+*                       @StrayaJake
+
+# The rules the rest of the codebase is judged against. Changing these changes
+# what "correct" means, so they are called out rather than reviewed in passing.
+/docs/CleanCode.md      @StrayaJake
+/docs/                  @StrayaJake
+/.github/               @StrayaJake
+
+# Schema changes are forward-only and cannot be edited once applied.
+/app/Database/src/migrations/  @StrayaJake

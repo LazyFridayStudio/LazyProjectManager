@@ -1,0 +1,156 @@
+/*
+ * Every group a team could have, behind a button.
+ *
+ * Wider and taller than the form dialogs, because this one is a list rather
+ * than three fields. A studio can have a hundred groups, and a picker for a
+ * hundred things in a box the size of a name field is a box nobody can use.
+ */
+.dialog {
+  width: min(560px, calc(100vw - 32px));
+  padding: 0;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+}
+
+.dialog::backdrop {
+  background: var(--color-scrim);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h2);
+}
+
+.explanation {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.search {
+  padding: 8px 10px;
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-panel);
+  background: var(--color-control);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-base);
+}
+
+.search:hover {
+  border-color: var(--color-control-border-hover);
+}
+
+.search:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * All of them, in a box that scrolls.
+ *
+ * Every group is already loaded, so there is nothing to gain by making somebody
+ * type to see the ninth. Tall enough that scrolling is obviously the thing to
+ * do, and bounded against the window so the dialog never grows past it.
+ */
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  max-height: min(50vh, 420px);
+  overflow-y: auto;
+  list-style: none;
+}
+
+/*
+ * How much is in the box, above the box.
+ *
+ * A scrolling list hides its own size — three rows and a hundred rows look the
+ * same until you drag the bar.
+ */
+.howMany {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/*
+ * The whole row presses.
+ *
+ * One press gives the team the group and closes this, so the target should be
+ * the row somebody is reading rather than a word at the end of it.
+ */
+.choice {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-panel);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.choice:hover:not(:disabled) {
+  background: var(--hover-row);
+  border-color: var(--color-divider);
+}
+
+.choice:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.choice:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.choiceName {
+  flex: 1;
+  min-width: 0;
+}
+
+/* How much it says, so an empty group can be told from a full one. */
+.choiceFacts {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}
+
+.message {
+  margin: 0;
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+}
+
+.problem {
+  margin: 0;
+  font-size: var(--font-size-base);
+  color: var(--color-danger);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

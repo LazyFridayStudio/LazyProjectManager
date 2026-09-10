@@ -1,0 +1,57 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.label {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+.input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  background: var(--color-control);
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-panel);
+}
+
+.input:hover:not(:disabled) {
+  border-color: var(--color-control-border-hover);
+}
+
+.input:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.input:disabled {
+  opacity: var(--disabled-opacity);
+}
+
+.input::placeholder {
+  color: var(--color-text-dim);
+}
+
+/* A field that failed validation. The border carries the signal as well as the
+   message, so the association survives for anyone who cannot see the colour. */
+.invalid {
+  border-color: var(--color-danger);
+}
+
+.problem {
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}
+
+.hint {
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}

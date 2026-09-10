@@ -1,0 +1,160 @@
+/* What has happened on this install, one entry to a row. */
+
+.entries {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  overflow: hidden;
+}
+
+/*
+ * One line per entry, in fixed columns.
+ *
+ * A trail is read by scanning down one column at a time — who, then what, then
+ * when — and columns that move with the length of a project's name defeat that.
+ */
+.entry {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 180px 90px;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--color-hairline);
+  font-size: var(--font-size-small);
+}
+
+.entry:last-child {
+  border-bottom: none;
+}
+
+.who {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  font-family: var(--font-heading);
+  font-size: var(--font-size-micro);
+  color: var(--color-label);
+}
+
+.what {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* What it happened to: the card key or the project's name. */
+.subject {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.byWhom {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+}
+
+.when {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  text-align: right;
+  color: var(--color-text-faint);
+}
+
+.more {
+  align-self: flex-start;
+}
+
+.message {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.problem {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}
+
+/*
+ * A search over every write the install has ever made.
+ *
+ * In the header beside the title, where the asset library puts its own: the
+ * trail is a long list and the way to narrow it belongs above the list rather
+ * than inside it.
+ */
+.search {
+  width: 260px;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  background: var(--color-control);
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-panel);
+}
+
+.search:hover:not(:disabled) {
+  border-color: var(--color-control-border-hover);
+}
+
+.search:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * What kind of thing, as a row of chips.
+ *
+ * Matched against what a thing *is* rather than what was done to it: "cards" is
+ * the question somebody arrives with, and what happened to them is what the
+ * search box is for.
+ */
+.kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.kind {
+  padding: 6px 12px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-small);
+  cursor: pointer;
+}
+
+.kind:hover {
+  background: var(--hover-row);
+  color: var(--color-text);
+}
+
+.kind:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.kindPicked {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-text-on-accent);
+}

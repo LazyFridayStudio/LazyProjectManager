@@ -1,0 +1,143 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+/* The name on the left, the colour it currently is on the right. */
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.label {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+/*
+ * What was picked, said in words.
+ *
+ * Monospace because for a mixed colour it is six hex digits, and those are read
+ * a character at a time — the same run the rest of the app writes a key or an
+ * amount in.
+ */
+.chosen {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/*
+ * Nine to a row, so the block is the same shape wherever it is asked for.
+ *
+ * Left to wrap at whatever width it was given, the seventeen swatches broke
+ * fifteen-and-two in the library's dialog and eleven-and-six in the board's —
+ * one control drawn two ways, which is the thing having one component was for.
+ * Nine and eight is the evenest split of seventeen, and the width is stated as
+ * the arithmetic rather than as the number it comes to.
+ *
+ * It still wraps below that: a phone-width dialog is narrower than the row, and
+ * a row that would not fit is better broken than scrolled sideways.
+ */
+.choices {
+  --swatch: 26px;
+  --swatch-gap: 6px;
+  --swatches-per-row: 9;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--swatch-gap);
+  max-width: calc(
+    var(--swatches-per-row) * var(--swatch) + (var(--swatches-per-row) - 1) * var(--swatch-gap)
+  );
+}
+
+.choice {
+  width: var(--swatch);
+  height: var(--swatch);
+  padding: 0;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  cursor: pointer;
+}
+
+.choice[aria-pressed='true'] {
+  outline: 2px solid var(--color-text);
+  outline-offset: 1px;
+}
+
+.choice:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * The swatch that opens the browser's own picker.
+ *
+ * Its background is set from TypeScript — the wheel is made of the palette, and
+ * once a colour is mixed it is that colour — so this rule owns the shape and
+ * never the colour.
+ */
+.mixed {
+  position: relative;
+  width: var(--swatch);
+  height: var(--swatch);
+  box-sizing: border-box;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  cursor: pointer;
+}
+
+.mixed[data-chosen='true'] {
+  outline: 2px solid var(--color-text);
+  outline-offset: 1px;
+}
+
+/* Focus lands on the input inside, so the ring is drawn on the swatch around it. */
+.mixed:has(.mixedInput:focus-visible) {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * Read out, never drawn.
+ *
+ * `display: none` would take the label out of the accessibility tree as well as
+ * off the screen, which would leave the input inside it with no name at all.
+ */
+.mixedLabel {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/*
+ * The input fills the swatch and is invisible on it.
+ *
+ * `opacity: 0` rather than `display: none`: a hidden input is not focusable and
+ * cannot be opened by a keyboard, which would make the one control here that
+ * reaches every colour the one control a keyboard cannot reach.
+ */
+.mixedInput {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.problem {
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}

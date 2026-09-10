@@ -1,0 +1,47 @@
+/*
+ * The asset library's delete dialog, to the letter — it is where this came
+ * from, and the point of moving it here is that there is one of them rather
+ * than one per screen.
+ *
+ * No padding on the `dialog` itself: the backdrop is part of that element, and
+ * `useModalDialog` decides a click landed on the backdrop by asking whether the
+ * dialog was the thing pressed. Padding here would be a strip inside the box
+ * that closes it, which nobody would expect.
+ */
+.dialog {
+  width: min(520px, calc(100vw - 32px));
+  padding: 0;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+}
+
+.dialog::backdrop {
+  background: var(--color-scrim);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 22px;
+}
+
+.question {
+  margin: 0;
+  font-size: var(--font-size-h2);
+}
+
+.consequence {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

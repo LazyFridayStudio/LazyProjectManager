@@ -1,0 +1,167 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-heading-weight);
+}
+
+/*
+ * What it has taken, against what it was meant to.
+ *
+ * On the heading rather than under the list, because it is the thing somebody
+ * opened this section to find out. The list is the working.
+ */
+.totals {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-small);
+  font-weight: 400;
+}
+
+.against,
+.share {
+  color: var(--color-text-faint);
+}
+
+/* Over the estimate, which is a fact rather than a failure — amber, not red. */
+.over {
+  color: var(--color-warn);
+}
+
+.empty {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.entries {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entry {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--color-hairline);
+  font-size: var(--font-size-small);
+}
+
+.entry:last-child {
+  border-bottom: none;
+}
+
+.face {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-divider);
+  border-radius: 50%;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-micro);
+}
+
+.what {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.who {
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.note {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The number, in the column an eye runs down. */
+.long {
+  flex: none;
+  font-family: var(--font-mono);
+}
+
+.remove {
+  flex: none;
+  padding: 2px 6px;
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-tag);
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-micro);
+  cursor: pointer;
+}
+
+.remove:hover {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.remove:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.adder {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-divider);
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+/*
+ * The note and the press that finishes it, on one line.
+ *
+ * The field grows and the button does not, and both sit on the bottom edge —
+ * a `Field` is a label stacked over its input, so anything beside it has to be
+ * aligned to the input rather than to the box as a whole or it floats level
+ * with the label.
+ */
+.saying {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.saying > *:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.problem {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}

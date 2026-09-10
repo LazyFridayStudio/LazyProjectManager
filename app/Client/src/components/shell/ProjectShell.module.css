@@ -1,0 +1,447 @@
+.shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: stretch;
+  color: var(--color-text);
+}
+
+/*
+ * Fixed width, as the prototype has it. A nav that grows with the longest
+ * project name is a nav that moves every time somebody opens a different
+ * project, and the content beside it reflows for no reason.
+ */
+.sidebar {
+  width: 216px;
+  flex: none;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 16px 12px;
+  border-right: 1px solid var(--color-divider);
+  background: var(--color-panel);
+  /*
+   * Always the height of the window, and staying there while the screen beside
+   * it scrolls.
+   *
+   * It is how you get anywhere, and a design document is long enough that it
+   * used to scroll away — taking the contents list with it exactly when
+   * somebody reached for the next heading. `height` rather than `max-height`:
+   * sized to its contents it stopped short of the bottom, which reads as the
+   * panel having ended rather than as the nav being short.
+   */
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  /* Only the width moves. Animating the content would mean text sliding about
+     inside a box that is already the wrong size for it. */
+  transition: width 120ms ease;
+}
+
+/*
+ * Narrowed to its icons.
+ *
+ * Wide enough for a 32px target with the padding either side, which is the
+ * smallest a thing you press should be.
+ */
+/*
+ * The scrolling middle.
+ *
+ * `min-height: 0` because a flex child will not shrink below its content
+ * without it, which is what makes an overflow inside a column silently do
+ * nothing.
+ */
+.sidebarScroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  /* Room for the scrollbar so the contents list is not under it. */
+  margin-right: -4px;
+  padding-right: 4px;
+}
+
+.sidebarCollapsed {
+  width: 60px;
+  padding: 16px 8px;
+}
+
+/*
+ * Words that are still read out but no longer drawn.
+ *
+ * Clipped rather than `display: none`, because a nav item's text is the name a
+ * screen reader announces it by — removing it would leave a column of
+ * unlabelled pictures.
+ */
+.sidebarCollapsed .projectNames,
+.sidebarCollapsed .groupLabel,
+.sidebarCollapsed .navText,
+.sidebarCollapsed .navBadge,
+.sidebarCollapsed .signedInNames {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/*
+ * With no words beside them, everything sits on one centred column.
+ *
+ * Every row is the full width and centres its contents, so the project mark, the
+ * button under it, each icon and the avatar all share an axis — rather than each
+ * being centred within its own differently-padded box.
+ */
+.sidebarCollapsed .project,
+.sidebarCollapsed .navItem,
+.sidebarCollapsed .signedIn {
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* The button goes under the project mark rather than beside it: at this width
+   there is no beside. */
+.sidebarCollapsed .project {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebarCollapsed .collapse {
+  margin-left: 0;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Which project --------------------------------------------------------- */
+
+.project {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 4px;
+  min-width: 0;
+}
+
+/*
+ * In line with the project, at the far end of it.
+ *
+ * The same button in both states — it is `aria-expanded` that says which way it
+ * will go, not a change of name or of icon.
+ */
+.collapse {
+  margin-left: auto;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-tag);
+  background: transparent;
+  color: var(--color-text-faint);
+  cursor: pointer;
+}
+
+.collapse:hover {
+  border-color: var(--color-divider);
+  color: var(--color-text);
+}
+
+.collapse:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * The project, as a mark.
+ *
+ * Large enough to be the thing you look at first, and larger still when the
+ * sidebar is narrow — where it is the only thing naming the project at all.
+ */
+.projectMark {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-tag);
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h3);
+  line-height: 1;
+  color: var(--color-accent);
+  /* Set for the logo, ignored by the letter: a mark that is not square is
+     cropped to the square rather than squashed into it. */
+  object-fit: cover;
+}
+
+.sidebarCollapsed .projectMark {
+  width: 38px;
+  height: 38px;
+  font-size: var(--font-size-h2);
+}
+
+.projectNames {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.projectName {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h3);
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.switchProject {
+  font-size: var(--font-size-micro);
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.switchProject:hover {
+  text-decoration: underline;
+}
+
+/* --- The nav --------------------------------------------------------------- */
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.groupLabel {
+  padding: 0 6px 6px;
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+/*
+ * The mark on the left is the whole indication of where you are: a filled row
+ * would make the nav the loudest thing on a screen it is not about.
+ *
+ * Drawn as a positioned bar rather than a left border, because a border is two
+ * pixels of box. Every row would carry them and every row that is not a nav item
+ * — the project, the avatar — would not, which is a column of things each an odd
+ * pixel out from the next.
+ */
+.navItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+  text-decoration: none;
+}
+
+.navItemActive::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-accent);
+}
+
+.navItem:hover {
+  background: var(--hover-nav, var(--hover-tile));
+}
+
+.navItem:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: calc(var(--focus-ring-offset) * -1);
+}
+
+.navItemActive {
+  color: var(--color-accent);
+}
+
+.navIcon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  /* Dimmer than the word beside it, so the row reads as a label with a mark
+     rather than as two things of equal weight. */
+  opacity: 0.75;
+}
+
+.navItemActive .navIcon {
+  opacity: 1;
+}
+
+/* --- Who is signed in ------------------------------------------------------ */
+
+.signedIn {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 6px 0;
+  border-top: 1px solid var(--color-divider);
+}
+
+.avatar {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  font-family: var(--font-heading);
+  font-size: var(--font-size-micro);
+}
+
+.signedInNames {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.signedInName {
+  font-size: var(--font-size-small);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signedInRole {
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/*
+ * The number beside a nav item.
+ *
+ * Monospace and dim: it is a fact about the section rather than part of its
+ * name, and a bright one would compete with the word it belongs to.
+ */
+.navBadge {
+  margin-left: auto;
+  padding-left: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/*
+ * A category in the tree.
+ *
+ * The same shape as a nav item, one step quieter: these are places inside a
+ * screen rather than screens, and a tree drawn as loud as the nav above it
+ * would read as ten more sections.
+ */
+/* Indented by how deep it sits, so the contents list is the shape of the
+   library it points into. Multiplied out from a depth the query hands over,
+   rather than a rule per level that runs out at four. */
+.categoryItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 16px 5px calc(16px + var(--category-depth, 0) * 12px);
+  color: var(--color-text-strong);
+  font-size: var(--font-size-small);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.categoryItem:hover {
+  background: var(--hover-row);
+  color: var(--color-text);
+}
+
+.categoryItem:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: calc(var(--focus-ring-offset) * -1);
+}
+
+/*
+ * The category's colour, said the way the library says it: on the name.
+ *
+ * There was a nine-pixel square of it here, beside a name it was a legend for.
+ * The library dropped its own when the heading learned to carry the colour
+ * itself, and two lists of the same categories disagreeing about how a colour
+ * is shown is worse than either way of showing it.
+ *
+ * `--category-ink` is how much of the colour survives against the theme's own
+ * text, which is what keeps a pale category readable on a light ground — the
+ * token says what the sixteen measure. Nothing here needs its own number: the
+ * lightest thing this nav ever puts behind a name is a hovered row, and that is
+ * the ground the token is set against.
+ */
+.categoryItem .navText {
+  color: color-mix(in srgb, var(--category-color) var(--category-ink), var(--color-text));
+}
+
+/*
+ * A heading in the document, as somewhere to go.
+ *
+ * Indented by its level, so the shape of the document is visible from the
+ * sidebar without reading a word of it.
+ */
+.outlineItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 4px 10px;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-small);
+  text-align: left;
+  cursor: pointer;
+}
+
+.outlineItem[data-level='1'] {
+  padding-left: 10px;
+  color: var(--color-text);
+}
+
+.outlineItem[data-level='2'] {
+  padding-left: 22px;
+}
+
+.outlineItem[data-level='3'] {
+  padding-left: 34px;
+  font-size: var(--font-size-micro);
+}
+
+.outlineItem:hover {
+  background: var(--hover-nav);
+  color: var(--color-text);
+}
+
+.outlineItem:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: calc(var(--focus-ring-offset) * -1);
+}

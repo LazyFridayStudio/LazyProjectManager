@@ -1,0 +1,42 @@
+/* Behind the panels of the sign-in screen, which position it themselves. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  display: block;
+  pointer-events: none;
+}
+
+/*
+ * Behind the whole app.
+ *
+ * Fixed rather than absolute, so it does not scroll with a long board and does
+ * not grow a page that already fits. Behind everything the app draws, which is
+ * why the screens themselves paint no ground: what shows through the gaps
+ * between the panels is this.
+ */
+.behindTheApp {
+  position: fixed;
+  inset: 0;
+  /*
+   * Said outright, not left to `inset`.
+   *
+   * A canvas is a replaced element, so `width: auto` resolves to its intrinsic
+   * 300 by 150 rather than stretching between the insets the way a div would.
+   * Without these it sits in the top-left corner at postcard size.
+   */
+  width: 100%;
+  height: 100%;
+  /*
+   * Behind the content rather than in front of it.
+   *
+   * A positioned element at `z-index: 0` paints *above* the text of everything
+   * that is not positioned, which for a full-screen canvas means over the whole
+   * app. Minus one puts it under the lot and still above the page's own ground.
+   */
+  z-index: -1;
+  display: block;
+  pointer-events: none;
+}

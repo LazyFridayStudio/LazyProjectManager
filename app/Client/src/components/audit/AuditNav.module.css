@@ -1,0 +1,39 @@
+/*
+ * The two halves of the Audit tab: what happened, and what can still be undone.
+ *
+ * The install tabs' idiom at a smaller size, with a rule under the row. A place
+ * inside a place should look like the places it is inside, one step quieter.
+ */
+.views {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin: 0 0 4px -8px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.view {
+  padding: 4px 8px 8px;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h3);
+  color: var(--color-text-faint);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.view:hover {
+  color: var(--color-text);
+}
+
+/* The one being read, underlined against the row's own rule. */
+.view[aria-current='page'] {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+
+.view:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}

@@ -1,0 +1,105 @@
+/* The tab it sits in draws the box; this only has to be something the image
+   furniture can be positioned against. */
+.preview {
+  position: relative;
+}
+
+.empty {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}
+
+/* Wrapped around each image by the resizer.
+
+   Block, and as wide as the description, so the image's percentage width means
+   the same fraction it means in read mode — an inline-block frame would size
+   itself to the image and the percentage would have nothing fixed to measure
+   against. The furniture is placed against the image by script, because the
+   image can sit anywhere along this width. */
+.imageFrame {
+  position: relative;
+  display: block;
+  line-height: 0;
+}
+
+/* The bar on the edge that moves, which is what is grabbed to scale. */
+.handle {
+  position: absolute;
+  width: 10px;
+  cursor: ew-resize;
+  /* Invisible until the image is hovered: a description being read should not
+     be covered in furniture. */
+  opacity: 0;
+  transition: opacity 120ms;
+  touch-action: none;
+}
+
+.handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 3px;
+  width: 4px;
+  height: 100%;
+  border-radius: var(--radius-tag);
+  background: var(--color-accent);
+}
+
+.imageFrame:hover .handle,
+.handle:active {
+  opacity: 1;
+}
+
+/* Left, centre and right, shown on the image being pointed at. */
+.alignment {
+  position: absolute;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-tag);
+  background: var(--color-scrim);
+  opacity: 0;
+  transition: opacity 120ms;
+}
+
+.imageFrame:hover .alignment {
+  opacity: 1;
+}
+
+.alignmentButton {
+  width: 22px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-tag);
+  background: transparent;
+  color: var(--color-text-on-scrim);
+  font: inherit;
+  font-size: var(--font-size-micro);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.alignmentButton:hover {
+  border-color: var(--color-accent);
+}
+
+.alignmentButtonSelected {
+  background: var(--color-accent);
+  color: var(--color-text-on-accent);
+}
+
+/* Shown while dragging, so the number being set is visible as it changes. */
+.scaleReadout {
+  position: absolute;
+  padding: 2px 6px;
+  border-radius: var(--radius-tag);
+  background: var(--color-scrim);
+  color: var(--color-text-on-scrim);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  line-height: 1.4;
+}

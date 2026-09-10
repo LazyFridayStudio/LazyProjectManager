@@ -1,0 +1,273 @@
+/*
+ * Everything about you, in one window.
+ *
+ * Twice the width it opened at, which was the narrowest dialog in the app and
+ * read as a column rather than a window — the more so once the type scale grew.
+ * The width is spent on a second column rather than on longer fields: a text
+ * input nine hundred pixels wide is harder to read than one half that, not
+ * easier.
+ */
+.dialog {
+  width: min(920px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+}
+
+.dialog::backdrop {
+  background: var(--color-scrim);
+}
+
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px 24px;
+  padding: 22px;
+  overflow-y: auto;
+  max-height: calc(100vh - 48px);
+  box-sizing: border-box;
+}
+
+/* Who you are, and how you get in. Each stacks its own sections. */
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+/*
+ * The rule between the two.
+ *
+ * The sections inside a column are already separated by a hairline above each,
+ * so without one here the two columns read as one list that happens to wrap —
+ * the eye goes down the left, finds Password across the gap at the same height
+ * as Picture, and has to work out they are not a pair.
+ *
+ * On the second column rather than as an element of its own: it is the same
+ * hairline the sections use, and a divider you can select is a divider that
+ * turns up in a copied selection.
+ *
+ * Grid stretches both columns to the taller one, so it runs the full height
+ * without being told to — and stops above the footer, which spans them.
+ */
+.column + .column {
+  padding-left: 24px;
+  border-left: 1px solid var(--color-divider);
+}
+
+/*
+ * One column on a narrow window, which is the shape it had before.
+ *
+ * Not a phone breakpoint — a dialog this wide simply has nowhere to go once the
+ * viewport is under about a thousand pixels, and two columns of fields at half
+ * of that is worse than one of them at all of it.
+ */
+@media (max-width: 900px) {
+  .body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Stacked, the rule belongs above the second column rather than beside it. */
+  .column + .column {
+    padding-left: 0;
+    padding-top: 18px;
+    border-left: none;
+    border-top: 1px solid var(--color-divider);
+  }
+}
+
+/*
+ * One thing you can change, and its heading.
+ *
+ * Separated by a rule rather than by boxes: a dialog of three panels inside a
+ * panel is a filing cabinet with the drawers drawn on, which is the same note
+ * the project settings screen carries.
+ */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-divider);
+}
+
+/*
+ * The rule above a section, except the one that starts a column.
+ *
+ * Written against the column rather than the body, or the second column would
+ * open with a hairline hanging off the top of nothing.
+ */
+.column > .section:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h3);
+  letter-spacing: 0.02em;
+}
+
+.headingAction {
+  margin-left: auto;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* A sentence about the section it sits in, rather than a field's own hint. */
+.aside {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.hint {
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}
+
+.problem {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}
+
+.pictureRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/*
+ * What is there now, at the size and shape it is actually drawn.
+ *
+ * The same square the shells draw, so choosing a picture shows what everybody
+ * else will see rather than a picture of it. Round, because a face is.
+ */
+.preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--color-divider);
+  border-radius: 50%;
+  background: var(--color-bg);
+  object-fit: cover;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-base);
+  color: var(--color-text-faint);
+}
+
+/* The real input, kept out of sight because the button opens it. */
+.hiddenPicker {
+  display: none;
+}
+
+/*
+ * Signing out, and closing. Apart from each other, because one of them ends the
+ * session and the other ends the window, and a pair of buttons side by side is
+ * how somebody presses the wrong one.
+ */
+.footer {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-divider);
+}
+
+.themes {
+  display: flex;
+  gap: 10px;
+}
+
+.theme {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-panel);
+  background: var(--color-control);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-small);
+  cursor: pointer;
+}
+
+.theme:hover {
+  border-color: var(--color-control-border-hover);
+}
+
+.theme:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* The one in use, marked by the accent rather than by a tick: the swatch is
+   already saying which it is, and a tick would be a second answer. */
+.themeChosen {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+/*
+ * A theme in miniature: its ground, a panel on it, and its accent.
+ *
+ * `data-theme` on the swatch itself, so each one is drawn by the same rule that
+ * draws the app — the light swatch is light while the app around it is dark,
+ * which is the whole point of showing it.
+ */
+.swatch {
+  position: relative;
+  width: 100%;
+  height: 42px;
+  overflow: hidden;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  background: var(--color-bg);
+}
+
+.swatchPanel {
+  position: absolute;
+  inset: 8px 8px 0 8px;
+  border-radius: var(--radius-tag) var(--radius-tag) 0 0;
+  background: var(--color-panel);
+}
+
+.swatchAccent {
+  position: absolute;
+  left: 14px;
+  bottom: 8px;
+  width: 22px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-accent);
+}

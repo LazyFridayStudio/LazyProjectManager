@@ -1,0 +1,39 @@
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.explanation {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The whole row, so the word is as easy to press as the box beside it. */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 2px;
+  cursor: pointer;
+}
+
+.name {
+  font-size: var(--font-size-base);
+}
+
+.problem {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}

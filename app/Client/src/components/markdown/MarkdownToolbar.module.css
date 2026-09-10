@@ -1,0 +1,63 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Buttons that do the same kind of thing sit together, with the gap between
+   groups doing the separating rather than a rule. */
+.group {
+  display: flex;
+  gap: 2px;
+}
+
+.button {
+  min-width: 26px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  padding: 0 5px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-tag);
+  background: transparent;
+  color: var(--color-label);
+  font: inherit;
+  font-size: var(--font-size-small);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.button:hover {
+  border-color: var(--color-divider);
+  color: var(--color-text);
+}
+
+.button:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* On, because the text under the caret already is what the button writes. */
+.buttonActive {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-bg);
+}
+
+/* The glyph is a sample of what the button does. */
+.bold {
+  font-weight: 700;
+}
+
+.italic {
+  font-style: italic;
+}
+
+.strikethrough {
+  text-decoration: line-through;
+}
+
+.code {
+  font-family: var(--font-mono);
+}

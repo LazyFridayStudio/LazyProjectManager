@@ -1,0 +1,291 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  box-shadow: var(--panel-inset-highlight);
+}
+
+/* The heading carries the way to add one, like every other panel that lists. */
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-heading-weight);
+}
+
+.about {
+  max-width: 70ch;
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.message {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.problem {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}
+
+.agent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.face {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-divider);
+  border-radius: 50%;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-micro);
+}
+
+.name {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.meta {
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.naming {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.nameBox {
+  flex: 1;
+  min-width: 220px;
+  padding: 6px 8px;
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-panel);
+  background: var(--color-control);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-small);
+}
+
+.nameBox:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * The one moment the key exists in readable form.
+ *
+ * Marked out rather than dropped into the list, because what it says is not
+ * "here is a key" but "this is your only chance to copy it".
+ */
+.secret {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--color-warn);
+  border-radius: var(--radius-panel);
+  background: var(--color-warn-200);
+}
+
+.secretSaid {
+  max-width: 70ch;
+  margin: 0;
+  font-size: var(--font-size-small);
+}
+
+.secretValue {
+  width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  padding: 8px 10px;
+  border-radius: var(--radius-tag);
+  background: var(--color-control);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-small);
+  user-select: all;
+}
+
+.keys {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.key {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  background: var(--color-surface);
+  font-size: var(--font-size-small);
+}
+
+.keyMeta {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/* A revoked key stays listed, struck through, so a list says what was there. */
+.revokedName {
+  color: var(--color-text-faint);
+  text-decoration: line-through;
+}
+
+/*
+ * Label on the left, value on the right, one ruled row each — the same block
+ * the asset panel uses for its facts, because it is the same shape of question.
+ */
+.facts {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: 0 16px;
+  margin: 0;
+  border-top: 1px solid var(--color-divider);
+  font-size: var(--font-size-small);
+}
+
+.factLabel {
+  padding: 7px 0;
+  border-bottom: 1px solid var(--color-hairline);
+  color: var(--color-text-muted);
+}
+
+.factValue {
+  margin: 0;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--color-hairline);
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-small);
+  user-select: all;
+}
+
+/* The face is the control: pressing it chooses the picture, the way the account
+   window does, rather than a second button beside it saying so. */
+.pictureButton {
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.pictureButton:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.pictureButton:disabled {
+  opacity: var(--disabled-opacity);
+  cursor: default;
+}
+
+/* The real input, kept out of the way. The face above is what anybody sees. */
+.hiddenPicker {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* The face and the name beside it, which is what an agent is. */
+.settings {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.bigFace {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-divider);
+  border-radius: 50%;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-base);
+}
+
+.settingsFields {
+  flex: 1;
+  min-width: 0;
+}
+
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* One group it holds, with the way to take it back. The accent edge says this
+   is something granted rather than something that was always true. */
+.group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-divider);
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius-tag);
+  background: var(--color-surface);
+}
+
+.groupName {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-small);
+}
+
+.adding {
+  max-width: 34ch;
+}
+
+/* Two presses on the heading, which is one more than it was built for. */
+.headingActions {
+  display: flex;
+  gap: 8px;
+}

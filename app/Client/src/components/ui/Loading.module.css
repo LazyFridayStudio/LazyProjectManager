@@ -1,0 +1,99 @@
+/*
+ * A page that has not arrived yet.
+ *
+ * Fills whatever box it is given and centres itself in it, so the same
+ * component is right in the content area of a screen and in the middle of a
+ * dialog. The minimum height is what stops it from centring inside nothing when
+ * the box it is in has not been given a size yet.
+ */
+.loading {
+  flex: 1;
+  min-height: 140px;
+  display: grid;
+  place-items: center;
+  /*
+   * Nothing at all for the first sixth of a second.
+   *
+   * Against a server on the same machine the answer comes back in tens of
+   * milliseconds, and a spinner that appears and vanishes inside a single blink
+   * is the flicker it was brought in to remove. Waiting means a fast page shows
+   * nothing, which is what a fast page should look like.
+   */
+  opacity: 0;
+  animation: appear 140ms linear 160ms forwards;
+}
+
+@keyframes appear {
+  to {
+    opacity: 1;
+  }
+}
+
+/*
+ * The radial itself.
+ *
+ * A ring with one arc in the accent rather than a chasing dot: at 28 pixels the
+ * arc is legible as motion at a glance, and the ring behind it holds the shape
+ * still so the whole thing does not read as something wobbling.
+ */
+.ring {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--color-hairline);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: turn 800ms linear infinite;
+}
+
+@keyframes turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/*
+ * What it says, for anybody who is not looking at it.
+ *
+ * Off screen but not hidden: `display: none` and `visibility: hidden` both take
+ * it away from a screen reader too, and then a page that is loading announces
+ * nothing at all.
+ */
+.word {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/*
+ * Somebody who has asked for less movement gets the word instead.
+ *
+ * A ring that does not turn is a circle, which says nothing. The sentence that
+ * was being read out to everybody else is the honest thing to show, and it is
+ * already here.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .loading {
+    opacity: 1;
+    animation: none;
+  }
+
+  .ring {
+    display: none;
+  }
+
+  .word {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+    font-size: var(--font-size-small);
+    color: var(--color-text-muted);
+  }
+}

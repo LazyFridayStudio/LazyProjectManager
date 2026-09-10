@@ -1,0 +1,102 @@
+/*
+ * The frame around everything outside a project.
+ *
+ * The header is `ScreenHeader`, the same bar every other screen has, so this
+ * file only has to say what is particular here: the row of places that stands
+ * in for a title, and the body under the bar.
+ */
+.screen {
+  min-height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  color: var(--color-text);
+}
+
+/*
+ * Where you can go.
+ *
+ * In the title's place, because naming the screen is half the job it is doing.
+ * Pulled left by a tab's own padding so the first place lines up with the
+ * content under it.
+ *
+ * Stretched rather than aligned to a baseline: the tab with a word in it is
+ * taller than the four with only a mark, and a baseline would hang the marks
+ * off the bottom of the letters. Stretched, every tab is the height of the row
+ * and every mark is centred in one — so they land on one axis, and each has the
+ * same hit area as the one that carries a word.
+ */
+.tabs {
+  margin-left: -10px;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: var(--radius-tag);
+  color: var(--color-text-faint);
+  text-decoration: none;
+}
+
+/* The mark keeps its 16 whatever the row does to the tab around it. */
+.tabMark {
+  display: flex;
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+/*
+ * The word beside the mark you are on, which is the screen's own name.
+ *
+ * At the title's size and weight, because it is standing in for the `<h1>` that
+ * `ScreenHeader` reads out rather than draws. One of these, not five.
+ */
+.tabName {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-title);
+  font-weight: var(--font-title-weight);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  background: var(--hover-nav);
+  color: var(--color-text);
+}
+
+/* The place you are is the one in the accent; the others are the way out. */
+.tab[aria-current='page'] {
+  color: var(--color-accent);
+}
+
+.tab:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Between what this screen does and what you do to your own account. */
+.divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 2px;
+  background: var(--color-divider);
+}
+
+/*
+ * The screen itself, indented to the same 22 pixels the bar is padded by, so a
+ * title sits over the first column of whatever is under it.
+ */
+.body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px 22px 32px;
+}

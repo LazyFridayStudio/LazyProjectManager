@@ -1,0 +1,61 @@
+name: label issue
+
+# Labels an issue by which part of the product it is about.
+#
+# The issue forms ask the question; nothing in GitHub answers it. `labels:` on a
+# form applies a fixed set, and a checkbox the reporter ticks is only text in
+# the body until something reads it — which is this. The same job .github/
+# labeler.yml does for pull requests, so the list of open work reads the same
+# way whichever kind of thing is on it.
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  label:
+    name: label
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/github-script@v9
+        with:
+          script: |
+            // The label each ticked box means. Keyed by the word the form
+            // starts the option with, so the wording after the dash can change
+            // without silently unlabelling everything.
+            const labelForArea = {
+              client: 'client',
+              server: 'server',
+              shared: 'shared',
+              database: 'database',
+              ci: 'ci',
+              docs: 'docs',
+              tests: 'tests',
+            };
+
+            const body = context.payload.issue.body ?? '';
+            const ticked = body.match(/^\s*[-*]\s*\[x\]\s*(.+)$/gim) ?? [];
+
+            const labels = [...new Set(ticked.flatMap((line) => {
+              const area = line.replace(/^\s*[-*]\s*\[x\]\s*/i, '').split(/[\s—-]/)[0];
+              return labelForArea[area.toLowerCase()] ?? [];
+            }))];
+
+            if (labels.length === 0) {
+              core.info('No area was ticked, so nothing to add.');
+              return;
+            }
+
+            // Only ever adds. A label taken off by hand stays off, the way
+            // `sync-labels: false` keeps it off a pull request.
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              labels,
+            });

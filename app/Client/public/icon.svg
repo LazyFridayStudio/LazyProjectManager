@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!--
+    LazyProjectManager: a project at the centre, and everything hanging off it.
+
+    In the family Lazy Logger and Lazy Godot VOIP share — the same dark rounded
+    ground, the same flat geometry, no gradient, no shadow, no letter.
+
+    One orange, and it is the project. Nothing else here is allowed to be: a
+    second orange would be a second thing claiming to be the subject, and the
+    subject is the middle.
+
+    The six around it run a spectrum — green, blue, violet, pink, red, lime,
+    clockwise from the top — which leaves exactly one arc of the wheel
+    uncovered, the orange and yellow between red and lime. That arc is the thing
+    in the middle. The gap in the spectrum is the project, so the wheel closes
+    on the centre rather than on itself.
+
+    Three of the six are the siblings' own accents: their green at the top,
+    their blue beside it, their red near the end. Only one of the six is a blue,
+    because two of them sitting a step apart read as the same colour twice.
+
+    One dark grey for every ring and every spoke, flat, with no outline of its
+    own — a step off the ground rather than a black edge, which is what keeps
+    the seven circles reading as one material.
+
+    All of it drawn thin. At twice these weights the rings read as bands
+    wrapped around the circles rather than as where each one stops, and the
+    spokes read as bars rather than as what holds the six on. A hair more on the
+    spokes than on the rings, because a line crossing an edge has to stay a line
+    where it meets it.
+
+    The middle wears the same ring as the six, because it is the same kind of
+    thing: the one they are all attached to.
+
+    The spokes run from under the middle right out to each node, so every one of
+    them is held rather than floating.
+  -->
+  <rect width="128" height="128" rx="20" fill="#10161d"/>
+
+  <!-- From the centre outwards. What falls inside the middle circle is covered
+       by it, so a spoke meets it with no seam to line up. -->
+  <g stroke="#4a5560" stroke-width="2.25" stroke-linecap="round">
+    <line x1="64" y1="64" x2="64" y2="21"/>
+    <line x1="64" y1="64" x2="101.24" y2="42.5"/>
+    <line x1="64" y1="64" x2="101.24" y2="85.5"/>
+    <line x1="64" y1="64" x2="64" y2="107"/>
+    <line x1="64" y1="64" x2="26.76" y2="85.5"/>
+    <line x1="64" y1="64" x2="26.76" y2="42.5"/>
+  </g>
+
+  <circle cx="64" cy="64" r="24" fill="#eda363" stroke="#4a5560" stroke-width="2"/>
+
+  <g stroke="#4a5560" stroke-width="1.75">
+    <circle cx="64" cy="21" r="9.5" fill="#6fd08c"/>
+    <circle cx="101.24" cy="42.5" r="9.5" fill="#7da9f5"/>
+    <circle cx="101.24" cy="85.5" r="9.5" fill="#a48af0"/>
+    <circle cx="64" cy="107" r="9.5" fill="#e589c4"/>
+    <circle cx="26.76" cy="85.5" r="9.5" fill="#ef6b62"/>
+    <circle cx="26.76" cy="42.5" r="9.5" fill="#b5d95f"/>
+  </g>
+</svg>

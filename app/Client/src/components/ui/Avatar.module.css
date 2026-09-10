@@ -1,0 +1,25 @@
+/*
+ * A picture drawn into a box that was built for two letters.
+ *
+ * Every place that draws a person sized its own square or circle for initials —
+ * `display: grid`, `place-items: center`, a width and a height. Dropping an
+ * `img` into that stretches it to the box, so a photograph that is not already
+ * square arrives squashed.
+ *
+ * Here rather than in the nine stylesheets that own those boxes. The caller
+ * decides how big the mark is and what shape its corners are; what happens to a
+ * picture inside it is the same answer every time, and a rule repeated nine
+ * times is a rule that is eight-ninths applied by the end of the year.
+ *
+ * `img.picture` on purpose. A bare class would tie the outcome to which
+ * stylesheet the bundler happened to emit last, and the caller's own class sets
+ * `display` — an element and a class together always wins, whatever the order.
+ */
+img.picture {
+  /* Cover, not contain: a face cropped at the edges still reads as that face,
+     and one letterboxed into a 22px square reads as a smudge. */
+  object-fit: cover;
+  /* The boxes are grids because they were centring text. An image needs none of
+     that, and inheriting it makes the picture a grid container. */
+  display: block;
+}

@@ -1,0 +1,245 @@
+/*
+ * Who is on a project, and the search that puts somebody else on it.
+ *
+ * The same panel shape as the two above it on the settings screen — the border,
+ * the radius, the inset highlight — because it is one more thing the project
+ * is, not a different kind of box. What is different is that this one is worked
+ * in rather than read, which is why it spans the width instead of sitting in
+ * the narrow column with the lists of short facts.
+ */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--panel-inset-highlight);
+  background: var(--color-panel);
+}
+
+.panelHeading {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.panelTitle {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h3);
+  letter-spacing: 0.02em;
+}
+
+.count {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/*
+ * Teams, then people.
+ *
+ * Two lists rather than one sorted together, because they are answers to
+ * different questions: a team says a department works on this, and a person
+ * says this one does. Mixed, a producer scanning for "is Alex on it" would have
+ * to read every row to find out that they are, through Audio.
+ */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--color-hairline);
+  font-size: var(--font-size-small);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+/* Initials for a person, the head count for a team: both are the row at a glance. */
+.rowMark {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  font-family: var(--font-heading);
+  font-size: var(--font-size-small);
+}
+
+/* Takes the free space, so the controls sit against the right edge together. */
+.rowName {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowFacts {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.action {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-accent-700);
+  font: inherit;
+  font-size: var(--font-size-small);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.action:hover {
+  text-decoration: underline;
+}
+
+.action:disabled {
+  color: var(--color-text-dim);
+  cursor: default;
+  text-decoration: none;
+}
+
+/*
+ * A row action that takes something away.
+ *
+ * The same quiet link as its neighbours, in red rather than the accent: what
+ * separates Take off from anything else in a row is not how loud it is, it is
+ * that one of them removes something.
+ */
+.actionStop {
+  color: var(--color-danger);
+}
+
+.action:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* The search that adds somebody or something, and what it found. */
+.adder {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-divider);
+}
+
+.adderLabel {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+.search {
+  height: 34px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-small);
+}
+
+.search:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.matches {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+}
+
+.match {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 9px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--font-size-small);
+  text-align: left;
+  cursor: pointer;
+}
+
+.match:hover {
+  background: var(--hover-tile);
+}
+
+.match:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.matchAbout {
+  margin-left: auto;
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.message {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.problem {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}

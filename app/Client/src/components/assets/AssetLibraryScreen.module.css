@@ -1,0 +1,1255 @@
+.screen {
+  min-height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  color: var(--color-text);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-title);
+  font-weight: var(--font-title-weight);
+  line-height: 1.2;
+}
+
+.backToBoard {
+  font-size: var(--font-size-small);
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.backToBoard:hover {
+  text-decoration: underline;
+}
+
+.summary {
+  display: flex;
+  gap: 14px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/*
+ * Where a heading's grip sits across the row, which is what the tree lines are
+ * drawn between.
+ *
+ * The grip is 14px wide inside a head padded 2px across, so its centre is 9px
+ * in. How far *down* it sits is not written here on purpose — the grip is
+ * centred in its row, so half the row is the answer whatever the row turns out
+ * to be, and the lines say `50%` rather than a number that would have to be
+ * measured again every time the type scale moved.
+ *
+ * Its size is written down because the lines stop at its edge rather than at
+ * its centre, so half of each is the distance they have to keep.
+ */
+.categories {
+  --category-indent: 20px;
+  --grip-centre-x: 9px;
+  --grip-width: 14px;
+  --grip-height: 20px;
+
+  /*
+   * How far what a category holds sits from its own left edge.
+   *
+   * Clear of the spine, which is drawn at the grip: a grid of tiles starting at
+   * the same edge covers the line that says whose tiles they are.
+   */
+  --contents-inset: 32px;
+
+  /*
+   * How far the grip's ink sits above the middle of the button holding it.
+   *
+   * A braille glyph is drawn on its baseline rather than centred in its box, so
+   * placing the character in the middle of the button leaves the six circles
+   * high in it. Measured at 1.65px and rounded.
+   *
+   * It used to move the *lines* up to meet the circles. Now that the grip is
+   * drawn as a box, the box is what a line arrives at, and a box that sits
+   * square on the row with its circles riding high in it looks broken in a way
+   * a bare glyph never did. So the same measurement pushes the circles down
+   * into the middle of the box instead, and the lines are free to say `50%`.
+   */
+  --grip-ink-lift: 2px;
+
+  display: flex;
+  flex-direction: column;
+  padding: 6px 22px 22px;
+}
+
+/* One section per category, divided by a line rather than by a gap: the library
+   is one list read top to bottom, not a set of separate panels. */
+.category {
+  /*
+   * What the tree is drawn in: the category's colour, quietened.
+   *
+   * Said once rather than at each of the three lines and the grip they meet at,
+   * which is what let a spine and the branch arriving at it drift apart while
+   * both claimed to be the same colour. A line that wants to be louder
+   * overrides it on itself — those are pseudo-elements with nothing under them,
+   * so nothing inherits a shout meant for one line.
+   *
+   * Here rather than up on `.categories` with the measurements, because a
+   * custom property is worked out where it is written: `var(--category-color)`
+   * inside one declared on the library resolves against the library, which has
+   * no colour, and every line on the screen computes to nothing at all. This is
+   * the first element that knows the colour, and each category inside restates
+   * it in its own.
+   */
+  --spine-ink: color-mix(in srgb, var(--category-color) 72%, transparent);
+
+  position: relative;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+/*
+ * A sub-category is indented one step, and has no rule under it.
+ *
+ * One step rather than a depth multiplied out, because the sections are nested
+ * inside each other — the indent of everything above it is already applied by
+ * the time this one is laid out, and multiplying as well made the fourth level
+ * sit a hundred and twenty pixels in.
+ *
+ * The rule is what separates one group from the next. Drawn under every heading
+ * at every depth it stops separating anything and turns a tree into a ledger.
+ */
+.categoryNested {
+  padding: 0 0 6px var(--category-indent);
+  border-bottom: none;
+}
+
+/*
+ * The tree: a spine down each category, and a branch into each heading.
+ *
+ * Two lines doing two jobs, and the colours say which is which. **A spine is
+ * the category's own colour** and runs from its grip down the left of
+ * everything it holds — sub-categories, tiles and all — so a grid of pictures
+ * four levels in is visibly inside something rather than floating after it.
+ * **A branch is the colour of the heading it arrives at**, so a line leaving
+ * one spine and turning into a heading says which heading it is going to.
+ *
+ * Which is also why the branch is only ever horizontal. Drawn as an elbow it
+ * would run down the spine in a second colour for the height of a row, and the
+ * spine would appear to change colour once per child.
+ *
+ * Mixed rather than used at full strength: a category's colour is already
+ * stated by the heading itself — its arrow, its name, the box round its grip —
+ * and by the bar at the end of the row, and lines at full strength on top of
+ * that would be the loudest thing on a screen of photographs. Far enough up that a spine still reads down the side
+ * of a tile three hundred pixels tall, which is the whole of what it is for.
+ */
+.categoryContents {
+  position: relative;
+  /*
+   * Holds its children's margins rather than letting them escape.
+   *
+   * The empty state opens with a top margin, and a margin that collapses out of
+   * this box takes the top of the box with it — which left a ten-pixel gap in
+   * the spine, under the heading, for every category with nothing in it yet.
+   */
+  display: flow-root;
+}
+
+/*
+ * The spine, and the one thing on it that is not a straight answer: its end.
+ *
+ * It used to stop at the last pixel of whatever the category held, which reads
+ * as a line that ran out rather than as one that finished — the eye keeps
+ * going and finds nothing. Fading it out says the branch is over.
+ *
+ * Over the last twenty-two pixels, or forty per cent of the line, whichever is
+ * shorter. The cap is what makes it work on a category holding one heading: a
+ * fixed fade is most of a short spine, and a spine that is nearly all fade is
+ * a smudge rather than a line. As a proportion alone it would fade a spine down
+ * the side of a tall grid of tiles for a hundred pixels, which is a line that
+ * gives up halfway.
+ */
+.categoryContents::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--grip-centre-x);
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    var(--spine-ink) calc(100% - min(22px, 40%)),
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/*
+ * The half of the spine that runs from the grip to the bottom of its own row.
+ *
+ * On the head because that is the only element that knows where the grip is
+ * without being told: it is centred in the row, so `50%` is the answer whatever
+ * a row turns out to be. The rest of the spine is the contents below, and the
+ * two meet because both are measured from the same edge.
+ *
+ * Only while the category is open. Closed, there is nothing under the heading
+ * for a line to be about — and a line heading downwards out of one points
+ * straight at the category below it, which is somebody else's.
+ *
+ * It leaves from under the grip rather than from inside it: half the grip's
+ * height below the middle of the row is its bottom edge, whatever the row is.
+ */
+.categoryOpen > .categoryHead::after {
+  content: '';
+  position: absolute;
+  top: calc(50% + var(--grip-height) / 2);
+  height: calc(50% - var(--grip-height) / 2);
+  left: var(--grip-centre-x);
+  width: 1px;
+  background: var(--spine-ink);
+  pointer-events: none;
+}
+
+/*
+ * The branch, from the spine of whatever holds this one into the middle of its
+ * grip.
+ *
+ * Measured against the row rather than in pixels: the grip is centred in its
+ * head, so `50%` is where it sits whatever the type scale does.
+ *
+ * It stops at the grip's left edge rather than at its centre, which is half the
+ * grip's width short of where it used to end. That last seven pixels were the
+ * line crossing the circles it was pointing at.
+ */
+.categoryNested > .categoryHead::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: calc(var(--grip-centre-x) - var(--category-indent));
+  width: calc(var(--category-indent) - var(--grip-width) / 2);
+  height: 1px;
+  background: var(--spine-ink);
+  pointer-events: none;
+}
+
+/*
+ * The category a tile would land in, while it is still being carried.
+ *
+ * The tiles already step aside to show the place, which answers "where in this
+ * category". This answers "which category" — and on a screen of nested headings
+ * that is the harder half, because the one being pointed at and the one above
+ * it are twenty pixels apart.
+ *
+ * Its own colour at full strength, which is the one thing on this screen the
+ * quiet version of it is saved for.
+ */
+.categoryTargeted > .categoryHead {
+  background: color-mix(in srgb, var(--category-color) 22%, transparent);
+  border-radius: var(--radius-tag);
+}
+
+/* Full strength and twice the width, so the eye follows the whole branch to the
+   heading rather than hunting for a tinted row. */
+.categoryTargeted > .categoryHead::after,
+.categoryTargeted > .categoryContents::before {
+  --spine-ink: var(--category-color);
+
+  width: 2px;
+}
+
+.categoryTargeted > .categoryHead::before {
+  --spine-ink: var(--category-color);
+
+  height: 2px;
+}
+
+/* And the grip they converge on, so the branch does not brighten into a box
+   that stayed quiet. */
+.categoryTargeted > .categoryHead .categoryGrip {
+  border-color: var(--category-color);
+}
+
+/* And the space the tile would land in, which is the answer to "where". */
+.categoryTargeted > .categoryContents > .categoryEmpty {
+  border-color: var(--category-color);
+  color: var(--color-text-muted);
+}
+
+/*
+ * Where a heading would land, drawn as a line rather than by moving anything.
+ *
+ * Above the group for a drop before it and below the whole group for a drop
+ * after it, because that is literally where the thing will sit — a category
+ * arrives with everything inside it, so the line goes round the outside of what
+ * it is landing next to.
+ *
+ * Nothing on this screen moves while the line is showing. A tree that rearranges
+ * itself under a drag moves the row being aimed at, which reads as the screen
+ * fighting back and lands the thing somewhere else.
+ */
+.dropAbove::before,
+.dropBelow::before {
+  content: '';
+  position: absolute;
+  left: var(--grip-centre-x);
+  right: 0;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--color-accent);
+  pointer-events: none;
+}
+
+.dropAbove::before {
+  top: 0;
+}
+
+.dropBelow::before {
+  bottom: 0;
+}
+
+.categoryHead {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 4px 2px;
+  /* The mark that says a drop would land here arrives and leaves rather than
+     snapping, which is the difference between a mark that follows a pointer and
+     one that flickers at it. */
+  transition: background 90ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .categoryHead {
+    transition: none;
+  }
+}
+
+/*
+ * What a category is dragged by. The board's column grip, to the pixel: two
+ * screens with two different handles is two things to learn.
+ */
+.categoryGrip {
+  flex: none;
+  width: var(--grip-width);
+  height: var(--grip-height);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  /*
+   * Drawn as a box rather than as six loose circles.
+   *
+   * The circles are where three lines converge, and without an edge of their
+   * own they had the branch running in among them and the spine leaving from
+   * somewhere inside the gaps. An outline gives the lines something to stop at,
+   * which is the whole of what it is for — so it is a boundary at
+   * forty-five per cent and a fill at ten, not a control competing with the
+   * name beside it.
+   */
+  border: 1px solid color-mix(in srgb, var(--category-color) 45%, transparent);
+  border-radius: var(--radius-tag);
+  background: color-mix(in srgb, var(--category-color) 10%, transparent);
+  /*
+   * The category's own colour, because the grip is where its lines meet.
+   *
+   * Mixed to the same strength as the spine leaving it, so the dots and the
+   * line read as one mark rather than as a grey handle a coloured line happens
+   * to touch.
+   */
+  color: var(--spine-ink);
+  font: inherit;
+  line-height: 1;
+  cursor: grab;
+  /* Otherwise a touch drag scrolls the library instead of moving the heading. */
+  touch-action: none;
+}
+
+/* Centred in the box rather than on its own baseline — see `--grip-ink-lift`. */
+.categoryGripDots {
+  display: block;
+  transform: translateY(var(--grip-ink-lift));
+}
+
+.categoryGrip:hover {
+  border-color: var(--category-color);
+  color: var(--category-color);
+}
+
+.categoryGrip:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* The category left behind while its heading travels under the pointer. */
+.categoryDragging {
+  opacity: 0.35;
+}
+
+.categoryToggle {
+  display: flex;
+  align-items: baseline;
+  gap: 11px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.categoryToggle:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * Centred against the row rather than sitting on the name's baseline.
+ *
+ * The rest of the heading is aligned to the baseline, which is right for a name
+ * and the count beside it — both are words. The chevron is a mark, and a mark on
+ * a word's baseline hangs off the bottom of a line twenty-two pixels tall.
+ */
+.chevron {
+  flex: none;
+  align-self: center;
+}
+
+.categoryName {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h2);
+}
+
+/*
+ * The category's colour, on the two things a heading is: its mark and its name.
+ *
+ * There was a ten-pixel square between them carrying it, which is a legend for
+ * a colour that has nowhere else to be. Here it does have somewhere: the arrow
+ * and the name are the heading, so colouring them says the same thing with one
+ * fewer object in the row and says it at the size of a word rather than of a
+ * dot.
+ *
+ * Not the colour straight. `--category-ink` is how much of it survives, and it
+ * changes with the theme because the palette is pitched to be seen rather than
+ * to be read — the token says what the sixteen measure and why. What is left is
+ * the theme's own text colour, which is what carries a pale category on a light
+ * ground and a dark one on the app's own.
+ */
+.chevron,
+.categoryName {
+  color: color-mix(in srgb, var(--category-color) var(--category-ink), var(--color-text));
+}
+
+.categoryCount {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/* What it is estimated to cost, against what it was budgeted. */
+.spend {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.bar {
+  width: 120px;
+  height: 7px;
+  display: block;
+  background: var(--color-surface);
+}
+
+.barFill {
+  display: block;
+  height: 7px;
+  background: var(--category-color);
+}
+
+/* Over budget is shown rather than refused — the estimate is what it is. */
+.barFill[data-over='true'],
+.share[data-over='true'] {
+  background: var(--color-warn);
+}
+
+.share {
+  width: 34px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  text-align: right;
+  background: transparent;
+}
+
+.share[data-over='true'] {
+  background: transparent;
+  color: var(--color-warn);
+}
+
+/*
+ * What can be done to the category, in the same buttons as everything else.
+ *
+ * These were small uppercase text links, which is what a heading row usually
+ * wants — but one of them deletes a category, and a control that removes eight
+ * assets' heading should not look like a caption.
+ */
+.categoryActions {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
+
+/*
+ * Where the first thing in a category is dropped.
+ *
+ * It was a line of grey text, which is what a category with nothing in it has
+ * to say — and it was also the only place a tile could be let go to land in
+ * one, which made "put this in that" a matter of hitting fourteen pixels of
+ * prose. An outlined area says it is somewhere things go, and is big enough to
+ * aim at while carrying something.
+ */
+.categoryEmpty {
+  margin: 10px 0 0 var(--contents-inset);
+  padding: 14px 16px;
+  border: 1px dashed var(--color-divider);
+  border-radius: var(--radius-tag);
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}
+
+/*
+ * Tiles rather than rows: an asset is a thing you recognise by looking at it,
+ * and the space a thumbnail needs is the space it gets.
+ *
+ * Half again as wide as they started. A 16:9 picture is shorter than the 4:3
+ * one that was here before, so at the old width the thing you are meant to
+ * recognise had become the smallest part of the tile.
+ */
+/* The gap the tile left, while it is being carried. Kept in the flow so the
+   grid does not reflow under the pointer, which would move the thing somebody
+   is aiming at. */
+.tileDragging {
+  opacity: 0.4;
+}
+
+/*
+ * What travels with the pointer: the tile, as it will be put down.
+ *
+ * The same width as the grid's columns, because the overlay is swapped for the
+ * real tile the instant the drag ends — anything narrower is a shape that
+ * changes on release, which reads as the asset appearing rather than landing.
+ *
+ * Lifted and outlined so it is obviously the one being carried, and tilted a
+ * degree so it reads as held rather than as a tile that has come loose.
+ */
+/*
+ * The heading under the pointer while a category is being moved.
+ *
+ * The dot and the name, at the metrics the real heading draws them at — what is
+ * being carried is the heading, and a category open at forty tiles carried
+ * whole would be most of a screen following the pointer around.
+ */
+/*
+ * The heading as a chip that follows the pointer.
+ *
+ * As wide as its own words, not as wide as the thing it came from. The overlay
+ * is given the size of what is being dragged, and what is being dragged is a
+ * section the width of the screen — so a heading two words long was carried as
+ * a bar across the whole window, and the degree of tilt below turned it into a
+ * wedge.
+ */
+.categoryCarried {
+  width: max-content;
+  max-width: 320px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+  transform: rotate(1deg);
+  cursor: grabbing;
+}
+
+.tileCarried {
+  /* The metrics of `.tile`, not near them: the two are swapped for each other
+     at the moment of release, and a gap or a padding that differs by a pixel is
+     a shift somebody sees. */
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 268px;
+  padding: 8px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+  transform: rotate(1deg);
+  cursor: grabbing;
+}
+
+/*
+ * Indented past the spine, like the empty state beside it.
+ *
+ * The line down a category's left is what says these tiles are its, and a grid
+ * starting at the same edge covers the line it is meant to be answering to.
+ */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+  gap: 12px;
+  margin: 0 0 0 var(--contents-inset);
+  padding: 14px 0 4px;
+  list-style: none;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 8px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--panel-inset-highlight);
+}
+
+/*
+ * The render, once there is one.
+ *
+ * The slot is 16:9 so a wall of tiles reads as a wall; the picture inside it is
+ * contained and centred rather than cropped to fill, because a library is
+ * scanned by recognising things and a crop is how you fail to recognise one.
+ */
+.thumbnailImage {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  display: block;
+  object-fit: contain;
+  object-position: center;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  background: var(--color-bg);
+}
+
+/* Where the render goes when there is none. Until then it says what the thing
+   is, which is more use than an empty rectangle. */
+.thumbnail {
+  aspect-ratio: 16 / 9;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--color-accent) 70%, transparent);
+}
+
+.assetName {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-base);
+  line-height: 1.15;
+}
+
+.assetFoot {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  background: var(--color-label);
+}
+
+.statusDot[data-status='concept'] {
+  background: var(--color-status-concept);
+}
+
+.statusDot[data-status='wip'] {
+  background: var(--color-status-wip);
+}
+
+.statusDot[data-status='review'] {
+  background: var(--color-status-review);
+}
+
+.statusDot[data-status='approved'] {
+  background: var(--color-status-approved);
+}
+
+.statusDot[data-status='final'] {
+  background: var(--color-status-final);
+}
+
+.statusName {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.assetCost {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+}
+
+/* How much is known about the thing, and how much work hangs off it. Quieter
+   than the line above, because it is what you read second. */
+.assetCounts {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.assetLinked {
+  margin-left: auto;
+}
+
+/* An asset with work on it is the interesting case, so that is the one that
+   gets the colour. */
+.assetLinked[data-linked='true'] {
+  color: var(--color-accent);
+}
+
+/* How many of its stages are done. Monospace so the counts line up down a
+   column of tiles, which is how a library is read. */
+.assetStages {
+  font-family: var(--font-mono);
+  color: var(--color-text-faint);
+}
+
+/* Only the finished ones are coloured. Everything else is in progress, and a
+   library where forty tiles all say something is a library saying nothing. */
+.assetStages[data-complete='true'] {
+  color: var(--color-ok);
+}
+
+.assetTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/*
+ * Outlined and quiet. On a tile these sit under the name, the status and the
+ * cost, and they are the fourth thing anybody reads — a row of filled chips
+ * would make them the first.
+ */
+.assetTag {
+  padding: 1px 5px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-muted);
+}
+
+.message {
+  margin: 22px;
+  max-width: 70ch;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.problem {
+  margin: 22px;
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}
+
+/* --- The two dialogs ------------------------------------------------------ */
+
+.dialog {
+  width: min(520px, calc(100vw - 32px));
+  padding: 0;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+}
+
+/*
+ * The asset panel, which is a screen rather than a form.
+ *
+ * Two columns of pictures and facts need the width; a dialog asking for a name
+ * does not, which is why this is a second class and not a wider `.dialog`.
+ *
+ * As large as the screen will allow. A reference image is being judged in here
+ * — whether a silhouette reads, whether two colour keys are the same colour —
+ * and that is not a thing anybody can do in a thumbnail. The viewport, less a
+ * margin, is what "as big as it goes" means on a laptop and on a 4K monitor
+ * alike.
+ */
+.detailDialog {
+  width: min(1800px, calc(100vw - 48px));
+  max-height: min(1400px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+}
+
+.detailDialog::backdrop,
+.dialog::backdrop {
+  background: var(--color-scrim);
+}
+
+.dialogForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 22px;
+}
+
+.dialogHeading {
+  margin: 0;
+  font-size: var(--font-size-h2);
+}
+
+.dialogExplanation {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.dialogPair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.dialogField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dialogLabel {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+.dialogTextArea {
+  width: 100%;
+  min-height: 72px;
+  box-sizing: border-box;
+  padding: 8px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  resize: vertical;
+}
+
+.dialogTextArea:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/*
+ * The description, given what the edit column has left rather than a height of
+ * its own.
+ *
+ * It is the only thing in that column with anything long to say, and the column
+ * is as tall as the screen; the floor is the card's, because it is the same kind
+ * of prose written in the same box.
+ */
+.detailDescription {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-height: 240px;
+}
+
+/* Fills its field, which is also why it cannot be dragged taller: the panel
+   decides the height, and a handle that moved nothing would be a lie. */
+.detailDescriptionBox {
+  flex: 1;
+  min-height: 0;
+  resize: none;
+}
+
+/* --- The asset panel ------------------------------------------------------ */
+
+.detailForm {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.detailHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+/* The key, and then whatever else names it. Both monospace, because both are
+   things somebody types rather than reads. */
+.detailKey {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-muted);
+}
+
+/*
+ * What it looks like on the left, what is known about it on the right.
+ *
+ * The pictures get the larger share. An asset is a thing being made, and
+ * somebody opening one is usually asking what it looks like now — the estimate
+ * is the second question, not the first.
+ */
+.detailBody {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  flex: 1;
+  min-height: 0;
+  /*
+   * Each column scrolls itself. A panel this size has a sheet of pictures on
+   * one side and a column of writing on the other, and one scrollbar for both
+   * would mean scrolling past the images to reach the files.
+   */
+  overflow: hidden;
+}
+
+.detailBody > :first-child {
+  border-right: 1px solid var(--color-divider);
+}
+
+.detailSide {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 18px;
+}
+
+/* Under the name, in the status's own colour: how far along the thing is, and
+   when anybody last touched it. */
+.detailStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/*
+ * The number a producer opens an asset to find, given a box of its own.
+ *
+ * Set on the panel's own ground rather than the surface a tile uses, so it
+ * reads as a plate laid on the panel rather than as another card.
+ */
+.estimate {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+.estimateLabel {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.estimateValue {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h2);
+  line-height: 1.05;
+}
+
+.estimateNote {
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.detailCategory {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+.detailCategoryDot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  background: var(--category-color);
+}
+
+.detailHead > :last-child {
+  margin-left: auto;
+}
+
+.detailName {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-title-weight);
+  line-height: var(--font-heading-line-height);
+}
+
+/*
+ * Label on the left, value on the right, one ruled row each.
+ *
+ * A grid rather than rows of flex, so every value lines up down one edge — the
+ * whole use of this block is being able to run an eye down it.
+ */
+.facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin: 0;
+  border-top: 1px solid var(--color-divider);
+  font-size: var(--font-size-small);
+}
+
+.factLabel,
+.factValue {
+  padding: 7px 0;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.factLabel {
+  color: var(--color-text-muted);
+}
+
+.factValue {
+  margin: 0;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-small);
+}
+
+.detailHeading {
+  margin: 4px 0 0;
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+/*
+ * Where the writing would be, when nobody has written it. Said in words rather
+ * than left blank: an empty space under a heading reads as still loading.
+ */
+.missing {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-style: italic;
+  color: var(--color-text-faint);
+}
+
+/* Pushed to the foot of the column, so the panel always ends on what you can
+   do rather than on however much writing this asset happens to have. */
+.detailActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+/* The one that moves the asset on takes the width; the rest ask for what they
+   need. */
+.detailActions > :first-child {
+  flex: 1;
+}
+
+.detailStamp {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/* The tile, made pressable. It looks like the tile, because what it opens is
+   what it is already showing. */
+.tileOpen {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tile:has(.tileOpen:hover) {
+  border-color: var(--color-accent);
+}
+
+.tileOpen:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* The cards about this asset. */
+.cardList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cardRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 8px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  font-size: var(--font-size-small);
+}
+
+.cardOpen {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cardRow:has(.cardOpen:hover) {
+  border-color: var(--color-accent);
+}
+
+.cardOpen:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.cardKey {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-accent);
+}
+
+.cardTitle {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Done work steps back out of the way of what is still open. */
+.cardTitle[data-closed='true'] {
+  text-decoration: line-through;
+  color: var(--color-text-faint);
+}
+
+.cardState {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/* The real input, kept out of sight because the button opens it. */
+.hiddenPicker {
+  display: none;
+}
+
+/*
+ * The search box, sized to the header rather than to the words in it.
+ *
+ * Its own control rather than the shared `Field`, which stacks a label above an
+ * input — right on a form, and wrong in a row of buttons where the placeholder
+ * already says what it is.
+ */
+.search {
+  width: min(280px, 40vw);
+  padding: 8px 12px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg);
+  font: inherit;
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+}
+
+.search::placeholder {
+  color: var(--color-text-faint);
+}
+
+.search:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * What is drawn when the filter matched nothing.
+ *
+ * With a way out of it: the state somebody most wants to leave is the one where
+ * the screen is empty, and hunting for which chip did it is not a way out.
+ */
+.noMatches {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 34px 18px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+}
+
+.noMatchesTitle {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h3);
+}
+
+.noMatchesHint {
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}

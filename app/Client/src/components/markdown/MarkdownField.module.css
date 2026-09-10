@@ -1,0 +1,74 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  /*
+   * Grows into a field with room to spare, so a box that is the only long thing
+   * in a panel as tall as the screen is as tall as the panel leaves it.
+   *
+   * Inert where the field is only as tall as its own contents, which is every
+   * other place this is used: there is no spare room to grow into.
+   */
+  flex-grow: 1;
+  min-height: 0;
+}
+
+/* Raw and Preview. Two words rather than an icon, because which one you are
+   looking at has to be readable at a glance. */
+.modes {
+  display: flex;
+  gap: 2px;
+  align-self: flex-start;
+  padding: 2px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+}
+
+.mode {
+  padding: 3px 12px;
+  border: 0;
+  border-radius: var(--radius-tag);
+  background: transparent;
+  color: var(--color-label);
+  font: inherit;
+  font-size: var(--font-size-small);
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.mode:hover {
+  color: var(--color-text);
+}
+
+.mode:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.modeSelected {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.modeSelected:hover {
+  color: var(--color-bg);
+}
+
+/* The same box the text is typed into, so switching view does not move the
+   panel about. It scrolls rather than growing for the same reason. */
+.previewBox {
+  overflow: auto;
+}
+
+/* While a file is being dragged over the field, so it is obvious where it
+   lands. */
+.over {
+  border-color: var(--color-accent);
+  background: var(--hover-tile);
+}
+
+.status {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}

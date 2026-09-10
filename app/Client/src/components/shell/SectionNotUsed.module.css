@@ -1,0 +1,27 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.said {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 60ch;
+  padding: 22px;
+}
+
+.headline {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h3);
+}
+
+/* The half that stops "switched off" reading as "thrown away". */
+.note {
+  margin: 0;
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}

@@ -1,0 +1,396 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+.names {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.moves {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.key {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.keySwatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+
+/*
+ * The three states a day can be in, used by the key, the group cells and the
+ * day load footer alike — one meaning, one colour, everywhere it appears.
+ */
+.keySwatch[data-tone='within'],
+.loadFill[data-tone='within'] {
+  background: var(--color-ok);
+}
+
+.keySwatch[data-tone='near'],
+.loadFill[data-tone='near'] {
+  background: var(--color-warn);
+}
+
+.keySwatch[data-tone='over'],
+.loadFill[data-tone='over'] {
+  background: var(--color-danger);
+}
+
+.loadFill[data-tone='idle'] {
+  background: transparent;
+}
+
+/* Sideways rather than compressed: fourteen columns narrower than about forty
+   pixels stop holding a number, and a chart nobody can read is decoration. */
+.scroller {
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.chart {
+  display: flex;
+  flex-direction: column;
+  min-width: 790px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  overflow: hidden;
+}
+
+.headRow,
+.loadRow {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.headRow {
+  border-bottom: 1px solid var(--color-text);
+}
+
+.loadRow {
+  border-top: 1px solid var(--color-text);
+  align-items: end;
+}
+
+.rowHead {
+  padding: 8px 10px;
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.days {
+  display: grid;
+  grid-template-columns: repeat(14, minmax(42px, 1fr));
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 5px 0 6px;
+  border-left: 1px solid var(--color-divider);
+}
+
+/* Weekends are drawn back rather than left out. Work lands on them, and a chart
+   that hides them quietly reports a six-day week as fine. */
+.day[data-weekend='true'],
+.cell[data-weekend='true'],
+.bandCell[data-weekend='true'] {
+  background: color-mix(in srgb, var(--color-bg) 45%, transparent);
+}
+
+.day[data-today='true'] {
+  background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+}
+
+.dayName {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.dayNumber {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-muted);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.groupHead {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  align-items: stretch;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: var(--color-surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.groupHead:hover {
+  background: var(--hover-row);
+}
+
+.groupHead:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: calc(var(--focus-ring-offset) * -1);
+}
+
+.groupName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  min-width: 0;
+}
+
+.chevron {
+  flex: none;
+  color: var(--color-accent);
+}
+
+.initials {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-divider);
+  font-family: var(--font-heading);
+  font-size: var(--font-size-micro);
+}
+
+.person {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-base);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.personNote {
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.cell {
+  display: grid;
+  place-items: center;
+  padding: 4px 0;
+  border-left: 1px solid var(--color-divider);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+}
+
+/* The number is coloured rather than the cell: fourteen filled squares in a row
+   is a heat map, and a heat map of mostly-fine days reads as an alarm. */
+.cell[data-tone='within'] {
+  color: var(--color-ok);
+}
+
+.cell[data-tone='near'] {
+  color: var(--color-warn);
+}
+
+.cell[data-tone='over'] {
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 16%, transparent);
+}
+
+.bandRow {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  align-items: center;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.bandName {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 10px 5px 28px;
+  min-width: 0;
+}
+
+.bandTitle {
+  font-size: var(--font-size-small);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bandNote {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.band {
+  position: relative;
+  display: block;
+  height: 26px;
+}
+
+.bandTrack {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(14, minmax(42px, 1fr));
+}
+
+.bandCell {
+  border-left: 1px solid var(--color-hairline);
+}
+
+.bar {
+  position: absolute;
+  top: 7px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+/* Square on the left when the work started before this window, so the bar reads
+   as cut off rather than as beginning on the first day. */
+.bar[data-clipped='true'] {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: 2px solid var(--color-text);
+}
+
+.loadCell {
+  display: flex;
+  align-items: flex-end;
+  padding: 6px 4px;
+  border-left: 1px solid var(--color-divider);
+}
+
+.loadTrack {
+  width: 100%;
+  height: 30px;
+  display: flex;
+  align-items: flex-end;
+  background: var(--color-neutral-200);
+  border-radius: 2px;
+}
+
+.loadFill {
+  display: block;
+  width: 100%;
+  border-radius: 2px;
+}
+
+.free,
+.empty {
+  margin: 0;
+  padding: 6px 10px 8px 28px;
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}
+
+.empty {
+  padding: 0;
+  max-width: 60ch;
+}
+
+.message {
+  margin: 22px;
+  max-width: 70ch;
+  font-size: var(--font-size-small);
+}
+
+.problem {
+  margin: 22px;
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}
+
+/* Two of the design's four groupings. Both ask the same question of different
+   rows: does the work promised here fit in the days there are. */
+.grouping {
+  display: flex;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  overflow: hidden;
+}
+
+.groupingOption {
+  padding: 6px 12px;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-small);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.groupingOption + .groupingOption {
+  border-left: 1px solid var(--color-divider);
+}
+
+.groupingOption[aria-checked='true'] {
+  background: var(--color-accent-100);
+  color: var(--color-accent);
+}
+
+.groupingOption:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: calc(var(--focus-ring-offset) * -1);
+}
+
+/* A day something ships. The mark is on the column rather than in a row,
+   because a deadline belongs to the date whichever way the rows are cut. */
+.day[data-milestone='true'] {
+  border-left: 2px solid var(--color-accent);
+}
+
+.dayMilestone {
+  max-width: 100%;
+  font-size: var(--font-size-micro);
+  color: var(--color-accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Everything under the bar, indented to the same 22 the bar is padded by. */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px 22px 22px;
+}

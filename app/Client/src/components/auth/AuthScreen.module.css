@@ -1,0 +1,179 @@
+.screen {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 40px 24px;
+  box-sizing: border-box;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.stack {
+  position: relative;
+  z-index: 1;
+  width: min(408px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-title);
+  font-weight: var(--font-title-weight);
+  line-height: var(--font-heading-line-height);
+}
+
+/* Server status: a dot and a short note under the address field. */
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-small);
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+}
+
+.dotChecking {
+  background: var(--color-neutral-500);
+}
+
+.dotReachable {
+  background: var(--color-ok);
+}
+
+.dotDegraded {
+  background: var(--color-warn);
+}
+
+.dotUnreachable {
+  background: var(--color-danger);
+}
+
+.recentServers {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recentServer {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 11px;
+  font-family: inherit;
+  font-size: var(--font-size-small);
+  color: var(--color-text);
+  text-align: left;
+  background: var(--color-neutral-300);
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-panel);
+  cursor: pointer;
+}
+
+.recentServer:hover {
+  background: var(--hover-row);
+  background-color: var(--color-neutral-400);
+}
+
+.recentServer:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.monospace {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+}
+
+.recentServerNote {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/* Brand block on the sign-in panel: mark, name, server chip, change link. */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.brandName {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h2);
+  line-height: 1.15;
+}
+
+.serverChip {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.changeServer {
+  margin-left: auto;
+  flex: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: var(--font-size-micro);
+  color: var(--color-accent-700);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.changeServer:hover {
+  color: var(--color-accent);
+}
+
+.changeServer:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.form {
+  display: contents;
+}
+
+/* A failure that belongs to the whole form rather than one field. */
+.formProblem {
+  margin: 0;
+  padding: 9px 11px;
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+  background: var(--color-danger-200);
+  border: 1px solid var(--color-danger-500);
+  border-radius: var(--radius-panel);
+}
+
+.explanation {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}

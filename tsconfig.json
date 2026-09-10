@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "files": [],
+  "references": [
+    { "path": "./app/Shared" },
+    { "path": "./app/Database" },
+    { "path": "./app/Server" },
+    { "path": "./app/Client" }
+  ]
+}

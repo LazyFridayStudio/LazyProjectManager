@@ -1,0 +1,52 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+/*
+ * Read out, never drawn.
+ *
+ * `display: none` and `visibility: hidden` both take an element out of the
+ * accessibility tree as well as off the screen, which would remove the label
+ * rather than hide it. A one-pixel clipped box is the way to keep it.
+ */
+.labelForScreenReaders {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.select {
+  height: 34px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.select:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.problem {
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}

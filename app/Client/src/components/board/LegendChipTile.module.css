@@ -1,0 +1,208 @@
+/*
+ * A card that gathers other cards.
+ *
+ * Deliberately unlike the cards around it. An ordinary chip is one piece of
+ * work; this is a heading over several, and a heading that looked like
+ * everything else would be one nobody could find in a column of forty. So: the
+ * accent down the side rather than the list's colour, a wider bar, a ground a
+ * step up from the surface, and the word on it.
+ */
+.legend {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 11px 11px 11px 13px;
+  /* The whole card is the drag, so touch here rather than on one child of it. */
+  touch-action: none;
+  border: 1px solid var(--color-accent);
+  border-left: 5px solid var(--color-accent);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-sm);
+  background: var(--color-panel);
+}
+
+.dragging {
+  opacity: var(--disabled-opacity);
+}
+
+/* Lifted under the pointer, where it needs to read against whatever it is over. */
+.lifted {
+  box-shadow: var(--shadow-lg);
+  background: var(--color-panel);
+}
+
+/*
+ * On the key's line, pushed to the end.
+ *
+ * Where an ordinary card puts its type, which is the place the eye already goes
+ * for what a card is — and it gives the title the full width of the card rather
+ * than a line of its own above it.
+ */
+.head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* The word, because the shape alone has to be learned once and this does not. */
+.banner {
+  margin-left: auto;
+  flex: none;
+  padding: 2px 8px;
+  border-radius: var(--radius-tag);
+  background: var(--color-accent);
+  color: var(--color-text-on-accent);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-heading-weight);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.open {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.open:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.key {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/* Larger than a card's title. It is a heading over the others, so it reads as
+   one before anything else on the card is read. */
+.title {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-heading-weight);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * The clump, shut.
+ *
+ * The count is the answer most of the time — "three of nine done" is what
+ * somebody wanted, and opening it is for when it is not.
+ */
+.expander {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 6px 7px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-small);
+  text-align: left;
+  cursor: pointer;
+}
+
+.expander:hover {
+  background: var(--hover-row);
+  color: var(--color-text);
+}
+
+.expander:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.chevron {
+  flex: none;
+  color: var(--color-text-faint);
+}
+
+.progress {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.empty {
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}
+
+/* The clump, open. */
+.clump {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gathered {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 5px 6px;
+  border: none;
+  border-radius: var(--radius-tag);
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--font-size-small);
+  text-align: left;
+  cursor: pointer;
+}
+
+.gathered:hover {
+  background: var(--hover-row);
+}
+
+.gathered:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: calc(var(--focus-ring-offset) * -1);
+}
+
+/* The square the board uses for a card's type, at the size a row wants. */
+.typeDot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  background: var(--type-color);
+}
+
+.gatheredKey {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.gatheredTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Struck through rather than hidden: what is finished is half the answer to
+   how far along the clump is. */
+.gatheredDone {
+  color: var(--color-text-faint);
+  text-decoration: line-through;
+}

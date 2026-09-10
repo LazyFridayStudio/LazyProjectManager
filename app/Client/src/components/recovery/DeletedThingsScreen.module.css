@@ -1,0 +1,127 @@
+/* What has been deleted and can still be put back, one thing to a row. */
+
+.about {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.things {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  overflow: hidden;
+}
+
+/*
+ * Fixed columns, as the audit trail has them.
+ *
+ * The two screens answer the same question a day apart — what happened, and
+ * what can still be undone — and reading down one column at a time is how both
+ * are used. Columns that move with the length of a team's name defeat that.
+ */
+.thing {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) 150px 100px auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.thing:last-child {
+  border-bottom: none;
+}
+
+/* Which kind of thing: "Team", "Milestone". */
+.what {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-label);
+}
+
+.named {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* What it cost: "4 people", "12 assets". */
+.detail {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+  white-space: nowrap;
+}
+
+.byWhom {
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * How long is left, in the accent.
+ *
+ * The only number on the row that decides anything, and the reason somebody is
+ * on this screen rather than reading the trail.
+ */
+.left {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-small);
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+
+.doing {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.message {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.problem {
+  /* Across every column, because it is about the row rather than about a cell. */
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--font-size-small);
+}
+
+/*
+ * Stacked, once the columns would be too narrow to read.
+ *
+ * The buttons go last rather than staying beside the name: a row read top to
+ * bottom should say what the thing is before it offers to do something to it.
+ */
+@media (max-width: 900px) {
+  .thing {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .doing {
+    justify-content: flex-start;
+    margin-top: 6px;
+  }
+}

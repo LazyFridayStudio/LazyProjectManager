@@ -1,0 +1,91 @@
+/*
+ * What the browser draws for itself.
+ *
+ * A checkbox, a radio, the little clear cross inside a search box and the whole
+ * date picker are the browser's, not ours. Without `color-scheme` it paints
+ * them for a white page, so a dark app gets a blue tick and a pale grey cross
+ * that belong to no theme here.
+ *
+ * `accent-color` is the other half: it is the one property those controls take
+ * a colour from, and this app's is orange.
+ *
+ * `color-scheme` itself is said by the token stylesheet, beside each theme's
+ * palette. It was here, on `:root`, and this file loads after the tokens — so
+ * it beat the light theme's own and a light app kept a dark scrollbar and a
+ * dark date picker. A theme says what the browser should draw in the same place
+ * it says everything else.
+ */
+:root {
+  accent-color: var(--color-accent);
+}
+
+/* Paper is a light ground, so its controls are drawn for one. */
+.lpm-paper {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+/* The type scale, applied by the element rather than re-declared on every
+   component. A screen only overrides this where a heading is not at its own
+   level — a page title, or an h2 being used as a micro-label. */
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  line-height: var(--font-heading-line-height);
+}
+
+/* An `<h1>` is the one thing a screen is about, and that is the bold step. */
+h1 {
+  font-size: var(--font-size-title);
+  font-weight: var(--font-title-weight);
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+}
+
+h3 {
+  font-size: var(--font-size-h3);
+}
+
+/* Screens own their own layout and padding — the login screen is full-bleed so
+   its animated canvas can reach the window edges. */
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  line-height: var(--font-line-height-base);
+}
+
+/*
+ * Scrollbars in the app's own greys, everywhere at once.
+ *
+ * Both properties inherit, so one declaration on the root reaches every scroll
+ * container rather than each panel remembering to style its own. The track is
+ * left transparent so a bar takes the colour of whatever it is scrolling, and
+ * the thumb is stated as a share of the text colour so it holds up on the paper
+ * theme as well as the dark one.
+ */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-text-dim) transparent;
+}
+
+:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+[disabled] {
+  opacity: var(--disabled-opacity);
+}

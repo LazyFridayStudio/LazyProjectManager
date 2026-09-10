@@ -1,0 +1,335 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/*
+ * Four numbers across the top, as the design has them.
+ *
+ * Wrapping rather than scrolling: they are the first thing read on the screen
+ * and a number that is off the edge is a number nobody read.
+ */
+.figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.figure {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--panel-inset-highlight);
+}
+
+.figureLabel {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+.figureValue {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h2);
+  line-height: 1.05;
+}
+
+/* A zero here is good news and a number is not, so only the number is coloured. */
+.figureValue[data-alarming='true'] {
+  color: var(--color-danger);
+}
+
+.figureNote {
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+/*
+ * The three summaries in one row, at the design's widths.
+ *
+ * The pipeline is widest because it carries five labelled bars; the burndown is
+ * narrowest because it carries a percentage and four short rows. Equal columns
+ * would leave the pipeline cramped and the burndown half empty.
+ */
+.blocks {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr 0.9fr;
+  gap: 12px;
+}
+
+/* Below this the three columns are narrower than their own labels, and a row of
+   three unreadable blocks is worse than a column of three readable ones. */
+@media (max-width: 1100px) {
+  .blocks {
+    grid-template-columns: 1fr;
+  }
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+}
+
+.blockHead {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.blockTitle {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h3);
+}
+
+/* What the block's numbers are counted in, held against the right edge. In the
+   header rather than beside every figure, which is what keeps a narrow column
+   readable. */
+.blockMeta {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.headline {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.headlineValue {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h2);
+  line-height: 1.05;
+}
+
+.headlineNote {
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.bar {
+  height: 11px;
+  display: block;
+  background: var(--color-neutral-200);
+  border-radius: var(--radius-tag);
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  display: block;
+  background: var(--color-accent);
+}
+
+/* Over budget is shown rather than refused: the estimate is what it is. */
+.barFill[data-over='true'] {
+  background: var(--color-danger);
+}
+
+/*
+ * The pipeline: a stage per row, name left, bar in the middle, count right.
+ *
+ * The bars take the same five colours the library paints its status dots, from
+ * the same tokens. A summary of the library that colours it differently is a
+ * summary somebody has to translate.
+ */
+.stages {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.stage {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stageName {
+  width: 74px;
+  flex: none;
+  font-size: var(--font-size-small);
+  color: var(--color-text-strong);
+}
+
+.stage .bar {
+  flex: 1;
+  min-width: 0;
+  height: 9px;
+}
+
+.stageCount {
+  width: 30px;
+  flex: none;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+}
+
+.barFill[data-status='concept'] {
+  background: var(--color-status-concept);
+}
+
+.barFill[data-status='wip'] {
+  background: var(--color-status-wip);
+}
+
+.barFill[data-status='review'] {
+  background: var(--color-status-review);
+}
+
+.barFill[data-status='approved'] {
+  background: var(--color-status-approved);
+}
+
+.barFill[data-status='final'] {
+  background: var(--color-status-final);
+}
+
+/* The three counts a stand-up is actually about, under a rule. */
+.notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding-top: 9px;
+  border-top: 1px solid var(--color-divider);
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.notes span[data-alarming='true'] {
+  color: var(--color-danger);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size-small);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.rowValue {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+}
+
+.rowValue[data-alarming='true'] {
+  color: var(--color-danger);
+}
+
+/* The key to the money: what is already committed, what is still an estimate,
+   and what is left. */
+.swatch {
+  width: 7px;
+  height: 7px;
+  flex: none;
+}
+
+.swatch[data-tint='firm'] {
+  background: var(--color-secondary);
+}
+
+.swatch[data-tint='soft'] {
+  background: var(--color-warn);
+}
+
+.swatch[data-tint='spare'] {
+  background: var(--color-label);
+}
+
+.onward {
+  margin-top: auto;
+  font-size: var(--font-size-small);
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.onward:hover {
+  text-decoration: underline;
+}
+
+.onward:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.empty {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}
+
+.message {
+  margin: 22px;
+  max-width: 70ch;
+  font-size: var(--font-size-small);
+}
+
+.problem {
+  margin: 22px;
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}
+
+/* Everything under the bar, indented to the same 22 the bar is padded by. */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 18px 22px 22px;
+}
+
+/*
+ * Where the release plan would be, when this person may not see it.
+ *
+ * In the panel's own ground rather than in the red of `.problem`: nothing went
+ * wrong here. A permission did the one job it has, and painting that as a fault
+ * says the software broke when what happened is that it worked.
+ */
+.notPermitted {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+}
+
+.notPermittedSaid {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+}
+
+/* The exact words, for quoting at whoever grants it. Dimmer, because it is not
+   the sentence somebody reading a dashboard needs. */
+.notPermittedWhy {
+  margin: 0;
+  color: var(--color-text-faint);
+  font-size: var(--font-size-micro);
+}

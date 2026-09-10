@@ -1,0 +1,79 @@
+/*
+ * Reading a repository in.
+ *
+ * The icon rather than the words, because it sits beside New card and Record a
+ * release and was reading as a third choice of equal weight — this is a thing
+ * you do occasionally and those are what the screens are for. What it is called
+ * is on the button as its label, which is what a screen reader announces and
+ * what a hover says.
+ */
+.sync {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.sync:hover {
+  color: var(--color-text);
+  background: var(--hover-row);
+}
+
+.sync:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.sync:disabled {
+  opacity: var(--disabled-opacity);
+  cursor: default;
+  background: none;
+}
+
+/*
+ * A sync that is not working, said where the sync is reported.
+ *
+ * Red because it is the one fact in the header that is asking for something to
+ * be done. It stays inside the facts row rather than becoming a banner: what to
+ * do about it is a sentence, and the sentence is on the settings screen.
+ */
+.failing {
+  color: var(--color-danger);
+}
+
+/*
+ * Turning while it reads.
+ *
+ * The same shape moving rather than a second thing appearing: a spinner that
+ * replaces the icon makes the button change identity every time it is pressed.
+ * Linear, because a refresh arrow easing in and out reads as hesitant.
+ */
+@keyframes turning {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.turning {
+  animation: turning 900ms linear infinite;
+}
+
+/*
+ * Somebody who has asked for less movement gets none.
+ *
+ * The button is disabled while it works, which dims it, so the state is still
+ * legible without anything spinning.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .turning {
+    animation: none;
+  }
+}

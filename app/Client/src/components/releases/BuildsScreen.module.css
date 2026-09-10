@@ -1,0 +1,524 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px 22px 60px;
+}
+
+/*
+ * The latest release: what changed on the left, what to download on the right.
+ *
+ * The notes get the wider column because they are the thing being read; the
+ * downloads are a list of names somebody scans for the platform they are on.
+ */
+.latest {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 22px;
+  padding: 16px 18px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+}
+
+@media (max-width: 900px) {
+  .latest {
+    grid-template-columns: 1fr;
+  }
+}
+
+.notesColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  min-width: 0;
+}
+
+.sideColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.latestLabel {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.sectionLabel {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.run {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.tagLine {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* The tag reads largest: it is what somebody says out loud when they ask which
+   build a bug was found on. */
+.tag {
+  font-size: var(--font-size-title);
+  line-height: 1;
+}
+
+.kind {
+  flex: none;
+  padding: 3px 8px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+}
+
+/* Only the one people are running gets the accent. A draft is unfinished and a
+   pre-release is not for players, and neither should read as the headline. */
+.kind[data-kind='latest'] {
+  border-color: var(--color-ok);
+  color: var(--color-ok);
+}
+
+.releaseName {
+  font-size: var(--font-size-base);
+  color: var(--color-text-strong);
+}
+
+.facts {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.latestActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 2px;
+}
+
+/*
+ * The changelog, as it was written.
+ *
+ * A heading in release notes is a section of a list rather than a title, so it
+ * is set as the label above it: small, uppercase, in the accent. That is the
+ * design's own treatment of `Added` / `Changed` / `Fixed`.
+ */
+.notes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+}
+
+.notes :global(h1),
+.notes :global(h2),
+.notes :global(h3) {
+  margin: 10px 0 2px;
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-heading-weight);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.notes :global(h1:first-child),
+.notes :global(h2:first-child),
+.notes :global(h3:first-child) {
+  margin-top: 0;
+}
+
+.notes :global(p) {
+  margin: 0 0 8px;
+}
+
+.notes :global(ul),
+.notes :global(ol) {
+  margin: 0;
+  padding-left: 18px;
+  list-style: none;
+}
+
+/* A square rather than a disc, which is the mark the rest of the product uses
+   for a bullet in a list of changes. */
+.notes :global(ul) > :global(li) {
+  position: relative;
+}
+
+.notes :global(ul) > :global(li)::before {
+  content: '';
+  position: absolute;
+  left: -14px;
+  top: 8px;
+  width: 5px;
+  height: 5px;
+  background: var(--color-accent);
+}
+
+.notes :global(li) {
+  margin-bottom: 3px;
+}
+
+.notes :global(code) {
+  padding: 1px 4px;
+  border-radius: var(--radius-tag);
+  background: var(--color-surface);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-small);
+}
+
+.notes :global(a) {
+  color: var(--color-accent);
+}
+
+.noNotes {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sideLabel {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.downloads {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.download {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  font-size: var(--font-size-small);
+  min-width: 0;
+}
+
+.downloadName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.downloadSize {
+  margin-left: auto;
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.getIt {
+  display: flex;
+  align-items: center;
+  /* Red is for taking away and green for making; this does neither, so it is
+     the accent, like every other control that just does its job. */
+  color: var(--color-accent);
+}
+
+.getIt:hover {
+  color: var(--color-accent-500);
+}
+
+.getIt:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.earlier {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.historyRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 2px;
+  border-bottom: 1px solid var(--color-hairline);
+  font-size: var(--font-size-small);
+  min-width: 0;
+}
+
+.historyTag {
+  width: 84px;
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-accent-700);
+}
+
+.historyName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.historyKind {
+  flex: none;
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.historyDate {
+  margin-left: auto;
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/*
+ * A mark on a row of the history, at the size the word it replaced was.
+ *
+ * Borderless on purpose. `Button` is the right control for a header or a
+ * dialog; a filled pill on every row of a list is heavier than the releases the
+ * list is about, and two of them per row is a page about its own buttons.
+ *
+ * The same shape the tag and stage chips already use for a row-level mark.
+ */
+.rowMark {
+  display: flex;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.rowMark:hover {
+  color: var(--color-accent);
+}
+
+.rowMark:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Red, because it takes the release off the page. Held back until the row is
+   pointed at, so a list of them does not read as a list of warnings. */
+.rowMarkStop {
+  composes: rowMark;
+  color: color-mix(in srgb, var(--color-danger) 55%, transparent);
+}
+
+.rowMarkStop:hover {
+  color: var(--color-danger);
+}
+
+.plain {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-small);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.plain:hover {
+  text-decoration: underline;
+}
+
+.plain:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.danger {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-danger);
+  font: inherit;
+  font-size: var(--font-size-small);
+  cursor: pointer;
+}
+
+.danger:hover {
+  text-decoration: underline;
+}
+
+.danger:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.empty {
+  margin: 22px;
+  max-width: 62ch;
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}
+
+.message {
+  margin: 22px;
+  max-width: 70ch;
+  font-size: var(--font-size-small);
+}
+
+.problem {
+  margin: 22px;
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}
+
+/*
+ * The dialog. No padding on the element itself: the backdrop is part of it, and
+ * `useModalDialog` decides a click landed on the backdrop by asking whether the
+ * dialog was the thing pressed.
+ */
+.dialog {
+  width: min(720px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+}
+
+.dialog::backdrop {
+  background: var(--color-scrim);
+}
+
+.dialogBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 22px;
+  overflow-y: auto;
+  max-height: calc(100vh - 48px);
+  box-sizing: border-box;
+}
+
+.dialogHeading {
+  margin: 0;
+  font-size: var(--font-size-h2);
+}
+
+.dialogRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.flags {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.flag {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--font-size-small);
+  cursor: pointer;
+}
+
+.notesField {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.fieldLabel {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+.notesBox {
+  width: 100%;
+  min-height: 140px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-small);
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.notesBox:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* The file, its size, how many took it, and the way to take the row off. */
+.assetRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr 0.8fr auto;
+  align-items: end;
+  gap: 10px;
+}

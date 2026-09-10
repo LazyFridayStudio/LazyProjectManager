@@ -1,0 +1,160 @@
+# LazyProjectManager — self-hosted install.
+#
+#   1. Put this folder somewhere it can stay.
+#   2. Copy .env.example to .env and change the two passwords.
+#   3. docker compose up -d
+#   4. Open http://localhost:24571
+#
+# Upgrading is `docker compose pull && docker compose up -d`. Migrations run when
+# the app container starts, so there is no separate step.
+
+name: lazyprojectmanager
+
+services:
+  app:
+    # Pinned by the release this folder came from. Change it deliberately.
+    image: ghcr.io/lazyfridaystudio/lazyprojectmanager:${LPM_VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      # Service names, not localhost: inside the compose network each container
+      # reaches the others by service name.
+      DATABASE_URL: postgres://lpm:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/lpm
+      REDIS_URL: redis://redis:6379
+
+      # The only address the store has, and only this stack uses it. A browser
+      # never talks to MinIO: it asks the app for a file and the app fetches it,
+      # so there is one hostname to configure rather than two. There was a
+      # second setting here for what the browser should use, defaulting to a
+      # port nothing publishes — so on a release install every upload failed and
+      # every image was broken (#172).
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: lpm
+      S3_ACCESS_KEY: lpm
+      S3_SECRET_KEY: ${MINIO_PASSWORD:?set MINIO_PASSWORD in .env}
+      S3_FORCE_PATH_STYLE: 'true'
+
+      # The address people reach this install on. Behind a Cloudflare tunnel this
+      # is the tunnel hostname, and TRUST_PROXY must be true — otherwise the API
+      # sees every request as coming from the connector and secure-cookie
+      # detection breaks.
+      BASE_URL: ${APP_BASE_URL:-http://localhost:24571}
+      SERVER_NAME: ${SERVER_NAME:-LazyProjectManager}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
+
+      # The key the webhook secrets are encrypted with. Passed through rather
+      # than defaulted: a default would be the same key on every install, which
+      # is the same as not encrypting them. Only `scm.connect` minds, and it
+      # says so plainly when it is missing.
+      APP_SECRET: ${APP_SECRET:-}
+    ports:
+      - '${APP_PORT:-24571}:3000'
+
+  # The same image as the API with a different command: one build, and a worker
+  # that cannot drift out of step with the schema it reads.
+  #
+  # A release shipped without one for its whole life. Everything the outbox
+  # carries silently did not happen on an installed copy: a delivery from a
+  # repository was stored and never read, so commits never reached a card;
+  # thumbnails were never made; a second tab never heard that the first had
+  # changed anything; and issues never synced on the half hour. All of it worked
+  # in development, where `docker/compose.yml` has always had one.
+  worker:
+    image: ghcr.io/lazyfridaystudio/lazyprojectmanager:${LPM_VERSION:-latest}
+    restart: unless-stopped
+    command: ['node', 'app/Server/dist/worker.js']
+    # The image's own healthcheck asks an HTTP server whether it is up, and a
+    # worker has none. This asks a better question: the worker touches a file at
+    # the top of every pass, and this asks how long ago — a worker wedged on
+    # something it cannot finish is still a running process.
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          'const {statSync}=require("node:fs");process.exit(Date.now()-statSync(process.env.WORKER_HEARTBEAT_FILE||"/tmp/lpm-worker-heartbeat").mtimeMs<60000?0:1)',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://lpm:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/lpm
+      REDIS_URL: redis://redis:6379
+      # No public endpoint: the worker never hands a URL to anybody, it only
+      # reads and writes objects itself.
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: lpm
+      S3_ACCESS_KEY: lpm
+      S3_SECRET_KEY: ${MINIO_PASSWORD:?set MINIO_PASSWORD in .env}
+      S3_FORCE_PATH_STYLE: 'true'
+      # The same key the API encrypts a repository's private key with. The
+      # worker reads it back to mint a token, which is how it keeps the board
+      # and the issue list in step on the half hour.
+      APP_SECRET: ${APP_SECRET:-}
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: lpm
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: lpm
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U lpm -d lpm']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    restart: unless-stopped
+    command: ['server', '/data', '--console-address', ':9001']
+    environment:
+      MINIO_ROOT_USER: lpm
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:?set MINIO_PASSWORD in .env}
+    ports:
+      # The console, on loopback. The S3 API is reached over the internal
+      # network by the app and the worker, and by nothing else — which is why
+      # neither it nor this needs to be reachable from your network.
+      - '127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001'
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+# Named volumes: `docker compose down -v` genuinely removes the data, and on
+# Docker Desktop they avoid the Windows/WSL filesystem boundary that a bind
+# mount would put in front of every Postgres write.
+volumes:
+  postgres-data:
+  minio-data:

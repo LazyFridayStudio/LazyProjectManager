@@ -1,0 +1,52 @@
+# Keep the build context small and free of host-specific state.
+#
+# Docker matches these patterns against the whole path, and a leading `*` does
+# NOT cross directory separators — `*.tsbuildinfo` matches only the repo root.
+# Anything that can appear inside a workspace package needs an explicit `**/`
+# form as well. Getting this wrong is not a size problem: a stale
+# tsconfig.tsbuildinfo copied in while dist is excluded tells `tsc --build`
+# everything is already compiled, so it emits nothing and the build fails much
+# later with confusing "cannot find module" errors.
+
+node_modules
+**/node_modules
+
+dist
+**/dist
+dist-types
+**/dist-types
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# node_modules in particular must never be copied: the image resolves its own
+# for linux, and a Windows tree would carry the wrong native binaries.
+
+.git
+.github
+.data
+
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+
+.output
+coverage
+**/coverage
+playwright-report
+**/playwright-report
+test-results
+**/test-results
+app/Client/e2e
+
+docs
+*.md
+!README.md
+
+.vscode
+.idea
+.claude
+.claude.json
+CLAUDE.md
+Dockerfile.debug

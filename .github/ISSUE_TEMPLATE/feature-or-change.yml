@@ -1,0 +1,65 @@
+name: Feature or change
+description: Something should be possible that is not, or should work differently.
+labels: [enhancement]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        `docs/Architecture.md` says how this is built and which decisions are
+        settled. If a change argues with one of them, say so — that is a
+        conversation worth having before the code, not after it.
+
+  - type: textarea
+    id: what-should-be-possible
+    attributes:
+      label: What should be possible
+      description: The thing somebody wants to do and currently cannot.
+      placeholder: A list can be dragged to a new position on the board.
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: >-
+        The reason, not a restatement of the feature. What does somebody do
+        today instead, and what does it cost them?
+      placeholder: A fifth working stage almost never belongs after Done, so the first thing anybody does after adding one is try to drag it left.
+    validations:
+      required: true
+
+  - type: input
+    id: settled-decision
+    attributes:
+      label: Settled decision this argues with
+      description: Anything in `docs/Architecture.md` or `docs/Engineering-Rules.md` this would bend. Leave it empty if nothing.
+      placeholder: Not a job queue — this needs something scheduled
+
+  - type: textarea
+    id: done-when
+    attributes:
+      label: Done when
+      description: How somebody other than you would know this is finished.
+      value: |
+        -
+        -
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: area
+    attributes:
+      label: Which part of the product
+      description: >-
+        Labelled from these, so the list of open work reads as what part of the
+        product each one is without opening any of them.
+      options:
+        - label: Client — the web UI
+        - label: Server — the API, worker and business rules
+        - label: Shared — the contract both sides import
+        - label: Database — schema, migrations and the test harness
+        - label: CI — workflows, scripts and repository automation
+        - label: Docs
+        - label: Tests

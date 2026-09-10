@@ -1,0 +1,249 @@
+/*
+ * The master task list.
+ *
+ * A table rather than a grid of tiles, because this is the view somebody scans
+ * a hundred rows in: the eye runs down one column at a time, which is the one
+ * thing a board cannot do.
+ */
+.screen {
+  height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--color-text);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-title);
+  font-weight: var(--font-title-weight);
+  line-height: 1.2;
+}
+
+/* Both the empty state and the failure: a line of prose given room of its own. */
+.message {
+  margin: 0;
+  padding: 22px;
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+}
+
+/* Which milestone, or all of them. */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 22px 0;
+}
+
+.filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  background: none;
+  color: var(--color-text-strong);
+  font: inherit;
+  font-size: var(--font-size-small);
+  cursor: pointer;
+}
+
+.filter:hover {
+  color: var(--color-text);
+  background: var(--hover-row);
+}
+
+.filter:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.filterOn {
+  composes: filter;
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/*
+ * The table scrolls, not the page — the same arrangement the board has, so
+ * moving between the two views does not move the furniture.
+ */
+.scroller {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin: 12px 22px 0;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-base);
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 8px 12px;
+  text-align: left;
+  white-space: nowrap;
+  background: var(--color-panel);
+  border-bottom: 1px solid var(--color-divider);
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+.table td {
+  padding: 7px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-divider) 60%, transparent);
+  vertical-align: middle;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.row {
+  cursor: pointer;
+}
+
+.row:hover {
+  background: var(--hover-row);
+}
+
+/* Finished work stays in the list and stops asking for attention. */
+.done {
+  opacity: 0.55;
+}
+
+.key {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.open {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.open:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.type,
+.quiet {
+  white-space: nowrap;
+  color: var(--color-text-strong);
+}
+
+/*
+ * The face in the assignee column.
+ *
+ * The same box the board draws beside a card key, and missing here for the
+ * same reason it was missing there: a picture handed no size renders at the
+ * size of the file, and a table cell grows to whatever it is given.
+ */
+.assignee {
+  width: 22px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--color-divider);
+  border-radius: 50%;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-muted);
+}
+
+/* The card's own words, and the column the eye lands on. */
+.summaryCell {
+  min-width: 24ch;
+}
+
+.number {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--color-text-strong);
+}
+
+/* The list's own colour, so a status reads the same here as on the board. */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border: 1px solid color-mix(in srgb, var(--list-color) 45%, transparent);
+  border-radius: var(--radius-tag);
+  background: color-mix(in srgb, var(--list-color) 12%, transparent);
+  font-size: var(--font-size-small);
+  white-space: nowrap;
+}
+
+.truncated {
+  margin: 0;
+  padding: 8px 22px 16px;
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}
+
+/*
+ * A heading you can press.
+ *
+ * The whole cell rather than the word, so the target is the width of the column
+ * — and it looks like the heading beside it that does nothing, because a column
+ * that cannot be sorted should not look broken.
+ */
+.heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.heading:hover {
+  color: var(--color-text);
+}
+
+.heading:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Kept at a fixed width so the words do not shuffle sideways when it appears. */
+.arrow {
+  width: 8px;
+  color: var(--color-accent);
+}

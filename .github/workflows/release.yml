@@ -1,0 +1,151 @@
+name: release
+
+# Pushing a semantic-version tag publishes that version. Nothing else does.
+#
+#   git tag 0.1.0 && git push origin 0.1.0
+#
+# Produces two things: a container image on GHCR, and a zip of the compose folder
+# attached to the GitHub release for someone to download and run.
+on:
+  push:
+    tags:
+      - '[0-9]*.[0-9]*.[0-9]*'
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  # The same gate every pull request runs. A tag can be pushed to any commit, so
+  # this is what stops a release being cut from code that was never green.
+  verify:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    name: publish image and release bundle
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read the version from the tag
+        id: version
+        run: |
+          # Accept 0.1.0 and v0.1.0; the version itself never carries the v.
+          version="${GITHUB_REF_NAME#v}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "major_minor=${version%.*}" >> "$GITHUB_OUTPUT"
+          echo "major=${version%%.*}" >> "$GITHUB_OUTPUT"
+          echo "Releasing ${version}"
+
+      # The tag and package.json must agree. They are bumped in a pull request
+      # and tagged afterwards, so a mismatch means the tag was cut from the wrong
+      # commit — and the image would carry a version the code never claimed.
+      - name: Check the tag matches package.json
+        env:
+          TAGGED: ${{ steps.version.outputs.version }}
+        run: |
+          declared="$(node scripts/version.mjs current)"
+          tagged="$TAGGED"
+          if [ "$declared" != "$tagged" ]; then
+            echo "Tag ${tagged} does not match package.json, which says ${declared}."
+            echo "Tag the commit where the version was bumped to ${tagged}."
+            exit 1
+          fi
+          echo "Tag and package.json both say ${tagged}."
+
+      # Actions GitHub does not own are pinned to a commit rather than a tag. A tag
+      # can be moved to different code after it is published, and this job pushes
+      # images and writes releases. Dependabot keeps the pins current.
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push the image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          # The Dockerfile moved under `docker/`; the context did not, because
+          # `.dockerignore` is read from the context root and the image copies
+          # the whole workspace.
+          file: docker/Dockerfile
+          push: true
+          # Moving tags as well as the exact one, so an install can follow
+          # patches without being pinned to a single build.
+          tags: |
+            ghcr.io/lazyfridaystudio/lazyprojectmanager:${{ steps.version.outputs.version }}
+            ghcr.io/lazyfridaystudio/lazyprojectmanager:${{ steps.version.outputs.major_minor }}
+            ghcr.io/lazyfridaystudio/lazyprojectmanager:${{ steps.version.outputs.major }}
+            ghcr.io/lazyfridaystudio/lazyprojectmanager:latest
+          build-args: |
+            APP_VERSION=${{ steps.version.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Assemble the release bundle
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          version="$VERSION"
+          bundle="lazyprojectmanager-${version}"
+
+          mkdir -p "${bundle}"
+
+          # The whole folder, and the folder is the bundle: every file in it is
+          # already named what it is called once installed, so nothing is
+          # renamed on the way out and a file added to it ships without this
+          # step being edited.
+          #
+          # Taken from git rather than copied off the disk, which is what makes
+          # that safe. An operator's own `.env` sits in this folder on any
+          # machine the stack has been run from, and `cp -r` would put their
+          # secrets in a public zip. Only what is committed can ship, and a
+          # secret is never committed.
+          git archive HEAD docker/install | tar -x -C "${bundle}" --strip-components=2
+
+          # Pin the bundle to the version it was cut from. Someone who downloads
+          # 0.1.0 and runs it should get 0.1.0, not whatever latest points at.
+          sed -i "s/\${LPM_VERSION:-latest}/\${LPM_VERSION:-${version}}/" "${bundle}/compose.yml"
+          sed -i "s/^LPM_VERSION=latest$/LPM_VERSION=${version}/" "${bundle}/.env.example"
+
+          zip -r "${bundle}.zip" "${bundle}"
+
+          echo "Bundle contents:"
+          unzip -l "${bundle}.zip"
+
+      - name: Publish the release
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          name: ${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          files: lazyprojectmanager-${{ steps.version.outputs.version }}.zip
+          body: |
+            ## Install
+
+            Download `lazyprojectmanager-${{ steps.version.outputs.version }}.zip`, unzip it, and:
+
+            ```bash
+            cp .env.example .env     # change the two passwords
+            docker compose up -d
+            ```
+
+            Open <http://localhost:24571>.
+
+            ## Upgrade
+
+            ```bash
+            docker compose pull && docker compose up -d
+            ```
+
+            Migrations run when the app container starts, so there is no separate step.
+
+            ## Image
+
+            `ghcr.io/lazyfridaystudio/lazyprojectmanager:${{ steps.version.outputs.version }}`

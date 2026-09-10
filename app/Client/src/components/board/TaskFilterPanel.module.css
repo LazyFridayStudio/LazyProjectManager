@@ -1,0 +1,149 @@
+/*
+ * Opened under the header rather than over it, for the reason the library's is:
+ * a filter is read alongside what it filters, and a panel that covered the
+ * board would mean choosing a person, dismissing the panel to see the result,
+ * and opening it again to change your mind.
+ */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 22px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: var(--color-surface);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.title {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+.summary {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/* A link, because it does nothing to a card — it puts the filter back. */
+.clear {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--font-size-small);
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.clear:hover {
+  color: var(--color-accent-700);
+}
+
+.clear:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.groupLabel {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/*
+ * Off is an outline; on is the accent filled.
+ *
+ * The difference has to survive a glance across twenty of them, which a change
+ * of border colour alone does not.
+ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  background: transparent;
+  font: inherit;
+  font-size: var(--font-size-small);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.chip:hover {
+  border-color: var(--color-accent);
+}
+
+.chipOn {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.chip:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Small enough to sit in a chip without making the row taller than the others. */
+.chipFace {
+  width: 16px;
+  height: 16px;
+  font-size: 8px;
+}
+
+/* The same mark the chip on the board carries, so a type reads the same in
+   both places. */
+.typeDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--type-color, var(--color-text-faint));
+}
+
+.typeDot[data-type='art'] {
+  background: var(--color-card-art);
+}
+
+.typeDot[data-type='task'] {
+  background: var(--color-card-task);
+}
+
+.typeDot[data-type='bug'] {
+  background: var(--color-card-bug);
+}
+
+.typeDot[data-type='build'] {
+  background: var(--color-card-build);
+}
+
+.none {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}

@@ -1,0 +1,91 @@
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 14px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--panel-inset-highlight);
+  background: var(--color-surface);
+  color: inherit;
+  text-decoration: none;
+}
+
+.tile:hover {
+  background: var(--hover-tile);
+}
+
+.tile:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* An archived project is still readable, just plainly not current. */
+.archived {
+  opacity: var(--disabled-opacity);
+}
+
+/*
+ * 16:9, which is the shape every picture in the product is given — the library
+ * tiles, the reference sheet, and this. A slot that is its own shape is a slot
+ * key art gets cropped differently for.
+ */
+/*
+ * The picture, or the name where the picture would be.
+ *
+ * Which is the only place the name is said now: a tile is a picture and the
+ * line under it, and a project whose art already says what it is called does
+ * not need that line repeating it.
+ *
+ * Two steps further up the scale than it was, because the tile it sits in is
+ * about twice the size: at `h2` in a slot 578 by 326 the name sat small in the
+ * middle of a much bigger box, which is a caption rather than the picture it is
+ * standing in for.
+ *
+ * `display` even though a slate of tiles is siblings sharing a screen, which is
+ * the one thing that step says it is not for. What is set here is not a heading
+ * competing with the tile beside it — it is the key art, drawn in letters
+ * because nobody has chosen a picture yet, and it is the only thing inside the
+ * slot. The sidebar's project mark does the same and steps up with its box.
+ */
+.thumb {
+  aspect-ratio: 16 / 9;
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  font-family: var(--font-heading);
+  font-size: var(--font-size-display);
+  line-height: 1.15;
+  text-align: center;
+  overflow-wrap: anywhere;
+  color: var(--color-text-strong);
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.role {
+  margin-left: auto;
+  text-transform: capitalize;
+}
+
+/* The same slot as the placeholder, filled. `cover` because key art is drawn to
+   16:7 and anything else somebody chooses should still fill the space. */
+.thumbImage {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  object-fit: cover;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  display: block;
+}

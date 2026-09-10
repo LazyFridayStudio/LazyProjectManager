@@ -1,0 +1,170 @@
+/*
+ * Opened under the header rather than over it.
+ *
+ * A filter is read alongside what it filters: a panel that covered the library
+ * would mean choosing a tag, dismissing the panel to see the result, and
+ * opening it again to change your mind.
+ *
+ * Square, unlike the panels around it. `DESIGN_TOKENS.md` puts 5px on panels
+ * and then says the prototype's are machined plates rather than framed
+ * wireframes — this is one of the plates, and the design draws it with corners.
+ */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: var(--color-surface);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+/*
+ * The same heading every section of every panel uses: uppercase micro type in
+ * the label colour. `DESCRIPTION`, `TAGS`, `FILES` and this are one thing, and
+ * a heading that picked its own colour would read as a different kind of thing.
+ */
+.title {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+.summary {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/* Both are links, so both are the accent. Neither does anything to an asset —
+   one clears the filter and the other puts the panel away. */
+.links {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.clear,
+.hide {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--font-size-small);
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.clear:hover,
+.hide:hover {
+  color: var(--color-accent-700);
+}
+
+.clear:focus-visible,
+.hide:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+/* The headings inside the card, in the same type and colour as the one above
+   them — two headings on one card that disagree read as a mistake. */
+.groupLabel {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/*
+ * Off is an outline; on is the accent filled.
+ *
+ * The difference has to survive a glance across twenty of them, which a change
+ * of border colour alone does not.
+ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  background: transparent;
+  font: inherit;
+  font-size: var(--font-size-small);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.tagChip {
+  padding: 3px 8px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+}
+
+.chip:hover {
+  border-color: var(--color-accent);
+}
+
+.chipOn {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.chip:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 1px;
+  background: var(--color-label);
+}
+
+.statusDot[data-status='concept'] {
+  background: var(--color-status-concept);
+}
+
+.statusDot[data-status='wip'] {
+  background: var(--color-status-wip);
+}
+
+.statusDot[data-status='review'] {
+  background: var(--color-status-review);
+}
+
+.statusDot[data-status='approved'] {
+  background: var(--color-status-approved);
+}
+
+.statusDot[data-status='final'] {
+  background: var(--color-status-final);
+}
+
+.none {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}

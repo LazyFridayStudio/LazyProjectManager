@@ -1,0 +1,569 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* The same micro-label the sections above it use, so the left column reads as
+   one list of parts rather than as two panels stuck together. */
+.heading {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+/* Sits on the heading's own line, at the far end of it: adding a step is what
+   the heading is for when there are no steps yet. */
+.headingAction {
+  margin-left: auto;
+  flex: none;
+  padding: 2px 4px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-tag);
+  background: transparent;
+  color: var(--color-accent);
+  font: inherit;
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.headingAction:hover {
+  border-color: var(--color-accent);
+}
+
+.headingAction:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-hairline);
+  font-size: var(--font-size-small);
+}
+
+/*
+ * The one part of a row that gives, so everything after it sits at the right
+ * edge without any of them having to claim the gap for itself.
+ */
+.rowTitle {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Where a row stands, quiet enough to scan past when it is not the question. */
+.state {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/*
+ * A linked card, or a file, drawn as a small plate rather than as a line.
+ *
+ * Both are things in their own right that happen to be attached here, which a
+ * bordered box says and an underlined row does not.
+ */
+.tiles {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tile {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 8px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  font-size: var(--font-size-small);
+}
+
+/* The whole row, made pressable. It looks like the row rather than like a
+   button, because what it opens is what it is already showing. */
+.tileOpen {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tile:has(.tileOpen:hover) {
+  border-color: var(--color-accent);
+  background: var(--hover-tile);
+}
+
+.tileOpen:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.checkbox {
+  flex: none;
+  accent-color: var(--color-accent);
+}
+
+/* A step already ticked off steps back out of the way. */
+.done {
+  color: var(--color-text-faint);
+  text-decoration: line-through;
+}
+
+.rowAction {
+  flex: none;
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-tag);
+  background: transparent;
+  color: var(--color-text-faint);
+  font: inherit;
+  font-size: var(--font-size-micro);
+  cursor: pointer;
+}
+
+.rowAction:hover {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.rowAction:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.adder {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  /* Clear of the row above, whose focus ring is drawn outside it. */
+  margin-top: 4px;
+}
+
+.adderField {
+  flex: 1;
+  min-width: 0;
+  /* The anchor the suggestion list hangs from. */
+  position: relative;
+}
+
+/* Said by somebody, at a time, to everybody else — in that order. */
+.comments {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.comment {
+  display: flex;
+  gap: 9px;
+}
+
+/* Initials rather than the whole name: at 24px square the name does not fit,
+   and the name is on the line beside it anyway. */
+.avatar {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  font-family: var(--font-heading);
+  font-size: var(--font-size-micro);
+  color: var(--color-label);
+}
+
+.commentSaid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.commentWho {
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.commentText {
+  margin: 0;
+  font-size: var(--font-size-base);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * One line, because a comment on a card is a remark rather than a document.
+ * Enter posts it; the button appears once there is something to post, so the
+ * gesture is never the only way to send.
+ */
+.commentInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 8px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-small);
+}
+
+.commentInput:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * What the row is, in a column of its own: how two cards are related, what type
+ * a child card is, or which category an asset comes from.
+ *
+ * A floor rather than a fixed width. Fixed was the original decision and the
+ * reason for it still stands — a title that starts in a different place on
+ * every row is a list you have to read instead of scan — but seventy-six pixels
+ * was a guess taken from the short end of the set. `BLOCKED BY` did not fit it,
+ * and an asset category is whatever the studio typed: `ENVIRONMENT PROPS` broke
+ * over two lines and shunted the name off its own baseline.
+ *
+ * So: never narrower than the floor, which is wide enough for every relation
+ * and card type there is, so those lists align exactly as they did. A label
+ * longer than that widens its own row instead of wrapping — one row out of step
+ * is a smaller cost than a row that has come apart. And never wider than the
+ * cap, because past that it is eating the name it is supposed to be labelling.
+ */
+.linkKind {
+  flex: none;
+  min-width: 108px;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.linkKey {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-accent);
+}
+
+.linkClosed {
+  text-decoration: line-through;
+  color: var(--color-text-faint);
+}
+
+.empty {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}
+
+.problem {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}
+
+/*
+ * What a search turned up, drawn over the panel rather than pushed into it.
+ *
+ * A list that took up space would move everything below it on every keystroke,
+ * which is why a date picker opens over its field instead of beside it.
+ */
+/*
+ * Opened upwards, from above the field rather than below it.
+ *
+ * This is the last thing in a long panel, so the field sits near the bottom of
+ * the scrolling pane with the save bar under it — a list hanging downwards puts
+ * its first and best match behind that bar, which is the one somebody wanted.
+ */
+.suggestions {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  /* Above the save bar, which is sticky and would otherwise cover it. */
+  z-index: 30;
+  max-height: 232px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+}
+
+.suggestion {
+  width: 100%;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 8px;
+  box-sizing: border-box;
+  border-radius: var(--radius-panel);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--font-size-small);
+  text-align: left;
+  cursor: pointer;
+}
+
+.suggestion:hover:not(:disabled) {
+  background: var(--hover-tile);
+  border-color: var(--color-accent);
+}
+
+.suggestion:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.attachmentName {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-accent);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachmentName:hover {
+  text-decoration: underline;
+}
+
+.attachmentSize {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.dropZone {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px dashed var(--color-divider);
+  border-radius: var(--radius-panel);
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+/* While something is being dragged over it, so it is obvious where it lands. */
+.dropZoneOver {
+  border-color: var(--color-accent);
+  background: var(--hover-tile);
+  color: var(--color-text);
+}
+
+/* The real input, kept out of sight because the button opens it. */
+.hiddenPicker {
+  display: none;
+}
+
+/* A commit sha or a branch name: monospace because it is an identifier, and a
+   link because the repository is where the rest of it is. */
+.scmRef {
+  color: inherit;
+  text-decoration: none;
+}
+
+.scmRef:hover {
+  text-decoration: underline;
+}
+
+/* Choosing what to link to, shown under the heading that asked for it rather
+   than in a dialog over the panel: the card stays readable while the choice is
+   made, which is how somebody knows what they are linking. */
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px dashed var(--color-divider);
+  border-radius: var(--radius-panel);
+}
+
+.pickerSearch {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-small);
+}
+
+.pickerSearch:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * A name said in a remark.
+ *
+ * Marked but not pressable: there is nowhere to go — this install has no screen
+ * about one person — and something that looks like a link and does nothing is
+ * worse than something that plainly is not one. The tint is what makes the
+ * sentence read as naming somebody rather than as an address.
+ */
+.mention {
+  padding: 0 3px;
+  border-radius: var(--radius-tag);
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  color: var(--color-accent-700);
+  font-weight: 500;
+}
+
+/*
+ * A card or an asset named in one, which does go somewhere.
+ *
+ * A button rather than an anchor: it opens the thing over the board in the panel
+ * already open, and there is no address to give a link. Underlined, because this
+ * one is pressable and the mention beside it is not.
+ */
+.reference {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-accent-700);
+  font: inherit;
+  font-weight: 500;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.reference:hover {
+  color: var(--color-accent);
+}
+
+.reference:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * What `@` and `#` offer, under the box being typed in.
+ *
+ * Named apart from the picker that chooses what to link to, which is a
+ * different control a few hundred lines up this file and had these names
+ * first. One stylesheet is shared by every section of the panel, so a second
+ * `.picker` was not an override — it was both rules landing on both controls,
+ * and the link picker quietly lost the dashed border that says it is a choice
+ * being made in place rather than a dialog.
+ */
+.markPicker {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 5px;
+  padding: 6px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+.markPickerHint {
+  padding: 2px 4px;
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.markSuggestion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 6px;
+  border: none;
+  border-radius: var(--radius-tag);
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--font-size-small);
+  text-align: left;
+  cursor: pointer;
+}
+
+.markSuggestion:hover {
+  background: var(--hover-tile);
+}
+
+.markSuggestion:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.markSuggestionFace {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-divider);
+  border-radius: 50%;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-micro);
+}
+
+/* The key, which is what somebody is scanning the list for. */
+.markSuggestionKey {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}

@@ -1,0 +1,395 @@
+.avatar {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  font-family: var(--font-heading);
+  font-size: var(--font-size-micro);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+}
+
+.panelHeading {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.panelTitle {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h3);
+  letter-spacing: 0.02em;
+}
+
+.count {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/*
+ * What this team may do, and nothing about what it may not.
+ *
+ * Every group on the install used to be here with a tick beside it, so a panel
+ * about one team was mostly about the fifteen groups it does not have. Usually
+ * one row now, and often none.
+ */
+.heldGroups {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  /*
+   * Usually one row. Bounded anyway, because nothing stops a team being given
+   * thirty and the panels under this one are what a team is.
+   */
+  max-height: 260px;
+  overflow-y: auto;
+  /*
+   * Said out loud, because it is not the default it looks like. A box that
+   * scrolls on one axis computes the other as `auto` rather than `visible`,
+   * so without this a dragged row leaning a pixel sideways grows a
+   * horizontal scrollbar under the list.
+   */
+  overflow-x: hidden;
+  list-style: none;
+}
+
+.heldGroup {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--color-divider);
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+/*
+ * The grip that says a permission can be moved.
+ *
+ * The same mark and the same weight as the board's columns, because it is the
+ * same gesture. Always drawn: somebody who has just given a team a fourth
+ * permission should learn they can be put in an order without trying it first.
+ */
+.heldGroupGrip {
+  flex: none;
+  align-self: center;
+  width: 14px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-tag);
+  background: transparent;
+  color: var(--color-text-dim);
+  font: inherit;
+  line-height: 1;
+  cursor: grab;
+  /* Otherwise a touch drag scrolls the panel instead of moving the row. */
+  touch-action: none;
+}
+
+.heldGroupGrip:hover {
+  color: var(--color-text);
+}
+
+.heldGroupGrip:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* The row left behind while its copy travels under the pointer. */
+.heldGroupMoving {
+  opacity: 0.45;
+}
+
+.heldGroupName {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-base);
+}
+
+/* How much it says, so an empty group can be told from a full one. */
+.heldGroupFacts {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-micro);
+  font-weight: inherit;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--color-text-muted);
+}
+
+.table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--color-hairline);
+  font-size: var(--font-size-small);
+  vertical-align: middle;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.personName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.role {
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.rowActions {
+  text-align: right;
+}
+
+.action {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-accent-700);
+  font: inherit;
+  font-size: var(--font-size-small);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.action:hover {
+  text-decoration: underline;
+}
+
+.action:disabled {
+  color: var(--color-text-dim);
+  cursor: default;
+  text-decoration: none;
+}
+
+/*
+ * A row action that takes something away.
+ *
+ * The same quiet link as its neighbours, in red rather than the accent: what
+ * separates Take out from Reset password is not how loud it is, it is that one
+ * of them removes something.
+ */
+.actionStop {
+  color: var(--color-danger);
+}
+
+.action:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* The search that adds somebody, and what it found. */
+.adder {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+  border-top: 1px solid var(--color-divider);
+}
+
+.adderLabel {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+.search {
+  height: 34px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-small);
+}
+
+.search:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.matches {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+}
+
+.match {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 9px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--font-size-small);
+  text-align: left;
+  cursor: pointer;
+}
+
+.match:hover {
+  background: var(--hover-tile);
+}
+
+.match:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.matchEmail,
+.matchTeams,
+.matchMore {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.matchTeams {
+  margin-left: auto;
+  flex: none;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/*
+ * Pushes a button in a panel heading to the far end of the row.
+ *
+ * `.count` does this on the headings that have one, by taking the free space
+ * itself. A heading with no count has nothing between the title and the button,
+ * so the button takes it.
+ */
+.headingAction {
+  margin-left: auto;
+}
+
+.message {
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.problem {
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}
+
+/* Announced, never drawn: the column of actions has no heading worth showing. */
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/*
+ * Who answers for the team, and the box that changes them, on one line.
+ *
+ * Stretched rather than centred, so the two boxes are the same height whichever
+ * of them is taller — the name has a Clear button in it and the search does not,
+ * and two controls of nearly the same height side by side look like a mistake
+ * where two of exactly the same height look like a pair.
+ */
+.leadRow {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+/*
+ * A quarter for the name, three for the search.
+ *
+ * They are not the same kind of thing. The name is one name and is as long as
+ * it is; the search is a box somebody types into, and a box to type in wants
+ * the room. Scoped to this row rather than put on `.search` itself, which is
+ * the same class the members picker uses at full width.
+ */
+.leadRow > .leadNow {
+  flex: 1;
+  min-width: 0;
+}
+
+.leadRow > .search {
+  flex: 3;
+  min-width: 0;
+}
+
+.leadNow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  box-sizing: border-box;
+  padding: 6px 9px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  font-size: var(--font-size-small);
+}
+
+/*
+ * Clear sits at the far end, and only Clear.
+ *
+ * It was "the last child", which is Clear while there is a lead and the name
+ * itself while there is not — so a team with nobody answering for it had
+ * "Nobody answers for this team" pushed against the right-hand edge for no
+ * reason anybody could see.
+ */
+.leadNow > button {
+  margin-left: auto;
+}

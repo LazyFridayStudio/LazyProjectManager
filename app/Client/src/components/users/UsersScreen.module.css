@@ -1,0 +1,249 @@
+.search {
+  width: 200px;
+  height: 34px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-small);
+}
+
+.search:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+}
+
+.panelHeading {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.panelTitle {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h3);
+  letter-spacing: 0.02em;
+}
+
+.count {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/*
+ * A real table, because this is one: a heading per column, a row per person, and
+ * a screen reader that can say which column a cell is in. The row of divs the
+ * prototype draws would need every one of those bolted back on.
+ */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-micro);
+  font-weight: inherit;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--color-text-muted);
+}
+
+.table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--color-hairline);
+  font-size: var(--font-size-small);
+  vertical-align: middle;
+}
+
+/* Still readable, and plainly not one of the people who can sign in. */
+.suspendedRow td {
+  color: var(--color-text-faint);
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.avatar {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  font-family: var(--font-heading);
+  font-size: var(--font-size-micro);
+}
+
+.personName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suspendedTag {
+  flex: none;
+  padding: 1px 6px;
+  border: 1px solid var(--color-warn);
+  border-radius: var(--radius-tag);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-warn);
+}
+
+/*
+ * The one person who is permanent.
+ *
+ * The accent rather than the warning colour the suspended tag uses: this is not
+ * a problem with the row, it is what the row is.
+ */
+.ownerTag {
+  flex: none;
+  padding: 1px 6px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-tag);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-accent);
+}
+
+.teams {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-strong);
+}
+
+.email,
+.lastSeen {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-muted);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.action {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-accent-700);
+  font: inherit;
+  font-size: var(--font-size-small);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.action:hover {
+  text-decoration: underline;
+}
+
+.action:disabled {
+  color: var(--color-text-dim);
+  cursor: default;
+  text-decoration: none;
+}
+
+/*
+ * A row action that takes something away.
+ *
+ * The same quiet link as its neighbours, in red rather than the accent: what
+ * separates Take out from Reset password is not how loud it is, it is that one
+ * of them removes something.
+ */
+.actionStop {
+  color: var(--color-danger);
+}
+
+.action:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * What somebody may do, in the row: the groups they hold, or that they hold
+ * none.
+ *
+ * A button rather than a dropdown, because the answer is a set and not a
+ * choice. It reads as text until it is pointed at, so a table of forty people
+ * is forty facts rather than forty controls.
+ */
+.groupsCell {
+  max-width: 22ch;
+  padding: 3px 6px;
+  border: none;
+  border-radius: var(--radius-panel);
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--font-size-small);
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.groupsCell:hover {
+  background: var(--hover-row);
+  text-decoration: underline;
+}
+
+.groupsCell:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.more {
+  display: flex;
+  justify-content: center;
+}
+
+.message {
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+}
+
+.problem {
+  font-size: var(--font-size-base);
+  color: var(--color-danger);
+}
+
+/* Announced, never drawn: the column of actions has no heading worth showing. */
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

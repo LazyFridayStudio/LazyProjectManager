@@ -1,0 +1,13 @@
+dist/
+dist-types/
+build/
+.output/
+coverage/
+playwright-report/
+test-results/
+pnpm-lock.yaml
+
+# The Clean Code guide is a specification document, not source. Prettier would
+# reformat the TypeScript examples inside it — adding semicolons and changing the
+# very style the document is teaching.
+docs/CleanCode.md

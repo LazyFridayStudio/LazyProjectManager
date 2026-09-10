@@ -1,0 +1,237 @@
+/*
+ * Every picture of an asset: one large, the rest as a strip under it.
+ *
+ * The whole column takes a drop, not just the strip — somebody dragging four
+ * images out of a folder aims at the big rectangle, because that is the part
+ * that looks like pictures.
+ */
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 18px;
+}
+
+.sheetOver {
+  outline: 1px dashed var(--color-accent);
+  outline-offset: -6px;
+}
+
+/*
+ * 16:9, the same shape every picture in the library is given.
+ *
+ * Fixed, so the panel does not resize itself every time a different picture is
+ * chosen, and capped in height because the panel is as wide as the screen
+ * allows — 16:9 of a wide monitor would push the strip of thumbnails off the
+ * bottom, which is the one thing the sheet exists to show.
+ */
+.frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  max-height: min(52vh, 620px);
+  flex: none;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg);
+}
+
+/*
+ * Contained and centred, never cropped.
+ *
+ * The frame is one shape so a wall of them reads as a wall; the picture inside
+ * it is whatever shape it was drawn at. A scale reference cropped to fill has
+ * had the scale taken out of it, and a silhouette cropped to fill is no longer
+ * a silhouette.
+ *
+ * Positioned rather than sized, because `place-items: center` on the frame
+ * leaves a grid item sized by its own content: a portrait took the full width
+ * and ran off the bottom, and `object-fit` had no box of the frame's shape to
+ * letterbox inside. Pinned to all four edges, it does.
+ */
+.frameImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.frameEmpty {
+  padding: 0 12px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  text-align: center;
+  overflow-wrap: anywhere;
+  color: color-mix(in srgb, var(--color-accent) 65%, transparent);
+}
+
+/*
+ * As many as fit, wrapping rather than scrolling: a sheet is meant to be taken
+ * in at once.
+ *
+ * A minimum width rather than a fixed four across. Four is right in the column
+ * the design drew, and this panel is as wide as the screen allows — four across
+ * a 1200px column is four 300px thumbnails, which is not a strip of thumbnails
+ * any more. At the design's width this still comes to four.
+ */
+.thumbnails {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The tile: the button that shows the picture, and the marks in its corner.
+   Positioned so both corners are measured against the picture rather than
+   against whatever the strip happens to lay out around it. */
+.thumbnailHolder {
+  position: relative;
+}
+
+/* Held out of the way while it is being carried, so the gap it leaves is what
+   the strip is showing you. */
+.thumbnailHolder[data-dragging='true'] {
+  opacity: 0.4;
+  z-index: 1;
+}
+
+.thumbnail {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  background: var(--color-bg);
+  cursor: pointer;
+}
+
+.thumbnail:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 60%, transparent);
+}
+
+.thumbnail:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* The one in the large frame. An outline rather than a colour change, so it
+   marks the thumbnail without tinting the picture inside it. */
+.thumbnailShown {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+/* Contained here too, and pinned for the same reason. A strip where every
+   picture is cropped differently is a strip you cannot compare across. */
+.thumbnailImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  object-position: center;
+}
+
+.thumbnailName {
+  padding: 0 4px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  text-align: center;
+  overflow-wrap: anywhere;
+  color: var(--color-text-faint);
+}
+
+/* Which one the library tile draws, named for what it is rather than for where
+   it sits. Worth saying here, because the tile is not on screen. */
+/*
+ * The two corner marks.
+ *
+ * On the first picture it is a label saying what that picture is; on the others
+ * it is the offer to make them it. Same place, same size, same colour, because
+ * they are the same fact seen from either side.
+ */
+.firstMark,
+.makeThumbnail {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 2px 5px;
+  border: none;
+  background: color-mix(in srgb, var(--color-bg) 82%, transparent);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.04em;
+  color: var(--color-accent);
+  pointer-events: none;
+}
+
+/*
+ * An offer, not a label: it appears when somebody is looking at that picture.
+ *
+ * A strip of eight pictures each carrying a permanent "make thumbnail" is a
+ * strip where the one that already is the thumbnail cannot be picked out.
+ */
+.makeThumbnail {
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 120ms ease-out;
+}
+
+.thumbnailHolder:hover .makeThumbnail,
+.makeThumbnail:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.makeThumbnail:hover {
+  background: var(--color-bg);
+  text-decoration: underline;
+}
+
+.makeThumbnail:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: calc(var(--focus-ring-offset) * -1);
+}
+
+/* No pointer while it is being carried: the offer is not what the drag is for. */
+.thumbnailHolder[data-dragging='true'] .makeThumbnail {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .makeThumbnail {
+    transition: none;
+  }
+}
+
+/*
+ * What can be done to the sheet.
+ *
+ * The count that used to sit on this line has gone: the facts table on the
+ * other side of the panel already says how many reference images there are,
+ * and saying it twice on one screen only invites the two to disagree.
+ */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* The real input, kept out of sight because the label above opens it. */
+.hiddenPicker {
+  display: none;
+}

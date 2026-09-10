@@ -1,0 +1,151 @@
+.mark {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/*
+ * The circle.
+ *
+ * Red, and the only red on either shell that is not an error — which is the
+ * point: nothing else in the chrome uses it, so it is seen without being looked
+ * for. It is only ever on screen when there is something in it.
+ */
+.circle {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 10px;
+  background: var(--color-danger);
+  color: var(--color-text-on-accent);
+  font-family: var(--font-heading);
+  font-size: var(--font-size-micro);
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.circle:hover {
+  filter: brightness(1.1);
+}
+
+.circle:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * What is waiting, beside the circle.
+ *
+ * Which side of it depends on where the caller put the mark, and only the two
+ * offsets differ — everything about the list itself is the same in the header
+ * as in the sidebar.
+ */
+.panel {
+  position: absolute;
+  z-index: 40;
+  width: 340px;
+  max-height: 60vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+}
+
+/*
+ * In the launcher header: under the mark, and anchored to its right edge so a
+ * panel this wide does not run off the side of the window.
+ */
+.downwards {
+  top: calc(100% + 8px);
+  right: 0;
+}
+
+/*
+ * In the project sidebar: above the mark, because it sits at the bottom of the
+ * screen and there is nothing below it to drop into. Anchored left, since the
+ * sidebar is narrower than this panel and the room is to the right of it.
+ */
+.upwards {
+  bottom: calc(100% + 8px);
+  left: 0;
+}
+
+.waiting {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px;
+  border: none;
+  border-radius: var(--radius-tag);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.waiting:hover {
+  background: var(--hover-tile);
+}
+
+.waiting:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.face {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-divider);
+  border-radius: 50%;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-micro);
+}
+
+.said {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.who {
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/*
+ * Enough of the sentence to decide whether it needs you now.
+ *
+ * Two lines, clamped: one is too little to tell a question from an aside, and a
+ * paragraph turns the list into the thing you have to read instead of the card.
+ */
+.excerpt {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  font-size: var(--font-size-small);
+  color: var(--color-text);
+}
+
+.more {
+  padding: 4px 8px 2px;
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}

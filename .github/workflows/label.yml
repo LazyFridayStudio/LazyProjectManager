@@ -1,0 +1,34 @@
+name: label
+
+# Labels a pull request by which part of the product it touches.
+#
+# pull_request_target because labelling needs write access, and a pull_request
+# workflow does not get it on pull requests from Dependabot. Nothing from the
+# pull request is executed here: the action only reads the list of changed
+# filenames.
+#
+# Opened and reopened only. On `synchronize` it re-ran on every push of every
+# branch — 111 runs in two days, each of them seven seconds of work billed as a
+# whole minute, to re-apply labels that were already there. A pull request that
+# grows into a new area after it is opened keeps the labels it was opened with,
+# which is a fair trade for two thirds of the runs.
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  label:
+    name: label
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/labeler@v7
+        with:
+          configuration-path: .github/labeler.yml
+          # Labels removed by hand stay removed; this only ever adds.
+          sync-labels: false

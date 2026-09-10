@@ -1,0 +1,46 @@
+name: restore rehearsal
+
+# The whole stack, built from a commit, destroyed, and put back from a backup.
+#
+# A backup script is only worth having if somebody has restored from it, and the
+# failure everybody has seen is the one where the dump ran nightly for two years
+# and the restore turns out to need a flag nobody knew about.
+#
+# That is worth running. It is not worth running on every push to every branch,
+# which is what it did: it builds and starts the entire compose stack, so it was
+# 75 seconds of Docker before it began, on work that had not touched the backup
+# script in weeks.
+#
+# Run it from the Actions tab after anything that touches the stack, the schema
+# or `scripts/rehearse-restore.sh`.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: The branch or tag to rehearse against
+        required: false
+        default: main
+
+jobs:
+  restore-rehearsal:
+    name: restore rehearsal
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Configure the stack
+        run: cp .env.example .env
+
+      - name: Start it
+        run: docker compose --profile app up -d --build --wait
+
+      - name: Destroy it and put it back from a backup
+        run: sh scripts/rehearse-restore.sh
+
+      - name: What the containers said, if it went wrong
+        if: failure()
+        run: docker compose --profile app logs --tail 100

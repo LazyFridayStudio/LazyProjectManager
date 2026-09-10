@@ -1,0 +1,312 @@
+/*
+ * The board is the window, rather than a page that happens to be tall.
+ *
+ * `height` rather than `min-height`, because the lists inside scroll
+ * themselves: a column can only be told to fill what is left and hand its
+ * overflow to a scrollbar if something above it has a height to divide up. The
+ * page itself does not scroll — the row of lists scrolls sideways and each list
+ * scrolls down, which is the two directions a board actually has.
+ */
+.screen {
+  height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--color-text);
+}
+
+/*
+ * What is on the screen, said above its name — how many lists, how many open
+ * cards, and the repository they came from when there is one.
+ */
+.title {
+  margin: 0;
+  font-size: var(--font-size-title);
+  font-weight: var(--font-title-weight);
+  line-height: 1.2;
+}
+
+/* Step 3 is the read path. The board says so rather than offering controls that
+   would do nothing. */
+.readOnly {
+  padding: 3px 8px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-tag);
+  color: var(--color-accent-800);
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* The asset library's summary line, to the letter: the two screens are the same
+   shape and should not be two typefaces about it. */
+
+/* The board scrolls sideways; the page behind it does not. */
+/*
+ * `align-items: stretch` so a list is the height of the board rather than the
+ * height of what is in it: a column with two cards in it is still somewhere to
+ * drop a third, and a row of lists that each end at a different place reads as
+ * ragged rather than as columns.
+ *
+ * `min-height: 0` because a flex child will not shrink below its content
+ * without it, which is what makes an overflow inside a column silently do
+ * nothing.
+ */
+.lists {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  padding: 16px 22px 22px;
+  overflow-x: auto;
+}
+
+.list {
+  /* Set on the screen from what this person keeps on their machine, and falling
+     back to what every board was before it could be changed. */
+  width: var(--list-width, 262px);
+  flex: none;
+  /* So the edge that resizes it can sit against it. */
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 10px;
+  border-radius: var(--radius-panel);
+  /* Set per list from its own colour, so one rule covers every list. A list is
+     part of the board rather than a thing on it, so it is tinted from the panel
+     ground and the cards in it are the tone above. */
+  border: 1px solid color-mix(in srgb, var(--list-color) 30%, transparent);
+  border-top: 3px solid var(--list-color);
+  background: color-mix(in srgb, var(--list-color) var(--list-tint), var(--color-panel));
+  min-height: 0;
+}
+
+/*
+ * The cards, and the only part of a list that scrolls.
+ *
+ * The name and the count stay put above it, so a list being read halfway down
+ * still says which list it is — and what is scrolling is the work rather than
+ * the column.
+ */
+.listCards {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  overflow-y: auto;
+  /* Room for the scrollbar, so a card is not sitting under it. */
+  margin-right: -4px;
+  padding-right: 4px;
+}
+
+.listHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid color-mix(in srgb, var(--list-color) 32%, transparent);
+}
+
+.listDot {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 2px;
+  background: var(--list-color);
+}
+
+.listName {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h3);
+  letter-spacing: 0.02em;
+}
+
+.listCount {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.listWip {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/* Over the limit is the one thing a WIP label exists to tell you. */
+.listWipExceeded {
+  color: var(--color-warn);
+}
+
+/*
+ * The grip that says a column can be moved.
+ *
+ * Always drawn rather than appearing on hover: the whole point of it is that
+ * somebody who has just added a fifth list learns the columns can be reordered
+ * without having to try it first.
+ */
+.listGrip {
+  flex: none;
+  width: 14px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-tag);
+  background: transparent;
+  color: var(--color-text-dim);
+  font: inherit;
+  line-height: 1;
+  cursor: grab;
+  /* Otherwise a touch drag scrolls the board instead of moving the column. */
+  touch-action: none;
+}
+
+.listGrip:hover {
+  color: var(--color-text);
+}
+
+.listGrip:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* The column left behind while its copy travels under the pointer. */
+.listDragging {
+  opacity: 0.35;
+}
+
+/* The column under the pointer, drawn above everything. */
+.listLifted {
+  width: var(--list-width, 262px);
+  height: auto;
+  cursor: grabbing;
+  box-shadow: var(--shadow-lg);
+  transform: rotate(1.5deg);
+}
+
+/* The list a card is currently hovering over. */
+.listOver {
+  border-color: var(--list-color);
+  background: color-mix(in srgb, var(--list-color) var(--list-tint-over), var(--color-panel));
+}
+
+.addList {
+  width: 200px;
+  flex: none;
+  /* The lists stretch to the board; this does not — it is an invitation rather
+     than a column, and a full-height dashed rectangle reads as an empty list. */
+  align-self: flex-start;
+  padding: 9px 10px;
+  box-sizing: border-box;
+  border: 1px dashed var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-small);
+  text-align: left;
+  cursor: pointer;
+}
+
+.addList:hover {
+  background: var(--hover-tile);
+  color: var(--color-text);
+}
+
+.addList:focus-visible,
+.listSettings:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.listSettings {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-tag);
+  background: transparent;
+  color: var(--color-text-faint);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.listSettings:hover {
+  border-color: var(--list-color);
+  color: var(--color-text);
+}
+
+.addCard {
+  padding: 7px 8px;
+  border: 1px dashed var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-small);
+  text-align: left;
+  cursor: pointer;
+}
+
+.addCard:hover {
+  background: var(--hover-tile);
+  color: var(--color-text);
+}
+
+.addCard:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.listEmpty {
+  padding: 8px 2px;
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}
+
+.truncated {
+  padding: 4px 2px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.message {
+  padding: 22px;
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+}
+
+.problem {
+  padding: 22px;
+  margin: 0;
+  font-size: var(--font-size-base);
+  color: var(--color-danger);
+}
+
+/*
+ * The rule between groups in the header.
+ *
+ * A hairline rather than a pipe character, so it is a line the design owns
+ * rather than a glyph in whatever font the row happens to be set in — and so it
+ * sits at the height of the controls either side of it rather than on their
+ * baseline.
+ */
+.headerRule {
+  width: 1px;
+  align-self: stretch;
+  margin: 0 2px;
+  background: var(--color-divider);
+}

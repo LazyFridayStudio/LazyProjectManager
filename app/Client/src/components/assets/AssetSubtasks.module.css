@@ -1,0 +1,199 @@
+.stages {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.heading {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+/*
+ * How many are ticked, beside the word rather than under it.
+ *
+ * The whole reason to write the stages down is to see how far along something
+ * is without reading the list, so the count belongs where the eye already is.
+ */
+.progress {
+  font-family: var(--font-mono);
+  letter-spacing: normal;
+  color: var(--color-text-faint);
+}
+
+/*
+ * Across rather than down, and bounded.
+ *
+ * A stage is two or three words — Mesh, UV, Texture — so a row each spent the
+ * whole width of the panel on one of them and pushed the tags, the facts and
+ * the files further down for every stage added. Wrapped, a normal pipeline is
+ * one line and a long one is three.
+ *
+ * The cap is the other half of it: this is one section of a panel that also has
+ * to show what the asset is, and a list nothing bounded grew until the rest of
+ * it was somewhere below the fold. Long enough that scrolling is rare — twelve
+ * stages fit without it — and short enough that the panel keeps its shape
+ * however many somebody types.
+ *
+ * Four and a half lines rather than four, so a list with more in it is cut
+ * through a row instead of between two. A clean edge at a row boundary looks
+ * like the end of the list, and the thin scrollbar is the only other thing
+ * saying otherwise.
+ */
+.rows {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 148px;
+  overflow-y: auto;
+  margin: 0;
+  /* Room for the scrollbar, so a chip is not sitting under it. */
+  padding: 0 4px 0 0;
+  list-style: none;
+}
+
+/*
+ * Outlined, like the tags below it, because a stage is the same kind of thing:
+ * a short label read at a glance rather than a control to press. The checkbox
+ * inside it is the part that is pressed.
+ */
+.row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  /* Never wider than the panel, so one long stage wraps inside its own chip
+     rather than pushing a scrollbar across the whole section. */
+  max-width: 100%;
+  padding: 3px 8px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  /* Set here rather than on the title, so the cross beside it is drawn at the
+     same size. Left to `font: inherit` the button took the panel's base step,
+     which is bigger than everything else in the chip and hung above it. */
+  font-size: var(--font-size-small);
+  line-height: 1;
+}
+
+/* A finished stage steps back rather than disappearing: the list is still the
+   pipeline, and which parts are done is read from the ones that are not. */
+.row[data-done='true'] {
+  border-color: var(--color-hairline);
+}
+
+.checkbox {
+  flex: none;
+  margin: 0;
+  cursor: pointer;
+}
+
+.checkbox:disabled {
+  cursor: default;
+}
+
+/*
+ * Trimmed to the band a word is actually read by, so centring it centres the
+ * letters rather than the box around them.
+ *
+ * A line box reserves room under the baseline for descenders, and `Mesh` has
+ * none — so every box in the chip could be centred to the pixel while the ink
+ * still rode two and a half pixels above the square beside it. That is what
+ * makes a chip look wrong when nothing in the layout is.
+ *
+ * `text-box` cuts the half-leading above the cap height and below the baseline
+ * off the box itself, which turns an optical problem back into a geometric one
+ * that `align-items: center` already solves. No nudge, and nothing to keep in
+ * step with the font.
+ *
+ * The fallback is that nudge, for a browser without it: a shift in `em` lands
+ * close enough at any size, and being a little out is better than being two and
+ * a half pixels out.
+ */
+.title {
+  text-box: trim-both cap alphabetic;
+  color: var(--color-text);
+}
+
+@supports not (text-box: trim-both cap alphabetic) {
+  .title {
+    transform: translateY(0.18em);
+  }
+}
+
+/* Struck through and stepped back, so a finished list reads as finished at a
+   glance rather than needing every checkbox looked at. */
+.title[data-done='true'] {
+  color: var(--color-text-faint);
+  text-decoration: line-through;
+}
+
+/*
+ * Centred against the checkbox rather than against a line of text.
+ *
+ * The mark inside is an SVG for that reason — see `CrossMark`. A flex box round
+ * it means the square it draws in is centred on the row, and the paths are
+ * centred in the square, so the two halves of the alignment are both geometry.
+ */
+.remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  line-height: 1;
+  /* Red, because it takes the stage off. Held back until the row is pointed at,
+     so a list of them does not read as a list of warnings. */
+  color: color-mix(in srgb, var(--color-danger) 55%, transparent);
+  cursor: pointer;
+}
+
+.remove:hover:not(:disabled) {
+  color: var(--color-danger);
+}
+
+.remove:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.remove:disabled {
+  cursor: default;
+}
+
+/* The plus and the words on the button that makes one, side by side. */
+.addLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.input {
+  align-self: flex-start;
+  width: 16ch;
+  padding: 2px 7px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-tag);
+  background: var(--color-bg);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text);
+}
+
+.input:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.empty {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}

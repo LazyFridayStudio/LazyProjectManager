@@ -1,0 +1,9 @@
+# The forms are the way in. A blank box is how the first four issues on this
+# repository each had to be told separately where in the code they land.
+blank_issues_enabled: false
+
+# A vulnerability reported as an issue is public before it can be fixed.
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/LazyFridayStudio/LazyProjectManager/security/advisories/new
+    about: Privately, so it is not public before it is fixed.

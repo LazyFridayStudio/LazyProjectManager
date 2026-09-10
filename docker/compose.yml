@@ -1,0 +1,218 @@
+# The whole stack.
+#
+#   pnpm start        build and run everything, including the app. Open :24571
+#   pnpm stop         stop everything, keep the data
+#   pnpm restart      stop, rebuild, start
+#   pnpm logs         follow the logs
+#
+#   pnpm dev          backing services in Docker, app from source with hot reload
+#   pnpm stack:reset  stop and delete the data
+#
+# The `app` service sits behind the `app` profile, so `docker compose up` alone
+# starts only the backing services. That is what `pnpm dev` uses. One file and
+# one project means both modes share the same database rather than quietly
+# keeping two.
+#
+# The app container carries the API and the web UI together, so :24571 is the
+# only port anything needs to reach.
+
+name: lazyprojectmanager
+
+services:
+  app:
+    profiles: ['app']
+    build:
+      # The repository, not this folder. `--project-directory ..` in the pnpm
+      # scripts is what makes `.` mean the root — which is also where `.env` and
+      # `.dockerignore` are read from, both of which have to be at the context
+      # root and cannot move here.
+      context: .
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      # Service names, not localhost: inside the compose network each container
+      # reaches the others by service name.
+      DATABASE_URL: postgres://lpm:${POSTGRES_PASSWORD:-lpm}@postgres:5432/lpm
+      REDIS_URL: redis://redis:6379
+
+      S3_ENDPOINT: http://minio:9000
+      # What the browser uses. The API reaches MinIO by its container name;
+      # a browser cannot, and a signed URL names the host it was signed for.
+      S3_BUCKET: lpm
+      S3_ACCESS_KEY: lpm
+      S3_SECRET_KEY: ${MINIO_PASSWORD:-lpm-dev-secret}
+      S3_FORCE_PATH_STYLE: 'true'
+
+      # The public origin. Behind a Cloudflare tunnel set APP_BASE_URL to the
+      # tunnel hostname and TRUST_PROXY to true, or the API builds callback URLs
+      # from the container's own address and sees every request as coming from
+      # the connector.
+      #
+      # Named APP_BASE_URL rather than BASE_URL because Docker Compose reads the
+      # repository's .env for interpolation, and BASE_URL there is the Vite dev
+      # server — which would otherwise be handed to the container as its own
+      # public address.
+      BASE_URL: ${APP_BASE_URL:-http://localhost:${APP_PORT:-24571}}
+      SERVER_NAME: ${SERVER_NAME:-LazyProjectManager}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
+
+      # The key the webhook secrets are encrypted with. Passed through rather
+      # than defaulted: a default would be the same key on every install, which
+      # is the same as not encrypting them. Unset until a repository is
+      # connected, and only that command minds.
+      APP_SECRET: ${APP_SECRET:-}
+    ports:
+      # Published on a high, unregistered port so it cannot collide with whatever
+      # else a studio already runs on the box, and so the API's own :3000 stays
+      # free for `pnpm dev`. Inside the container it is still 3000.
+      - '${APP_PORT:-24571}:3000'
+
+  # The outbox worker. It has existed since step 0 and was never started, so
+  # every consumer registered against it — realtime invalidation, thumbnails —
+  # has been writing rows nothing drained.
+  #
+  # The same image as the API with a different command: one build, and a worker
+  # that cannot drift out of step with the schema it reads.
+  worker:
+    profiles: ['app']
+    image: lazyprojectmanager-app
+    build:
+      # The repository, not this folder. `--project-directory ..` in the pnpm
+      # scripts is what makes `.` mean the root — which is also where `.env` and
+      # `.dockerignore` are read from, both of which have to be at the context
+      # root and cannot move here.
+      context: .
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    command: ['node', 'app/Server/dist/worker.js']
+    # The image's own healthcheck asks an HTTP server whether it is up, and a
+    # worker has none — but disabling it outright makes `docker compose up
+    # --wait` refuse to wait for this service at all on some versions, which is
+    # the command both `pnpm start` and the upgrade instructions use.
+    #
+    # So it answers a better question than the HTTP one would: the worker
+    # touches a file at the top of every pass, and this asks how long ago. A
+    # worker wedged on something it cannot finish is still a running process,
+    # and this is what tells the difference.
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          'const {statSync}=require("node:fs");process.exit(Date.now()-statSync(process.env.WORKER_HEARTBEAT_FILE||"/tmp/lpm-worker-heartbeat").mtimeMs<60000?0:1)',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://lpm:${POSTGRES_PASSWORD:-lpm}@postgres:5432/lpm
+      REDIS_URL: redis://redis:6379
+      # No public endpoint: the worker never hands a URL to anybody, it only
+      # reads and writes objects itself.
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: lpm
+      S3_ACCESS_KEY: lpm
+      S3_SECRET_KEY: ${MINIO_PASSWORD:-lpm-dev-secret}
+      S3_FORCE_PATH_STYLE: 'true'
+      # The same key the API encrypts a repository's private key with. The
+      # worker reads it back to mint a token, which is how it keeps the board
+      # and the issue list in step on the half hour.
+      APP_SECRET: ${APP_SECRET:-}
+
+  # A forge that is not real, so the repository integration can be tried without
+  # a repository — and without writing labels onto somebody's actual issues.
+  # Development only: it is deliberately absent from `docker/install/compose.yml`, and
+  # nothing in `app/` knows it exists. See `scripts/fake-forge.mjs`.
+  fake-forge:
+    profiles: ['app']
+    image: node:22-alpine
+    restart: unless-stopped
+    command: ['node', '/srv/fake-forge.mjs']
+    volumes:
+      - ./scripts/fake-forge.mjs:/srv/fake-forge.mjs:ro
+    ports:
+      # Localhost only. It answers as a forge and takes anybody's word for
+      # everything, which is fine on a laptop and nowhere else.
+      - '127.0.0.1:3010:3010'
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: lpm
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lpm}
+      POSTGRES_DB: lpm
+    ports:
+      # Bound to the loopback address so `pnpm dev` and psql can reach it while
+      # the database stays off the network the host is on.
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U lpm -d lpm']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # Jobs are re-derivable from the outbox, so an append-only file is not worth
+    # the write amplification here.
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+    ports:
+      - '127.0.0.1:6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    restart: unless-stopped
+    command: ['server', '/data', '--console-address', ':9001']
+    environment:
+      MINIO_ROOT_USER: lpm
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-lpm-dev-secret}
+    ports:
+      # 9000 is the S3 API, 9001 the browser console. Both on loopback.
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001'
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+# TODO: Create the `lpm` bucket if it is missing, from the API at startup, when
+# presigned uploads arrive. A one-shot `minio/mc` sidecar used to
+# do it here, but it only ever worked for this compose file — an install pointed
+# at real S3 or R2 would still have had no bucket — and a service that exits
+# makes `docker compose up --wait` report the whole stack as failed.
+
+# Named volumes rather than a bind mount under ./.data. `docker compose down -v`
+# actually removes a named volume, so `stack:reset` does what its name says; and
+# on Docker Desktop a bind mount crosses the Windows/WSL filesystem boundary,
+# which Postgres pays for on every write.
+volumes:
+  postgres-data:
+  minio-data:

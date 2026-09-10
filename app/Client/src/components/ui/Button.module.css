@@ -1,0 +1,89 @@
+/*
+ * A button is the accent orange unless it means yes or no.
+ *
+ * There is one appearance rather than a set of them, still: loud and quiet was
+ * a scale nobody could read, and every button setting its own place on it meant
+ * working out which was which before pressing anything. What is here instead is
+ * not a scale — it is two answers and their absence. Red takes something away,
+ * green is the other half of such a pair, and everything else is orange.
+ *
+ * Dark text on all three, per the design tokens: each is light enough that
+ * white on it fails to separate.
+ */
+.button {
+  box-sizing: border-box;
+  padding: 9px 14px;
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: var(--color-bg);
+  background: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-panel);
+  cursor: pointer;
+}
+
+/*
+ * A button that has to live among chips.
+ *
+ * The padding and the radius of a chip rather than of a panel, so a row that
+ * holds tags and the control that makes one reads as a row of one kind of
+ * thing. The tone is untouched: it is the same green, at the size the row has
+ * room for.
+ */
+.compact {
+  padding: 2px 8px;
+  font-size: var(--font-size-small);
+  border-radius: var(--radius-tag);
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color-accent-500);
+  border-color: var(--color-accent-500);
+}
+
+/*
+ * The ring is drawn outside the button rather than on it: an outline in any
+ * colour laid over this much orange is hard to see, and offsetting it puts the
+ * ring on the panel behind, where it reads.
+ */
+.button:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.button:disabled {
+  opacity: var(--disabled-opacity);
+  cursor: default;
+}
+
+/*
+ * The two answers, at the same weight as the accent they sit beside.
+ *
+ * `--color-danger` is the red the Delete on a document is written in, and
+ * `--color-ok` is its green counterpart. Both are light, like the accent — dark
+ * text on a light ground is what every button in this product already is, so
+ * the three read as one set rather than as two dark buttons and an orange one.
+ *
+ * The `-500` pair is what they darken to when pointed at, which is the same
+ * move `.button:hover` makes.
+ */
+.go {
+  background: var(--color-ok);
+  border-color: var(--color-ok);
+}
+
+.go:hover:not(:disabled) {
+  background: var(--color-ok-500);
+  border-color: var(--color-ok-500);
+}
+
+.stop {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.stop:hover:not(:disabled) {
+  background: var(--color-danger-500);
+  border-color: var(--color-danger-500);
+}

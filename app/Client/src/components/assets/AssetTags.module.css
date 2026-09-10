@@ -1,0 +1,92 @@
+.tags {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.heading {
+  margin: 0;
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/*
+ * Outlined rather than filled, as the design draws them.
+ *
+ * A tag is a thing to read, not a thing to press: filling a dozen of them would
+ * make a panel of small buttons out of what is meant to be a line of words.
+ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-tag);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-accent);
+}
+
+.remove {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  line-height: 1;
+  /* Red, because it takes the tag off. Held back until the tag is pointed at,
+     so a row of them does not read as a row of warnings. */
+  color: color-mix(in srgb, var(--color-danger) 55%, transparent);
+  cursor: pointer;
+}
+
+.remove:hover:not(:disabled) {
+  color: var(--color-danger);
+}
+
+.remove:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.remove:disabled {
+  cursor: default;
+}
+
+/* The plus and the words on the button that makes one, side by side. */
+.addLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.input {
+  width: 9ch;
+  padding: 2px 7px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-tag);
+  background: var(--color-bg);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text);
+}
+
+.input:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.empty {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}

@@ -1,0 +1,13 @@
+/*
+ * An icon inside a button stands as tall as a word would.
+ *
+ * `1lh` is the whole point: without it the line box collapses to the height of
+ * the mark, and a row that mixes an icon button with a worded one steps up and
+ * down. Flex centres the mark in that line; each mark is drawn centred on its
+ * own box, which is the other half of it.
+ */
+.buttonIcon {
+  display: flex;
+  align-items: center;
+  height: 1lh;
+}

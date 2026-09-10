@@ -1,0 +1,85 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.well {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+/*
+ * The browser's own colour well, sized to the swatches beside it.
+ *
+ * Its inside is drawn by the browser and cannot be styled, which is why the
+ * padding is nought — anything else draws a frame around the colour rather than
+ * the colour.
+ */
+.swatch {
+  width: 42px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  background: none;
+  cursor: pointer;
+}
+
+.swatch:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.wellLabel {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+.scheme {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+/* Said before it is saved, not after: the point is that it never gets applied. */
+.warning {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/*
+ * The way out, and the one control here that keeps its colours.
+ *
+ * They are set on the element rather than written here, because a stylesheet
+ * may not write a colour down — and this is the one control that has to survive
+ * a palette somebody cannot read.
+ */
+.reset {
+  padding: 6px 12px;
+  border-radius: var(--radius-tag);
+  font: inherit;
+  font-size: var(--font-size-small);
+  cursor: pointer;
+}

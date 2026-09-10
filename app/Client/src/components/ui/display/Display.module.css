@@ -1,0 +1,159 @@
+/*
+ * The messages, bottom right of the viewport.
+ *
+ * Fixed rather than absolute, because this is rendered inside whichever modal
+ * dialog is open — see `Display.tsx` — and it should sit in the corner of the
+ * screen either way rather than in the corner of the panel it happens to be
+ * inside. `overflow: hidden` on an ancestor does not clip a fixed descendant
+ * unless that ancestor is a containing block, and no dialog here is one.
+ */
+/*
+ * Where the messages sit.
+ *
+ * Bottom right of the window, which is out of the way of everything except one
+ * thing: a dialog's buttons, which are at the bottom right of the dialog. See
+ * `.hostInDialog` for what happens then.
+ *
+ * `pointer-events: none` because this box is 460px wide and mostly empty, and
+ * every empty pixel of it was swallowing clicks meant for whatever was
+ * underneath. The messages themselves take their clicks back.
+ */
+.host {
+  position: fixed;
+  inset: auto 20px 20px auto;
+  pointer-events: none;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(460px, calc(100vw - 40px));
+  max-height: calc(100vh - 40px);
+  margin: 0;
+  color: var(--color-text);
+}
+
+/*
+ * Loud on purpose.
+ *
+ * This is the corner of the screen, a long way from wherever somebody was
+ * looking when it appeared, and it takes itself away after a few seconds. A
+ * quiet card there is a card nobody reads in time. So: the tone's own colour on
+ * the border, that colour mixed into the ground it sits on, and a ring and a
+ * shadow deep enough to lift it off whatever is behind.
+ */
+/*
+ * Messages shown while a modal dialog is open.
+ *
+ * Moved to the top, because a dialog's actions are always along its bottom edge
+ * and a message over them is a Cancel button nobody can press until it fades —
+ * ten seconds, for an error. Which is exactly when somebody wants to press it.
+ */
+.hostInDialog {
+  inset: 20px 20px auto auto;
+}
+
+.message {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--tone);
+  border-left-width: 5px;
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--tone) 16%, var(--color-panel));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--tone) 30%, transparent),
+    var(--shadow-lg);
+  font-size: var(--font-size-base);
+  line-height: 1.45;
+}
+
+/*
+ * The three colours a person already reads without being taught: blue for
+ * something worth knowing, yellow for something worth looking at, red for
+ * something that went wrong.
+ *
+ * They are the product's own — the secondary, the warn and the danger tokens —
+ * rather than three new ones, so a message in the corner is the same blue as a
+ * task card and the same red as a blocked one.
+ */
+.message[data-tone='info'] {
+  --tone: var(--color-secondary);
+}
+
+.message[data-tone='warning'] {
+  --tone: var(--color-warn);
+}
+
+.message[data-tone='error'] {
+  --tone: var(--color-danger);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/*
+ * What kind of thing this is, said in a word as well as in a colour.
+ *
+ * The uppercase micro-label this product uses everywhere else, and the reason
+ * it is here rather than only in the border: roughly one man in twelve cannot
+ * tell the danger red from the accent orange, and a message whose severity is
+ * carried by hue alone says nothing to them.
+ */
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tone);
+}
+
+.text {
+  overflow-wrap: anywhere;
+}
+
+.dismiss {
+  flex: none;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  font-size: var(--font-size-small);
+  line-height: 1.4;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.dismiss:hover {
+  color: var(--color-text);
+}
+
+.dismiss:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * A fade, and deliberately nothing that moves.
+ *
+ * A message that slides into place is a message whose edges are somewhere else
+ * for the first frames after it appears, and somebody reaching for its dismiss
+ * button — or a test doing the same — is aiming at a box that has moved. The
+ * fade says "this is new" without that.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .message {
+    animation: arrive 140ms ease-out;
+  }
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+  }
+}

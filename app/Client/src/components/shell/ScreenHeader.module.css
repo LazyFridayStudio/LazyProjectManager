@@ -1,0 +1,81 @@
+/*
+ * The bar across the top of every screen.
+ *
+ * The asset library's, which is the one every other screen was already trying
+ * to be: one row, a hairline under it, and 14 by 22 of padding — the same 22 the
+ * content under it is indented by, so the title sits over the first column of
+ * whatever the screen draws.
+ */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--color-divider);
+  /*
+   * A ground of its own, the way a site's header has one.
+   *
+   * Everything under the bar is the app's ground with the backdrop drifting
+   * through it. The bar is chrome rather than content, and chrome you can see
+   * motes moving behind reads as another panel that forgot its background.
+   */
+  background: var(--color-page-title-header-background);
+}
+
+/* The name and its facts are one thing said in two lines, so nothing separates
+   them and the pair is centred against the actions rather than either line. */
+.names {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-title);
+  font-weight: var(--font-title-weight);
+  line-height: 1.2;
+}
+
+/*
+ * Read out, never drawn.
+ *
+ * When a row of places names the screen, a heading repeating it would be a line
+ * spent saying nothing — but a page with no heading at all is one somebody
+ * moving by headings cannot land in.
+ */
+.hiddenTitle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.facts {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}

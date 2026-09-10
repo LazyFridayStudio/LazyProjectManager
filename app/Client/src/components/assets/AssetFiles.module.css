@@ -1,0 +1,145 @@
+/*
+ * What the asset is made of.
+ *
+ * The whole section takes a drop, not just a strip at the bottom: somebody
+ * dragging a source file out of a folder aims at the list it is going to join.
+ */
+.files {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filesOver {
+  outline: 1px dashed var(--color-accent);
+  outline-offset: 4px;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+/* Under the list, matching the reference sheet on the other side of the panel:
+   the thing being acted on first, then what you can do to it. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.heading {
+  margin: 0;
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+.empty {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  font-size: var(--font-size-small);
+}
+
+.row:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 60%, transparent);
+}
+
+/* The name takes the room and gives it back: a depot path is long, and a row
+   that grew to fit one would push everything after it off the panel. */
+.link {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.link:hover {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+.link:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Its size when we hold it, and the word "linked" when we do not. Worth saying:
+   one of those is a download and the other is somebody else's website. */
+.where {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.rowAction {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+  cursor: pointer;
+}
+
+.rowAction:hover:not(:disabled) {
+  color: var(--color-danger);
+}
+
+.rowAction:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.rowAction:disabled {
+  cursor: default;
+}
+
+/* Opened in place rather than in a dialog over a dialog. */
+.linkForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 12px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+.linkActions {
+  display: flex;
+  gap: 8px;
+}
+
+/* The real input, kept out of sight because the label above opens it. */
+.hiddenPicker {
+  display: none;
+}

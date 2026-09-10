@@ -1,0 +1,66 @@
+/*
+ * The edge of a column, sitting in the gap between it and the next.
+ *
+ * Centred on the gap rather than inside the column, so the thing under the
+ * pointer is the line between two columns — which is where somebody reaches
+ * when they want one of them wider.
+ */
+.handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -6px;
+  width: 12px;
+  z-index: 1;
+  cursor: col-resize;
+  /* Or the drag selects the card titles it passes over. */
+  user-select: none;
+  /* Otherwise a touch drag scrolls the board instead of moving the edge. */
+  touch-action: none;
+}
+
+/*
+ * The line itself, which is not drawn until somebody is near it.
+ *
+ * A visible divider on every column would be furniture on a screen that is
+ * already a row of coloured columns, and the gap between them says where the
+ * edge is well enough. Hovering is the moment it needs to say it is grabbable.
+ */
+.handle::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 5px;
+  width: 2px;
+  border-radius: var(--radius-tag);
+  background: var(--color-accent);
+  opacity: 0;
+  transition: opacity 120ms ease-out;
+}
+
+.handle:hover::after {
+  opacity: 0.6;
+}
+
+/*
+ * Focus is drawn on the line rather than as a ring round the whole strip: the
+ * strip is 12px of nothing in a gap, and a ring round it reads as a box between
+ * two columns rather than as an edge somebody is holding.
+ */
+.handle:focus-visible {
+  outline: none;
+}
+
+.handle:focus-visible::after {
+  opacity: 1;
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* The line appears either way; it just stops fading in. */
+@media (prefers-reduced-motion: reduce) {
+  .handle::after {
+    transition: none;
+  }
+}

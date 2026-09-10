@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--
+      One SVG and no sizes. A vector favicon is drawn at whatever the tab, the
+      bookmark bar and the task switcher each ask for, and the mark is three
+      rectangles that lose nothing to being drawn small.
+    -->
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <title>LazyProjectManager</title>
+    <!--
+      The theme, before anything is drawn.
+
+      Which theme somebody reads the app in is a fact about them and lives on
+      the server, so it arrives with `identity.me` — well after the first paint.
+      Waiting for it means everybody on the light theme watches the app load
+      dark and then flip, every time.
+
+      So the last answer is kept in storage and read here, inline and before the
+      bundle, and the app reconciles it when the real one arrives. The attribute
+      on `<html>` above is the default this falls back to: storage is refused in
+      private-browsing modes and some embedded views, and a forgotten preference
+      is a worse first second rather than a broken app.
+    -->
+    <script>
+      try {
+        var chosen = localStorage.getItem('lpm.theme');
+
+        if (chosen === 'light' || chosen === 'dark') {
+          document.documentElement.dataset.theme = chosen;
+        } else if (chosen === 'custom') {
+          /*
+            A theme somebody wrote is a palette rather than a word, and a word
+            is all that fits in an attribute. So the stylesheet it renders to is
+            cached whole and written out here — without it a custom theme would
+            flash its base theme on every load, which is a worse flash than the
+            one this script exists to remove.
+
+            Only with the palette in hand: the attribute alone would select
+            rules nothing has declared yet, which is a screen with no colours
+            rather than a screen in the wrong ones.
+          */
+          var css = localStorage.getItem('lpm.theme.css');
+
+          if (css) {
+            var style = document.createElement('style');
+            style.id = 'lpm-custom-theme';
+            style.textContent = css;
+            document.head.appendChild(style);
+            document.documentElement.dataset.theme = 'custom';
+          }
+        }
+      } catch (error) {
+        // Storage is unavailable. The default in the attribute stands.
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

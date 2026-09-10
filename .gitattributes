@@ -1,0 +1,43 @@
+# Normalise line endings to LF in the repository. Development happens on Windows
+# but the API, worker and CI containers are Linux, so a CRLF that reaches a shell
+# script or a Docker entrypoint breaks the build in a way that is slow to spot.
+* text=auto eol=lf
+
+# Shell scripts and container entrypoints must stay LF even when checked out on
+# Windows, because they are executed inside Linux images.
+*.sh              text eol=lf
+*.bash            text eol=lf
+Dockerfile        text eol=lf
+*.Dockerfile      text eol=lf
+.dockerignore     text eol=lf
+
+# Windows-only scripts must keep CRLF or cmd.exe mis-parses them.
+*.bat             text eol=crlf
+*.cmd             text eol=crlf
+*.ps1             text eol=crlf
+
+# Binary assets — never diffed, never line-ending converted.
+*.png             binary
+*.jpg             binary
+*.jpeg            binary
+*.gif             binary
+*.webp            binary
+*.avif            binary
+*.ico             binary
+*.pdf             binary
+*.zip             binary
+*.gz              binary
+*.woff            binary
+*.woff2           binary
+*.ttf             binary
+*.otf             binary
+*.mp4             binary
+*.webm            binary
+*.wav             binary
+*.ogg             binary
+
+# Lockfiles are generated. Collapse them in diffs and let the tool resolve
+# conflicts rather than a human.
+pnpm-lock.yaml    -diff linguist-generated=true
+package-lock.json -diff linguist-generated=true
+

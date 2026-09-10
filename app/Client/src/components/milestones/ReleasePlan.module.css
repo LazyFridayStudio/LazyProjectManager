@@ -1,0 +1,280 @@
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h3);
+}
+
+.range {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.edit {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+  font-size: var(--font-size-small);
+  cursor: pointer;
+}
+
+.edit:hover {
+  text-decoration: underline;
+}
+
+.edit:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * The milestones side by side rather than as a list.
+ *
+ * A plan is read for the shape of the run-up: three of them in one fortnight
+ * and nothing for two months is a fact about the year that a list hides.
+ */
+.strip {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.stop {
+  flex: 1 1 0;
+  min-width: 92px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 0 8px 8px 0;
+}
+
+.stopName {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-base);
+  line-height: 1.15;
+  text-wrap: pretty;
+}
+
+.stopDate {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/* The bar under each stop is the state, which is the only thing about a
+   milestone that changes without anybody typing. */
+.stopBar {
+  width: 100%;
+  height: 4px;
+  margin-bottom: -2px;
+  background: var(--color-neutral-400);
+}
+
+.stopBar[data-state='shipped'] {
+  background: var(--color-ok);
+}
+
+.stopBar[data-state='active'] {
+  background: var(--color-accent);
+}
+
+.stopBar[data-state='planned'] {
+  background: var(--color-neutral-400);
+}
+
+.note,
+.empty {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.empty {
+  max-width: 60ch;
+  color: var(--color-text-faint);
+}
+
+/* The dialog: a list of the dates and one form, because a plan is decided by
+   looking at the dates together. */
+.dialog {
+  width: min(760px, 100vw - 32px);
+  max-height: min(760px, 100vh - 48px);
+  padding: 0;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  color: var(--color-text);
+}
+
+.dialog::backdrop {
+  background: var(--color-scrim);
+}
+
+.dialogBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+}
+
+.dialogHeading {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h2);
+}
+
+.dialogExplanation {
+  margin: 0;
+  max-width: 62ch;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--color-hairline);
+  font-size: var(--font-size-small);
+}
+
+.rowName {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.rowTitle {
+  font-family: var(--font-heading);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowGoal {
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowDates {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.rowState {
+  flex: none;
+  padding: 2px 8px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  font-size: var(--font-size-micro);
+}
+
+.rowState[data-state='active'] {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.rowState[data-state='shipped'] {
+  color: var(--color-ok);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.formRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.formRow > * {
+  flex: 1 1 150px;
+}
+
+.formActions,
+.dialogActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dialogActions {
+  justify-content: flex-end;
+}
+
+.plain,
+.danger {
+  flex: none;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: var(--font-size-small);
+  cursor: pointer;
+}
+
+.plain {
+  color: var(--color-text-muted);
+}
+
+.danger {
+  color: var(--color-danger);
+}
+
+.plain:hover,
+.danger:hover {
+  text-decoration: underline;
+}
+
+.plain:focus-visible,
+.danger:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}

@@ -1,0 +1,76 @@
+name: Bug report
+description: Something in the product does not do what it says it does.
+labels: [bug]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Say where in the code it lands if you already know — a path and a line
+        saves the first hour of every bug.
+
+  - type: textarea
+    id: what-happens
+    attributes:
+      label: What happens
+      description: What the product actually does, as somebody using it sees it.
+      placeholder: A card dragged over an empty list refuses to enter it, and drops back where it came from.
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-should-happen
+    attributes:
+      label: What should happen
+      description: The behaviour this is being measured against.
+      placeholder: An empty list is as droppable as a full one.
+    validations:
+      required: true
+
+  - type: textarea
+    id: how-to-get-there
+    attributes:
+      label: How to get there
+      description: The shortest path from a signed-in browser to seeing it.
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: input
+    id: where-it-is
+    attributes:
+      label: Which screen or module
+      description: The screen it is on, or the file it is in.
+      placeholder: The board — app/Client/src/components/board/BoardScreen.tsx
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: >-
+        What the connect screen says beside the server name. `/api/q/system.health`
+        returns it too.
+      placeholder: v0.57.0
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: area
+    attributes:
+      label: Which part of the product
+      description: >-
+        Labelled from these, so the list of open work reads as what part of the
+        product each one is without opening any of them.
+      options:
+        - label: Client — the web UI
+        - label: Server — the API, worker and business rules
+        - label: Shared — the contract both sides import
+        - label: Database — schema, migrations and the test harness
+        - label: CI — workflows, scripts and repository automation
+        - label: Docs
+        - label: Tests

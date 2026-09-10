@@ -1,0 +1,117 @@
+# ---------------------------------------------------------------------------
+# Dependencies
+# ---------------------------------------------------------------------------
+node_modules/
+.pnpm-store/
+.pnpm-debug.log*
+.yarn/
+.npm/
+npm-debug.log*
+yarn-error.log*
+
+# ---------------------------------------------------------------------------
+# Build output
+# ---------------------------------------------------------------------------
+dist/
+dist-types/
+build/
+out/
+.output/
+.vite/
+.turbo/
+storybook-static/
+
+# ---------------------------------------------------------------------------
+# TypeScript
+# ---------------------------------------------------------------------------
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# ---------------------------------------------------------------------------
+# Tests, coverage and Playwright
+# ---------------------------------------------------------------------------
+# Every generated artefact goes under .output, so the repository root shows only
+# what a person maintains.
+.output/
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+blob-report/
+
+# ---------------------------------------------------------------------------
+# Secrets and local configuration
+#
+# Only `.env.example` is committed. Every real value stays on the machine that
+# owns it — session secrets, S3 keys, SCM webhook secrets and database URLs must
+# never reach the remote.
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+
+# ---------------------------------------------------------------------------
+# Local service state
+#
+# Postgres and MinIO keep their data in named Docker volumes, not here, so that
+# `pnpm stack:reset` can actually delete it. This entry stays for any local
+# scratch state a tool decides to drop in the working tree.
+# ---------------------------------------------------------------------------
+.data/
+*.sqlite
+*.sqlite3
+
+# ---------------------------------------------------------------------------
+# AI assistant state
+#
+# Nothing from a local assistant session belongs on the remote: `.claude/` and
+# `.claude.json` hold OAuth credentials and machine-local settings, and `.mcp.json`
+# can carry server tokens. The durable engineering rules live in the committed
+# docs/Engineering-Rules.md instead, which CLAUDE.md points at.
+# ---------------------------------------------------------------------------
+.claude/
+.claude.json
+.claude.json.backup
+CLAUDE.md
+CLAUDE.local.md
+# Anchored to the root. Git on Windows matches these case-insensitively, so a
+# bare AGENTS.md also ignored docs/Agents.md, which is how that guide was never
+# committed while the readme linked it.
+/AGENTS.md
+.mcp.json
+.anthropic/
+.aider*
+.cursor/
+.cursorrules
+.windsurfrules
+.github/copilot-instructions.md
+
+# ---------------------------------------------------------------------------
+# Editors and OS
+# ---------------------------------------------------------------------------
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.shared.json
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------------------------------------------------------------------------
+# Scratch
+# ---------------------------------------------------------------------------
+tmp/
+temp/
+scratch/
+*.local
+
+# Where `scripts/backup.sh` writes by default. A backup is somebody's data,
+# and the one place it must never end up is a public commit.
+backups/

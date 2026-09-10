@@ -1,0 +1,42 @@
+# Labels a pull request by what it touches, so the list of open work reads as
+# "what part of the product is this" without opening any of them.
+#
+# Consumed by .github/workflows/label.yml.
+
+client:
+  - changed-files:
+      - any-glob-to-any-file: 'app/Client/**'
+
+server:
+  - changed-files:
+      - any-glob-to-any-file: 'app/Server/**'
+
+shared:
+  - changed-files:
+      - any-glob-to-any-file: 'app/Shared/**'
+
+database:
+  - changed-files:
+      - any-glob-to-any-file: 'app/Database/**'
+
+# A schema change is forward-only and cannot be edited once applied, so it is
+# worth seeing before opening the diff.
+migration:
+  - changed-files:
+      - any-glob-to-any-file: 'app/Database/src/migrations/**'
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file: ['docs/**', '*.md', 'docker/install/README.md']
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: ['.github/**', 'scripts/**']
+
+deploy:
+  - changed-files:
+      - any-glob-to-any-file: ['docker/**', '.dockerignore']
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file: ['**/*.test.ts', '**/*.test.tsx', 'app/Client/e2e/**']

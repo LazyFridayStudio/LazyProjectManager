@@ -1,0 +1,30 @@
+{
+  "name": "@lpm/client",
+  "version": "0.91.18",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build:assets": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@dnd-kit/core": "6.3.1",
+    "@dnd-kit/sortable": "10.0.0",
+    "@dnd-kit/utilities": "3.2.2",
+    "@lpm/shared": "workspace:*",
+    "@tanstack/react-query": "5.102.8",
+    "@tanstack/react-router": "1.170.32",
+    "dompurify": "3.4.14",
+    "marked": "18.0.11",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.5",
+    "@vitejs/plugin-react": "4.7.0",
+    "vite": "6.4.3"
+  }
+}

@@ -1,0 +1,99 @@
+name: ci
+
+# One job, on pull requests only.
+#
+# It was four jobs — types/lint/format, tests, end-to-end and a restore
+# rehearsal — and every push paid for four checkouts, four installs, two
+# `pnpm build`s and two Postgres containers, then paid GitHub's per-job rounding
+# four times over. Ten billed minutes for three minutes of work, on 68 runs a
+# day.
+#
+# The two that are gone are not deleted, they are on demand: `e2e.yml` and
+# `restore-rehearsal.yml` run from the Actions tab when you want them.
+on:
+  pull_request:
+  # Lets release.yml run this exact gate before publishing, rather than keeping
+  # a second copy of it that drifts.
+  workflow_call:
+
+# A new push to the same branch cancels the run it superseded.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PNPM_VERSION: 9.15.4
+  NODE_VERSION: 22
+
+jobs:
+  gate:
+    name: checks and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: lpm
+          POSTGRES_PASSWORD: lpm
+          POSTGRES_DB: lpm_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-retries 10
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://lpm:lpm@localhost:5432/lpm_test
+      REDIS_URL: redis://localhost:6379
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Pinned to a commit, like every action GitHub does not own. release.yml says why.
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Cheapest first, because in one job a failing step stops the ones after
+      # it: a stray space now costs twelve seconds instead of billing a full
+      # test run in parallel to tell you the same thing.
+      #
+      # Prettier is the only one that can go first. `lint` is type-aware and
+      # resolves workspace imports through the declaration output `typecheck`
+      # emits — put it before typecheck and every cross-package import in the
+      # repository is an error.
+      - run: pnpm format:check
+      - run: pnpm typecheck
+      - run: pnpm lint
+
+      # Produces the compiled output the migration step runs from.
+      - run: pnpm build
+
+      # Coverage thresholds are per package and the run fails below them, so this
+      # step is the gate as well as the report. The report goes to the run
+      # summary rather than to an artifact nobody downloaded.
+      - name: Run tests with coverage
+        run: pnpm test:coverage
+
+      - name: Summarise coverage on the run
+        if: always()
+        run: pnpm coverage:summary >> "$GITHUB_STEP_SUMMARY"
+
+      # Filtered rather than the root `db:migrate` script: CI supplies
+      # DATABASE_URL through the job environment and has no .env file to load.
+      - name: Verify the migration applies and reverses against a real Postgres
+        run: |
+          pnpm --filter @lpm/database migrate
+          pnpm --filter @lpm/database migrate down

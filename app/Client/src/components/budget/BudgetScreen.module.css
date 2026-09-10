@@ -1,0 +1,230 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+/* The one number the screen is about, held against the right edge as the design
+   has it: the table below is the working, and this is the answer. */
+.headline {
+  margin-left: auto;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.headlineValue {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h2);
+  line-height: 1;
+}
+
+.headlineNote {
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.figure {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--panel-inset-highlight);
+}
+
+.figureLabel {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* The same key the dashboard's budget block uses, so one meaning has one colour
+   across the two screens that both talk about the money. */
+.figureSwatch {
+  width: 7px;
+  height: 7px;
+  flex: none;
+}
+
+.figureSwatch[data-tone='firm'] {
+  background: var(--color-secondary);
+}
+
+.figureSwatch[data-tone='soft'] {
+  background: var(--color-warn);
+}
+
+.figureSwatch[data-tone='spare'] {
+  background: var(--color-ok);
+}
+
+.figureSwatch[data-tone='missing'] {
+  background: var(--color-label);
+}
+
+.figureValue {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h2);
+  line-height: 1;
+}
+
+.figureValue[data-alarming='true'] {
+  color: var(--color-danger);
+}
+
+.figureNote {
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}
+
+.table {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  overflow: hidden;
+}
+
+.headRow,
+.row {
+  display: grid;
+  grid-template-columns: 1.6fr 130px 190px minmax(80px, 1fr) 64px;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 12px;
+}
+
+.headRow {
+  border-bottom: 1px solid var(--color-text);
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* Every row goes to the category it counts. A total nobody can open is a total
+   somebody has to go and find by hand. */
+.row {
+  border-bottom: 1px solid var(--color-divider);
+  font-size: var(--font-size-small);
+  color: inherit;
+  text-decoration: none;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row:hover {
+  background: var(--hover-row);
+}
+
+.row:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: calc(var(--focus-ring-offset) * -1);
+}
+
+.name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.swatch {
+  width: 8px;
+  height: 8px;
+  flex: none;
+}
+
+.count,
+.money,
+.share {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+}
+
+.count {
+  color: var(--color-text-muted);
+}
+
+/* The part of a total that is missing rather than the part it is wrong by. */
+.missing {
+  color: var(--color-warn);
+}
+
+.burn {
+  display: block;
+  min-width: 0;
+}
+
+.track {
+  height: 8px;
+  display: block;
+  background: var(--color-neutral-200);
+  border-radius: var(--radius-tag);
+  overflow: hidden;
+}
+
+.fill {
+  height: 8px;
+  display: block;
+}
+
+.share {
+  text-align: right;
+}
+
+.share[data-over='true'] {
+  color: var(--color-danger);
+}
+
+.right {
+  text-align: right;
+}
+
+.empty {
+  margin: 0;
+  max-width: 60ch;
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}
+
+.message {
+  margin: 22px;
+  max-width: 70ch;
+  font-size: var(--font-size-small);
+}
+
+.problem {
+  margin: 22px;
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}
+
+/* Everything under the bar, indented to the same 22 the bar is padded by. */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px 22px 22px;
+}

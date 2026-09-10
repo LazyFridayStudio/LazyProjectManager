@@ -1,0 +1,474 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Beside the name rather than under it: when a document was last written is
+   part of reading it, not a fact about the page. */
+.updated {
+  padding: 3px 9px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-tag);
+  color: var(--color-accent-800);
+  font-size: var(--font-size-micro);
+  white-space: nowrap;
+}
+
+.readOnly {
+  padding: 3px 9px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-tag);
+  font-size: var(--font-size-micro);
+  color: var(--color-accent-800);
+}
+
+/*
+ * An icon standing where a word would.
+ *
+ * A block box rather than an inline one, so the icon does not sit on a text
+ * baseline and take the space under it for a descender no icon has — which is
+ * what made this button five pixels taller than the one beside it.
+ *
+ * No height of its own beyond that. A button does not inherit the page's
+ * line-height: the browser's own `font` shorthand on `button` resets it to
+ * `normal`, so a line of button text is the same 16 pixels the icon already is,
+ * and stating a height here is how the two stop matching.
+ */
+/*
+ * An icon in a box the size of a line of the button's own text.
+ *
+ * Without the height, a button holding a 16px glyph is shorter than the one
+ * beside it holding a word — invisibly so while the type scale happened to make
+ * them nearly equal, and plainly once it moved. `1lh` is the line box this
+ * button would give a word, so the two match at whatever size the text is set.
+ */
+
+/*
+ * The browser's file input, out of the way.
+ *
+ * `display: none` would take it out of the accessibility tree with the layout,
+ * and it is still the control being operated — the button in front of it only
+ * clicks it. Kept a real, focusable element that happens to be a pixel.
+ */
+.picker {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/*
+ * The documents, across the top.
+ *
+ * Over the document rather than over the window: centred while the prose is
+ * centred, hard left the moment it runs the full width.
+ *
+ * `safe` is what stops a row too wide for the screen being centred into its own
+ * overflow — the first tab would sit off the left edge with no way to scroll
+ * back to it. It falls back to packing from the start exactly when that would
+ * otherwise happen.
+ */
+.tabs {
+  display: flex;
+  align-items: stretch;
+  justify-content: safe center;
+  gap: 0;
+  /* 15 here plus a tab's own 13 puts the first tab's text on the same line down
+     the screen as the prose below it, which has 28 of its own. */
+  padding: 0 15px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.tabsFull {
+  justify-content: flex-start;
+}
+
+.tab {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 8px 13px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* The tab left behind while its copy travels under the pointer. */
+.tabDragging {
+  opacity: 0.35;
+}
+
+/*
+ * The tab under the pointer, drawn above everything.
+ *
+ * On the panel's ground rather than transparent: it is over the prose while it
+ * travels, and a row of words with no ground under them reads as text that has
+ * come loose rather than as a tab being carried.
+ */
+.tabLifted {
+  border-radius: var(--radius-tag);
+  background: var(--color-panel);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+  cursor: grabbing;
+}
+
+.tab[aria-selected='true'] {
+  border-bottom-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+.tab:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: calc(var(--focus-ring-offset) * -1);
+}
+
+.tabName {
+  font-size: var(--font-size-base);
+}
+
+.tabCount {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  opacity: 0.45;
+}
+
+/*
+ * The one thing on the strip that makes something rather than opening one.
+ *
+ * Green, which is what every affirmative action in this product wears. Shaped
+ * like the tabs beside it rather than like a button, because the strip is a row
+ * of text and a filled control in it would be the loudest thing on a screen
+ * that exists to be read.
+ */
+.addTab {
+  padding: 8px 13px;
+  border: none;
+  background: none;
+  color: var(--color-ok);
+  font: inherit;
+  font-size: var(--font-size-base);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.addTab:hover {
+  text-decoration: underline;
+}
+
+.addTab:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: calc(var(--focus-ring-offset) * -1);
+}
+
+/*
+ * The document itself, and the only part a measure applies to.
+ *
+ * A measure set for a design document rather than for a paragraph.
+ *
+ * Wider than the 82ch prose alone would want, because this is not prose alone:
+ * it carries tables of frame budgets and diagrams wider than a sentence, and a
+ * measure that cut those off is what made the screen open full width and give
+ * up on having a measure at all.
+ *
+ * It was briefly twice the 82 — wide enough that nothing was ever cut off, and
+ * wide enough that on an ordinary window it was no measure either, because the
+ * column filled the screen and the toggle had nothing left to do. This is the
+ * width that still leaves the toggle something to say.
+ *
+ * Padding inside the width, not added to it. Without this the column runs past
+ * the right edge of the screen it is on the moment the measure comes off.
+ */
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 104ch;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 22px 28px 80px;
+}
+
+/*
+ * Full screen: the document across the whole of the screen it is on.
+ *
+ * The nav and the header stay. What changes is only how wide the prose runs,
+ * which is what a table of frame budgets or a wide diagram needs and what the
+ * reading measure will not give them.
+ */
+.columnFull {
+  max-width: none;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hint {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/*
+ * A rule between two things, used twice and meaning the same both times: what
+ * is on either side of me is not the same kind of thing.
+ *
+ * Once between Export and Import, which are one errand in two directions rather
+ * than two actions in a row. Once after `Edit document`, where everything to
+ * the left has changed the prose and everything to the right — how wide the
+ * page is set, the bin — has not.
+ *
+ * `aria-hidden` in the markup: it is a mark on the screen, not a word to be
+ * read out between two buttons.
+ */
+.divider {
+  color: var(--color-divider);
+  user-select: none;
+}
+
+/*
+ * The document as it reads.
+ *
+ * `scroll-margin-top` is what stops a heading jumped to from the contents list
+ * landing flush against the top of the window.
+ */
+.document {
+  font-size: var(--font-size-base);
+  line-height: 1.65;
+}
+
+.document :global(h1),
+.document :global(h2),
+.document :global(h3),
+.document :global(h4),
+.document :global(h5),
+.document :global(h6) {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  line-height: 1.2;
+  scroll-margin-top: 20px;
+}
+
+/*
+ * A heading is the size of its own level.
+ *
+ * These were each set a step down — `#` at h2, `##` at h3 — on the reasoning
+ * that the page already had an h1 in its header. It made a document where
+ * writing `# Pillars` got you something the size of a subheading, and no amount
+ * of being right about the document outline makes that read correctly. The
+ * header bar is chrome; this is the document.
+ */
+/*
+ * Every level is warm, and the prose under them is not.
+ *
+ * Size was doing all the work and could not do it: a `##` was the same white as
+ * the paragraph below at four pixels' difference, and a `###` was
+ * `--color-text-strong` — dimmer than the prose it introduced, which is a
+ * subheading apologising for itself. Hue is what a person scanning a long
+ * document sees before they read a word.
+ *
+ * Three steps of one ramp. The levels are far enough apart to tell one from
+ * another and close enough to read as the same kind of thing, which is what
+ * they are.
+ */
+.document :global(h1) {
+  margin: 34px 0 12px;
+  padding-top: 8px;
+  border-top: 2px solid var(--color-prose-heading-1);
+  font-size: var(--font-size-title);
+  color: var(--color-prose-heading-1);
+}
+
+.document :global(h1:first-child) {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+/* A hairline under the section headings, which is worth more to somebody
+   scanning ten pages than another two pixels of type would be. */
+.document :global(h2) {
+  margin: 26px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: var(--font-size-h2);
+  color: var(--color-prose-heading-2);
+}
+
+.document :global(h3) {
+  margin: 20px 0 8px;
+  font-size: var(--font-size-h3);
+  letter-spacing: 0.02em;
+  color: var(--color-prose-heading-3);
+}
+
+/*
+ * The levels below, which had no size and no colour at all.
+ *
+ * A design document goes four deep, and `####` was arriving smaller than the
+ * body text it was introducing — the browser's default, which assumes a page
+ * with one `h1` at the top rather than a document somebody is writing.
+ *
+ * Neutral rather than warm. Three warm levels is a scheme; five is a rainbow,
+ * and by the fourth level the thing that separates a heading from its text is
+ * that it is short and bold and has space above it.
+ */
+.document :global(h4) {
+  margin: 18px 0 6px;
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+}
+
+.document :global(h5),
+.document :global(h6) {
+  margin: 16px 0 6px;
+  font-size: var(--font-size-small);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+.document :global(p),
+.document :global(ul),
+.document :global(ol),
+.document :global(blockquote),
+.document :global(table) {
+  margin: 0 0 14px;
+}
+
+.document :global(ul),
+.document :global(ol) {
+  padding-left: 22px;
+}
+
+.document :global(li) {
+  margin-bottom: 4px;
+}
+
+.document :global(blockquote) {
+  padding-left: 14px;
+  border-left: 2px solid var(--color-accent);
+  color: var(--color-text-strong);
+}
+
+.document :global(table) {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-small);
+}
+
+.document :global(th),
+.document :global(td) {
+  padding: 6px 10px;
+  border: 1px solid var(--color-divider);
+  text-align: left;
+}
+
+.document :global(th) {
+  background: var(--color-surface);
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+}
+
+.document :global(code) {
+  padding: 1px 4px;
+  border-radius: var(--radius-tag);
+  background: var(--color-surface);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-small);
+}
+
+.document :global(pre) {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg);
+}
+
+.document :global(img) {
+  max-width: 100%;
+  border-radius: var(--radius-panel);
+}
+
+.document :global(a) {
+  color: var(--color-accent);
+}
+
+/*
+ * One text box for the whole document.
+ *
+ * Tall enough to write in rather than through a letterbox: this is where a
+ * design document is actually written, and a six-row box is what makes people
+ * keep the real one in a word processor.
+ */
+.bodyBox {
+  width: 100%;
+  min-height: 60vh;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-small);
+  line-height: 1.65;
+  resize: vertical;
+}
+
+.bodyBox:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * The page before there is anything on it, centred.
+ *
+ * Held to a measure like the prose it stands in for, and then centred inside
+ * the column rather than left against its edge — a single short paragraph on an
+ * otherwise blank page reads as a caption for something when it sits where the
+ * first line of a document would.
+ *
+ * Horizontally only. The column is as tall as what is in it, so there is no
+ * height here to centre a thing down the middle of.
+ */
+.empty {
+  margin: 0 auto;
+  max-width: 60ch;
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+  text-align: center;
+}
+
+.message {
+  margin: 22px;
+  max-width: 70ch;
+  font-size: var(--font-size-small);
+}
+
+.problem {
+  margin: 22px;
+  font-size: var(--font-size-small);
+  color: var(--color-danger);
+}

@@ -1,0 +1,100 @@
+/* Prose, rather than the app's chrome. Long-form text wants a little more room
+   between lines than a form label does. */
+.markdown {
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.markdown > :first-child {
+  margin-top: 0;
+}
+
+.markdown > :last-child {
+  margin-bottom: 0;
+}
+
+/*
+ * The same warm levels the design document uses, and none of its size.
+ *
+ * A description or a comment is a few lines with the odd heading in it, so what
+ * is wrong here is only that a heading looked like the sentence under it — the
+ * document's scale would turn a two-line comment into a poster.
+ *
+ * More space above than below, so a heading belongs to what follows rather than
+ * floating between two paragraphs.
+ */
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4,
+.markdown h5,
+.markdown h6 {
+  margin: 18px 0 6px;
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  line-height: 1.25;
+}
+
+.markdown h1 {
+  color: var(--color-prose-heading-1);
+}
+
+.markdown h2 {
+  color: var(--color-prose-heading-2);
+}
+
+.markdown h3 {
+  color: var(--color-prose-heading-3);
+}
+
+.markdown h4,
+.markdown h5,
+.markdown h6 {
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+}
+
+.markdown p,
+.markdown ul,
+.markdown ol {
+  margin: 0 0 10px;
+}
+
+.markdown p {
+  /* Balances the last line rather than leaving one word on it. */
+  text-wrap: pretty;
+}
+
+.markdown code {
+  padding: 1px 4px;
+  border-radius: var(--radius-tag);
+  background: var(--color-bg);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-small);
+}
+
+.markdown pre {
+  padding: 10px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg);
+  overflow-x: auto;
+}
+
+.markdown a {
+  color: var(--color-accent);
+}
+
+.markdown img {
+  /* Width, alignment and everything else come from the markdown itself. */
+  max-width: 100%;
+  border-radius: var(--radius-panel);
+}
+
+.markdown blockquote {
+  margin: 0 0 10px;
+  padding-left: 10px;
+  border-left: 3px solid var(--color-divider);
+  color: var(--color-text-strong);
+}

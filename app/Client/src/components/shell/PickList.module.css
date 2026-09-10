@@ -1,0 +1,148 @@
+/*
+ * A list of things down the side, and the one that was picked beside it.
+ *
+ * A studio has tens of teams and tens of permission groups, each with more to
+ * say than fits on a tile. One column would be a page nobody reaches the bottom
+ * of, and a grid of tiles with the detail underneath moves the thing you are
+ * reading every time you pick a different one.
+ */
+.layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 260px 1px minmax(0, 1fr);
+  gap: 20px;
+  align-items: stretch;
+}
+
+.splitter {
+  width: 1px;
+  background: var(--color-divider);
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  /* Stacked, the column is not beside anything to stay level with. */
+  .list {
+    position: static;
+    max-height: 340px;
+  }
+
+  /* Stacked, the line would be a stray dash between two blocks. */
+  .splitter {
+    display: none;
+  }
+}
+
+/*
+ * Its own column, and its own scroll.
+ *
+ * A studio can have a hundred permission groups. Sticky alone meant the column
+ * came with you down the page but was still as tall as the list — so the search
+ * that narrows it was off the top by the time you needed it again.
+ */
+.list {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: calc(100vh - 140px);
+  min-height: 0;
+}
+
+.search {
+  flex: none;
+  padding: 7px 10px;
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-panel);
+  background: var(--color-control);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-small);
+}
+
+.search:hover {
+  border-color: var(--color-control-border-hover);
+}
+
+.search:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.nothing {
+  margin: 0;
+  padding: 4px 12px;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.items {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  /* The list scrolls, not the page: the search above it has to stay put. */
+  overflow-y: auto;
+  list-style: none;
+}
+
+.item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-panel);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.item:hover {
+  background: var(--hover-row);
+}
+
+.item:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* The one being read. The accent, as the install tabs use it. */
+.picked {
+  background: var(--color-surface);
+  border-color: var(--color-divider);
+}
+
+.picked .name {
+  color: var(--color-accent);
+}
+
+.name {
+  font-size: var(--font-size-h3);
+}
+
+/* What it costs to read the thing without opening it. */
+.facts {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-small);
+  color: var(--color-text-faint);
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding-bottom: 24px;
+}

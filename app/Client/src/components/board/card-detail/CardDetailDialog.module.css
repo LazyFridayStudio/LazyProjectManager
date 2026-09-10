@@ -1,0 +1,298 @@
+/*
+ * Wide, with room either side rather than a fixed percentage.
+ *
+ * A percentage margin would have made this narrower on the screens it is
+ * actually used on: 1040px was already about half of a 1920 display. A cap with
+ * a gutter grows on a big monitor and still fits a laptop, which is the pair of
+ * cases that matter.
+ */
+/*
+ * The panel itself never scrolls.
+ *
+ * Its head, its footer and the buttons on them stay put, and each column takes
+ * its own scrollbar — one panel-wide bar would carry the fields away while
+ * somebody was reading the description, and take Save off the screen with them.
+ */
+.dialog {
+  width: min(1440px, calc(100vw - 96px));
+  max-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+}
+
+.dialog::backdrop {
+  background: var(--color-scrim);
+}
+
+.head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.typeDot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  background: var(--type-color);
+}
+
+.key {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.closeButton {
+  margin-left: auto;
+}
+
+/* Everything the panel holds, between its head and its footer. */
+.form {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Description and criteria on the left, the field rail on the right. */
+.columns {
+  flex: 1;
+  /* Without this the grid refuses to be shorter than its contents, and the two
+     columns never get a height to scroll inside. */
+  min-height: 0;
+  display: grid;
+  /* The rail grows with the dialog, so the fields do not end up as a thin strip
+     beside a very wide description. */
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 0;
+  overflow: hidden;
+}
+
+.main {
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px;
+}
+
+.rail {
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  /* Divided from the prose by a line rather than by a change of tone: the rail
+     is the other half of the same panel, not a well sunk into it. */
+  border-left: 1px solid var(--color-divider);
+}
+
+/*
+ * What each part of the card is called, as the prototype draws it: a micro-label
+ * above the block it names.
+ *
+ * The colour is the label token rather than the prototype's dimmer mix, because
+ * a word naming a field has to be read at a glance — which is the whole reason
+ * the token exists.
+ */
+.sectionHeading {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+.titleInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  /* The card's own name, and the only line on this side set above body size —
+     everything under it is either a label or the writing itself. */
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-title-weight);
+  line-height: var(--font-heading-line-height);
+}
+
+.titleInput:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* A heading and the control it names. The gap is what keeps the focus ring —
+   which is drawn outside the control, by `--focus-ring-offset` — from sitting on
+   top of the heading. */
+.labelled {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.textArea {
+  width: 100%;
+  min-height: 120px;
+  box-sizing: border-box;
+  padding: 8px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  resize: vertical;
+}
+
+.textArea:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.people {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.footer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 22px;
+  border-top: 1px solid var(--color-divider);
+}
+
+.stamp {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+.problem {
+  margin: 0;
+  font-size: var(--font-size-base);
+  color: var(--color-danger);
+}
+
+.message {
+  padding: 22px;
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 1100px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rail {
+    border-left: none;
+    border-top: 1px solid var(--color-divider);
+  }
+}
+
+/*
+ * A card opens to be read, and the same controls do both jobs.
+ *
+ * Disabled would grey them out and say "you may not", which is wrong — nothing
+ * is refused, editing simply has not been asked for yet. So a disabled control
+ * in this panel reads as the value it holds.
+ */
+.titleInput:disabled,
+.textArea:disabled {
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-text);
+  opacity: 1;
+  cursor: default;
+  /* No box to sit inside, so no inset either — the title lines up with the
+     headings under it rather than starting a few pixels in. */
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/*
+ * The description is where the work is described and the criteria are a short
+ * list of conditions. They were the same height, which gave the shorter one
+ * room it never uses and the longer one a window to scroll through.
+ */
+.descriptionArea {
+  min-height: 240px;
+}
+
+.criteriaArea {
+  min-height: 60px;
+}
+
+/*
+ * Acceptance criteria, drawn as the checklist they are.
+ *
+ * The text is markdown like everything else on a card, so a criterion is a list
+ * item; only the marker changes, to the empty square the prototype uses. A
+ * square that is not ticked reads as a condition still to be met, which a bullet
+ * does not.
+ */
+.criteria ul,
+.criteria ol {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.criteria li {
+  display: flex;
+  gap: 8px;
+  font-size: var(--font-size-base);
+  line-height: 1.4;
+}
+
+.criteria li::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-top: 6px;
+  border: 1px solid var(--color-accent);
+}
+
+/*
+ * Where the writing would be, when nobody has written it.
+ *
+ * Said in words rather than left blank: an empty space under a heading reads as
+ * the panel still loading, and a card whose description is missing is a card
+ * somebody still has to finish.
+ */
+.missing {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-style: italic;
+  color: var(--color-text-faint);
+}
