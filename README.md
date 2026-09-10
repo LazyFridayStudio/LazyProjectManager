@@ -153,9 +153,10 @@ it, and you can argue with them in an issue.
 
 ## Contributing
 
-**Start with an issue.** `main` is protected, every change arrives as a pull request, and every pull
-request needs a green CI run. The gate to run locally and what a new behaviour owes in tests are in
-**[CONTRIBUTING.md](CONTRIBUTING.md)**.
+**Start with an issue** — up to five open at a time each. `main` is protected: every change arrives
+as a pull request, and every pull request needs a green CI run and an approving review. Everybody
+taking part follows the **[Code of Conduct](CODE_OF_CONDUCT.md)**, and the gate to run locally and
+what a new behaviour owes in tests are in **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 
 ## Support
 
