@@ -117,8 +117,11 @@ async function recreateSchema(connectionString: string, schemaName: string): Pro
   try {
     await sql.raw(`drop schema if exists ${schemaName} cascade`).execute(admin);
     await sql.raw(`create schema ${schemaName}`).execute(admin);
-    // Extensions are database-wide. Creating citext here, in public, means each
-    // worker's migration finds the type already present.
+    // Extensions are database-wide. The suite's global setup has already created
+    // citext before any worker gets here, so in a test run this is a no-op: two
+    // workers creating it at the same moment race on pg_extension, which is why
+    // it is made there first. It stays so a schema recreated any other way still
+    // finds the type.
     await sql`create extension if not exists citext`.execute(admin);
   } finally {
     await admin.destroy();

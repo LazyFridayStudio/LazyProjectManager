@@ -3,6 +3,39 @@ import pg from 'pg';
 const TEST_SCHEMA_PATTERN = 'lpm_test_w%';
 
 /**
+ * Creates, once and before any worker starts, what every worker's schema needs
+ * from the database as a whole.
+ *
+ * Extensions are database-wide, and each worker used to create citext for itself
+ * as it recreated its schema. `create extension if not exists` is not safe when
+ * two connections run it at the same moment: both find no extension, both insert
+ * one, and the second fails on `pg_extension_name_index`. A developer's database
+ * already has citext, so it never happened there. Every CI run starts from an
+ * empty Postgres, which is where it did — and where the release workflow runs
+ * the same suite before it publishes anything.
+ *
+ * Created here, the workers find it already present and theirs is a no-op.
+ *
+ * Uses `pg` directly for the same reason `teardown` does.
+ */
+export async function setup(): Promise<void> {
+  const connectionString = process.env.DATABASE_URL;
+
+  if (connectionString === undefined || connectionString === '') {
+    return;
+  }
+
+  const client = new pg.Client({ connectionString });
+
+  try {
+    await client.connect();
+    await client.query('create extension if not exists citext');
+  } finally {
+    await client.end().catch(() => undefined);
+  }
+}
+
+/**
  * Drops the per-worker schemas the suite created.
  *
  * Not just tidiness. Kysely's migrator decides whether it needs to create its
