@@ -94,6 +94,24 @@ async function checkConstraint(constraintName: string): Promise<string> {
   }
 }
 
+/** How an index is defined, as Postgres holds it. */
+async function indexDefinition(indexName: string): Promise<string> {
+  const database = new Kysely<unknown>({
+    dialect: new PostgresDialect({
+      pool: new pg.Pool({ connectionString: urlForDatabase(TEST_DATABASE_NAME), max: 1 }),
+    }),
+  });
+
+  try {
+    const result = await sql<{ definition: string }>`
+      select indexdef as definition from pg_indexes where indexname = ${indexName}
+    `.execute(database);
+    return result.rows[0]?.definition ?? '';
+  } finally {
+    await database.destroy();
+  }
+}
+
 const ACCOUNT = '00000000-0000-4000-8000-00000000ac01';
 const PROJECT = '00000000-0000-4000-8000-00000000d001';
 const CATEGORY = '00000000-0000-4000-8000-00000000ca01';
@@ -193,6 +211,7 @@ describe('GIVEN the migration set', () => {
         '0058-how-often-a-repository-syncs',
         '0059-one-sync-at-a-time',
         '0060-a-category-inside-a-category',
+        '0061-a-name-can-wait-for-the-end-of-a-command',
       ]);
       expect(provided).toEqual(names);
     });
@@ -264,6 +283,7 @@ describe('GIVEN the migration set', () => {
         '0058-how-often-a-repository-syncs',
         '0059-one-sync-at-a-time',
         '0060-a-category-inside-a-category',
+        '0061-a-name-can-wait-for-the-end-of-a-command',
       ]);
     });
   });
@@ -329,6 +349,16 @@ describe('GIVEN the migration set', () => {
       expect(await checkConstraint('scm_link_kind_known')).not.toContain('lfs_object');
     });
 
+    it('THEN two sibling categories may share a name until the command that asked ends', async () => {
+      const definition = await checkConstraint('asset_category_name_unique_among_siblings');
+
+      // Deferrable, so deleting a `Props` can bring a `Props` up out of it before
+      // the parent has gone — and only when a command asks, so every other write
+      // is still checked as it happens.
+      expect(definition).toContain('DEFERRABLE');
+      expect(definition).not.toContain('INITIALLY DEFERRED');
+    });
+
     it('THEN applying them again is a no-op, so a restart is safe', async () => {
       const { error, results } = await runMigrations(urlForDatabase(TEST_DATABASE_NAME));
 
@@ -338,6 +368,17 @@ describe('GIVEN the migration set', () => {
   });
 
   describe('WHEN migrations are rolled back one at a time', () => {
+    it('THEN a category name is checked at every row again', async () => {
+      const { error } = await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
+
+      expect(error).toBeUndefined();
+      expect(await checkConstraint('asset_category_name_unique_among_siblings')).toBe('');
+      // Still unique among siblings: what goes is only the ability to wait.
+      expect(await indexDefinition('asset_category_name_unique_among_siblings')).toContain(
+        'NULLS NOT DISTINCT',
+      );
+    });
+
     it('THEN a category cannot hold a category, and the text box is back', async () => {
       const { error } = await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
 
@@ -956,6 +997,9 @@ describe('GIVEN the migration set', () => {
    */
   describe('WHEN a library filed with subcategories is migrated', () => {
     it('THEN every subcategory becomes a category, and the assets move into it', async () => {
+      // Back past the step that lets a name wait as well, which came after the
+      // tree and depends on the index it made.
+      await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
       await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
 
       await withTestDatabase(async (database) => {

@@ -291,6 +291,11 @@ so the two cannot come to disagree about what a button is or what it is called.
 - What the delete changed on rows it did **not** delete goes in `repairs`,
   gathered by the caller. A repair is only applied while the column still holds
   what the delete left there: somebody who refiled the asset afterwards meant it.
+- **A restore checks deferrable constraints once its repairs are in.** A thing
+  comes back as rows and then repairs, and is only whole after both. The rule
+  that a category's name is unique among its siblings is deferrable for this: a
+  `Props` deleted out from over a `Props` comes back to a level its own child is
+  standing in, until the repair moves the child back inside it.
 - **Payloads cross into JavaScript as `text`, never as `jsonb`.**
   `CamelCasePlugin` renames the keys of any object it finds in a result,
   including inside a `jsonb` column — and those keys are column names that have

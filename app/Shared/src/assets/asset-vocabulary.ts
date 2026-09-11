@@ -27,7 +27,20 @@ export function describeAssetStatus(status: AssetStatus): string {
 
 export const assetNameSchema = z.string().trim().min(1).max(200);
 
-export const assetCategoryNameSchema = z.string().trim().min(1).max(100);
+/**
+ * The longest name a category may have.
+ *
+ * Its own constant because a person is no longer the only thing that names a
+ * category: one coming up out of a deleted category into a name that is taken
+ * is given another, and that has to be a name the edit dialog would accept.
+ */
+export const MAXIMUM_ASSET_CATEGORY_NAME_LENGTH = 100;
+
+export const assetCategoryNameSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(MAXIMUM_ASSET_CATEGORY_NAME_LENGTH);
 
 /**
  * A colour a category is drawn in.

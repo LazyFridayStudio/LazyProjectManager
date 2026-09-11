@@ -13,6 +13,7 @@ import { requireActor, type RequestActor } from '../../../cqrs/request-context.j
 import {
   AssetCategoryNotInProjectError,
   InvariantViolatedError,
+  nameWhereTheyLand,
   positionBetween,
   ProjectArchivedError,
 } from '../../../domain/index.js';
@@ -23,6 +24,7 @@ import {
 } from '../../projects/project-access.js';
 import { binIt, howMany } from '../../recovery/index.js';
 import { placeCategory } from '../asset-positions.js';
+import { whileNamesSettle } from '../category-names.js';
 
 interface DeleteRequest {
   readonly transaction: CommandTransaction;
@@ -100,31 +102,48 @@ async function deleteCategory({
       ? null
       : await moveToDefault({ transaction, category, accountId: actor.accountId });
 
-  const lifted = await liftTheChildren({ transaction, category });
-
   /*
-   * Kept after the assets have moved and before the category goes.
+   * Names are checked once the category has gone, not at each row on the way.
    *
-   * The repairs are what this delete did to things it is not deleting, so they
-   * are only knowable once the move has happened — and they have to be written
-   * down before the category is gone, because they are written down on it.
-   *
-   * Restoring refiles only the assets still sitting where this move put them.
-   * Somebody who filed one somewhere else afterwards meant it.
+   * What was inside it comes up while it is still here — its children point at
+   * it until they have moved, and the bin copies it after — so a `Props` inside
+   * `Props` stands beside its parent until the parent is deleted. That is a
+   * clash on the way to a library without one.
    */
-  await binIt({
-    transaction,
-    kind: 'assetCategory',
-    accountId: actor.accountId,
-    actorId: actor.userId,
-    subjectId: category.id,
-    projectId: category.projectId,
-    name: category.name,
-    about: howMany(held.length, 'asset', 'assets'),
-    repairs: whatThisDeleteMoved({ category, held, movedTo, lifted }),
-  });
+  await whileNamesSettle({
+    transaction: transaction.database,
+    work: async () => {
+      const lifted = await liftTheChildren({ transaction, category });
 
-  await transaction.database.deleteFrom('assetCategory').where('id', '=', category.id).execute();
+      /*
+       * Kept after what it held has moved and before the category goes.
+       *
+       * The repairs are what this delete did to things it is not deleting, so
+       * they are only knowable once the move has happened — and they have to be
+       * written down before the category is gone, because they are written down
+       * on it.
+       *
+       * Restoring refiles only the assets still sitting where this move put
+       * them. Somebody who filed one somewhere else afterwards meant it.
+       */
+      await binIt({
+        transaction,
+        kind: 'assetCategory',
+        accountId: actor.accountId,
+        actorId: actor.userId,
+        subjectId: category.id,
+        projectId: category.projectId,
+        name: category.name,
+        about: howMany(held.length, 'asset', 'assets'),
+        repairs: whatThisDeleteMoved({ category, held, movedTo, lifted }),
+      });
+
+      await transaction.database
+        .deleteFrom('assetCategory')
+        .where('id', '=', category.id)
+        .execute();
+    },
+  });
 
   transaction.appendEvent({
     accountId: actor.accountId,
@@ -140,10 +159,10 @@ async function deleteCategory({
 /**
  * What the delete changed on rows it is not deleting, so a restore can undo it.
  *
- * Two kinds, and both under the same rule the recycle bin applies to every
+ * Three kinds, and all under the same rule the recycle bin applies to every
  * repair: only put back while the column still holds what this delete left
- * there. Somebody who refiled an asset, or moved a sub-category somewhere else
- * afterwards, meant it.
+ * there. Somebody who refiled an asset, moved a sub-category somewhere else or
+ * renamed one afterwards meant it.
  */
 function whatThisDeleteMoved({
   category,
@@ -154,7 +173,7 @@ function whatThisDeleteMoved({
   readonly category: { id: string; parentId: string | null };
   readonly held: readonly { id: string }[];
   readonly movedTo: string | null;
-  readonly lifted: readonly { id: string }[];
+  readonly lifted: readonly LiftedChild[];
 }): BinnedRepair[] {
   const assets =
     movedTo === null
@@ -176,12 +195,32 @@ function whatThisDeleteMoved({
     now: category.parentId,
   }));
 
-  return [...assets, ...children];
+  // And under the name it had in there, for one that came up under another.
+  const names = lifted
+    .filter((child) => child.cameUpAs !== child.name)
+    .map((child) => ({
+      table: 'asset_category',
+      id: child.id,
+      column: 'name',
+      was: child.name,
+      now: child.cameUpAs,
+    }));
+
+  return [...assets, ...children, ...names];
 }
 
 interface LiftRequest {
   readonly transaction: CommandTransaction;
   readonly category: { id: string; projectId: string; name: string; parentId: string | null };
+}
+
+/** A category that came up out of the one being deleted. */
+interface LiftedChild {
+  readonly id: string;
+  /** What it was called inside the category being deleted. */
+  readonly name: string;
+  /** What it is called where it landed: the same, unless that name was taken. */
+  readonly cameUpAs: string;
 }
 
 /**
@@ -196,11 +235,16 @@ interface LiftRequest {
  * Placed at the end of where they land, because they are arriving among
  * headings that already have an order and the positions they had were an order
  * among each other.
+ *
+ * Under its own name wherever that is free there, and named after the category
+ * it came out of where it is not — `nameWhereTheyLand` says how. This used to
+ * refuse the delete instead, which somebody met only after confirming it, and
+ * which asked them to rename a heading before they could drop one.
  */
 async function liftTheChildren({
   transaction,
   category,
-}: LiftRequest): Promise<readonly { id: string }[]> {
+}: LiftRequest): Promise<readonly LiftedChild[]> {
   const children = await transaction.database
     .selectFrom('assetCategory')
     .select(['id', 'name'])
@@ -212,9 +256,18 @@ async function liftTheChildren({
     return [];
   }
 
-  await refuseIfANameIsTaken({ transaction, category, children });
+  const landingNames = new Map(
+    nameWhereTheyLand({
+      leaving: category.name,
+      children,
+      takenWhereTheyLand: await namesTakenWhereTheyLand({ transaction, category }),
+    }).map((child) => [child.id, child.name]),
+  );
+
+  const lifted: LiftedChild[] = [];
 
   for (const child of children) {
+    const cameUpAs = landingNames.get(child.id) ?? child.name;
     const position = await placeCategory({
       transaction: transaction.database,
       projectId: category.projectId,
@@ -226,51 +279,39 @@ async function liftTheChildren({
 
     await transaction.database
       .updateTable('assetCategory')
-      .set({ parentId: category.parentId, position })
+      .set({ parentId: category.parentId, name: cameUpAs, position })
       .where('id', '=', child.id)
       .execute();
+
+    lifted.push({ id: child.id, name: child.name, cameUpAs });
   }
 
-  return children.map((child) => ({ id: child.id }));
+  return lifted;
 }
 
 /**
- * A child cannot come up into a place where its name is already taken.
+ * Every name already used where the children are landing.
  *
- * Names are unique among siblings, so lifting `Weapons` out of `Props` into a
- * library that already has a `Weapons` at the top is a delete that cannot
- * finish. Refused with the name in the message rather than reported as a
- * constraint: somebody who renames one of the two can then delete the heading,
- * and nothing about a unique index tells them that.
+ * Not counting the category they are coming out of, whose name is free the
+ * moment it goes. Archived categories do count: they are not drawn, but a name
+ * is unique among siblings whether anybody can see the sibling or not.
  */
-async function refuseIfANameIsTaken({
+async function namesTakenWhereTheyLand({
   transaction,
   category,
-  children,
-}: LiftRequest & { children: readonly { id: string; name: string }[] }): Promise<void> {
-  const destination = transaction.database
+}: LiftRequest): Promise<ReadonlySet<string>> {
+  const level = transaction.database
     .selectFrom('assetCategory')
     .select('name')
     .where('projectId', '=', category.projectId)
-    .where('id', '!=', category.id)
-    .where(
-      'name',
-      'in',
-      children.map((child) => child.name),
-    );
+    .where('id', '!=', category.id);
 
-  const taken =
+  const siblings =
     category.parentId === null
-      ? await destination.where('parentId', 'is', null).execute()
-      : await destination.where('parentId', '=', category.parentId).execute();
+      ? await level.where('parentId', 'is', null).execute()
+      : await level.where('parentId', '=', category.parentId).execute();
 
-  const clash = taken[0];
-
-  if (clash !== undefined) {
-    throw new InvariantViolatedError(
-      `${clash.name} is inside ${category.name} and there is already a ${clash.name} where ${category.name} sits. Rename one of them before deleting ${category.name}.`,
-    );
-  }
+  return new Set(siblings.map((sibling) => sibling.name));
 }
 
 interface MoveRequest {
