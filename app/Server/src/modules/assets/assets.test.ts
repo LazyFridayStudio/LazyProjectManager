@@ -464,6 +464,21 @@ describe('GIVEN a project with things to make', () => {
   });
 
   describe('WHEN a category holding categories is deleted', () => {
+    /** Each category's id and name, in the order the library draws them. */
+    function namesOf(categories: readonly AssetLibraryView['categories'][number][]): string[][] {
+      return categories.map((each) => [each.id, each.name]);
+    }
+
+    /** Puts back the one thing in the bin, which is what each of these deleted. */
+    async function restoreWhatWasDeleted(): Promise<Awaited<ReturnType<typeof server.inject>>> {
+      const binned = await testDatabase.database
+        .selectFrom('deletedThing')
+        .select('id')
+        .executeTakeFirstOrThrow();
+
+      return command('recovery.restore', { deletedThingId: binned.id });
+    }
+
     it('THEN what was inside it comes up to where it sat', async () => {
       const props = await addCategory('Props');
       const interior = await addCategoryInside(props, 'Interior');
@@ -487,15 +502,31 @@ describe('GIVEN a project with things to make', () => {
       ).toEqual([breakable]);
     });
 
-    it('THEN it is refused when a name would collide where the children land', async () => {
+    it('THEN one named like the category being deleted comes up in its place', async () => {
       const props = await addCategory('Props');
-      await addCategoryInside(props, 'Weapons');
-      await addCategory('Weapons');
+      const inner = await addCategoryInside(props, 'Props');
 
       const response = await command('assets.deleteCategory', { categoryId: props });
 
-      expect(response.statusCode).toBe(422);
-      expect(response.json<{ message: string }>().message).toContain('Rename one of them');
+      // The parent is leaving, so its name is free where the child lands.
+      expect(response.statusCode).toBe(200);
+      expect(namesOf((await library()).categories)).toEqual([[inner, 'Props']]);
+    });
+
+    it('THEN one named like a category already there comes up under a name that is free', async () => {
+      const props = await addCategory('Props');
+      const inner = await addCategoryInside(props, 'Mobs');
+      const mobs = await addCategory('Mobs');
+
+      const response = await command('assets.deleteCategory', { categoryId: props });
+
+      // Rather than refusing a delete somebody has already confirmed, over a
+      // heading that may not hold anything at all.
+      expect(response.statusCode).toBe(200);
+      expect(namesOf((await library()).categories)).toEqual([
+        [mobs, 'Mobs'],
+        [inner, 'Mobs (from Props)'],
+      ]);
     });
 
     it('THEN putting it back puts what was inside it back inside it', async () => {
@@ -503,16 +534,45 @@ describe('GIVEN a project with things to make', () => {
       const interior = await addCategoryInside(props, 'Interior');
 
       await command('assets.deleteCategory', { categoryId: props });
-      const binned = await testDatabase.database
-        .selectFrom('deletedThing')
-        .select('id')
-        .executeTakeFirstOrThrow();
-
-      await command('recovery.restore', { deletedThingId: binned.id });
+      await restoreWhatWasDeleted();
 
       expect(
         findIn((await library()).categories, props)?.categories.map((each) => each.id),
       ).toEqual([interior]);
+    });
+
+    it('THEN putting it back gives one that came up under another name its own again', async () => {
+      const props = await addCategory('Props');
+      const inner = await addCategoryInside(props, 'Mobs');
+      const mobs = await addCategory('Mobs');
+
+      await command('assets.deleteCategory', { categoryId: props });
+      await restoreWhatWasDeleted();
+
+      const restored = (await library()).categories;
+
+      expect(namesOf(restored)).toEqual([
+        [props, 'Props'],
+        [mobs, 'Mobs'],
+      ]);
+      expect(namesOf(findIn(restored, props)?.categories ?? [])).toEqual([[inner, 'Mobs']]);
+    });
+
+    it('THEN putting back one that held a category of its own name puts that one inside it', async () => {
+      const props = await addCategory('Props');
+      const inner = await addCategoryInside(props, 'Props');
+
+      await command('assets.deleteCategory', { categoryId: props });
+      const response = await restoreWhatWasDeleted();
+
+      // Back at a level its own child is standing in, which stops being a clash
+      // only once the child has been moved back inside it.
+      expect(response.statusCode).toBe(200);
+
+      const restored = (await library()).categories;
+
+      expect(namesOf(restored)).toEqual([[props, 'Props']]);
+      expect(namesOf(findIn(restored, props)?.categories ?? [])).toEqual([[inner, 'Props']]);
     });
   });
 
