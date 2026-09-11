@@ -553,6 +553,124 @@ describe('GIVEN an install where things get deleted', () => {
     });
   });
 
+  describe('WHEN an asset is deleted', () => {
+    /** A category with one asset filed in it, and both their ids. */
+    async function makeAsset(name: string): Promise<{ categoryId: string; assetId: string }> {
+      const categoryId = (
+        await command('assets.createCategory', {
+          projectId,
+          name: 'Environment Props',
+          color: '#63aeeb',
+        })
+      ).json<{ id: string }>().id;
+      const assetId = (await command('assets.createAsset', { projectId, categoryId, name })).json<{
+        id: string;
+      }>().id;
+
+      return { categoryId, assetId };
+    }
+
+    /** Puts back the one thing in the bin that is an asset. */
+    async function restoreTheAsset(): Promise<Awaited<ReturnType<typeof server.inject>>> {
+      const forAsset = (await bin()).things.find((thing) => thing.what === 'Asset');
+
+      return command('recovery.restore', { deletedThingId: forAsset?.id });
+    }
+
+    it('THEN it waits in the bin under the key people call it by', async () => {
+      const { assetId } = await makeAsset('Ruined watchtower');
+
+      await command('assets.deleteAsset', { assetId });
+
+      expect((await bin()).things[0]).toMatchObject({
+        what: 'Asset',
+        name: 'Ruined watchtower',
+        about: 'SLTM-AST-1',
+      });
+    });
+
+    it('THEN putting it back brings what was on it', async () => {
+      const { assetId } = await makeAsset('Ruined watchtower');
+      const cardId = await makeCard('Retopo the watchtower');
+
+      await command('assets.addSubtask', { assetId, title: 'Mesh' });
+      await command('assets.addTag', { assetId, tag: 'act-1' });
+      await command('assets.linkFile', {
+        assetId,
+        label: 'watchtower.blend',
+        url: 'https://depot.example/watchtower.blend',
+      });
+      await command('assets.linkCard', { cardId, assetId });
+      await command('assets.deleteAsset', { assetId });
+
+      const restored = await restoreTheAsset();
+
+      const read = testDatabase.database;
+      const stages = await read
+        .selectFrom('assetSubtask')
+        .select('title')
+        .where('assetId', '=', assetId)
+        .execute();
+      const tags = await read
+        .selectFrom('assetTag')
+        .select('tag')
+        .where('assetId', '=', assetId)
+        .execute();
+      const files = await read
+        .selectFrom('assetFile')
+        .select('label')
+        .where('assetId', '=', assetId)
+        .execute();
+      const links = await read
+        .selectFrom('cardAssetLink')
+        .select('cardId')
+        .where('assetId', '=', assetId)
+        .execute();
+
+      expect(restored.statusCode).toBe(200);
+      expect(stages).toEqual([{ title: 'Mesh' }]);
+      expect(tags).toEqual([{ tag: 'act-1' }]);
+      // A linked file points at no stored file, and comes back all the same.
+      expect(files).toEqual([{ label: 'watchtower.blend' }]);
+      expect(links).toEqual([{ cardId }]);
+    });
+
+    it('THEN it is refused, saying why, while the category it was in is deleted', async () => {
+      const { categoryId, assetId } = await makeAsset('Ruined watchtower');
+
+      await command('assets.deleteAsset', { assetId });
+      await command('assets.deleteCategory', { categoryId });
+
+      const refused = await restoreTheAsset();
+
+      // A sentence somebody can act on, rather than a foreign key they cannot.
+      expect(refused.statusCode).toBe(422);
+      expect(refused.json<{ message: string }>().message).toContain('Put the category back first');
+    });
+
+    it('THEN putting the category back first lets the asset follow it', async () => {
+      const { categoryId, assetId } = await makeAsset('Ruined watchtower');
+
+      await command('assets.deleteAsset', { assetId });
+      await command('assets.deleteCategory', { categoryId });
+
+      const forCategory = (await bin()).things.find((thing) => thing.what === 'Asset category');
+      await command('recovery.restore', { deletedThingId: forCategory?.id });
+
+      const restored = await restoreTheAsset();
+
+      expect(restored.statusCode).toBe(200);
+      expect(await cardTitles()).toEqual([]);
+      expect(
+        await testDatabase.database
+          .selectFrom('asset')
+          .select('name')
+          .where('id', '=', assetId)
+          .execute(),
+      ).toEqual([{ name: 'Ruined watchtower' }]);
+    });
+  });
+
   describe('WHEN the week runs out', () => {
     it('THEN the sweep throws away what is past its date and leaves the rest', async () => {
       const going = await makeTeam('Audio');

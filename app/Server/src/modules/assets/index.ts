@@ -20,6 +20,8 @@ export {
 
 export { deleteAssetCategoryHandler } from './commands/delete-category.js';
 
+export { deleteAssetHandler } from './commands/delete-asset.js';
+
 export { updateAssetCategoryHandler } from './commands/update-category.js';
 
 export { updateAssetHandler } from './commands/update-asset.js';

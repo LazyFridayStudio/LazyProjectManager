@@ -21,6 +21,7 @@ export {
   createAssetCategoryCommand,
   createAssetCommand,
   deleteAssetCategoryCommand,
+  deleteAssetCommand,
   linkAssetCommand,
   linkAssetFileCommand,
   moveAssetCategoryCommand,
