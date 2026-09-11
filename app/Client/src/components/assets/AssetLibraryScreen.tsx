@@ -415,38 +415,53 @@ function CategoryTiles({
   /** The droppable the empty space and the grid share. */
   readonly setNodeRef: (element: HTMLElement | null) => void;
   readonly onOpen: (assetId: string) => void;
-}): React.JSX.Element {
-  return category.assets.length === 0 ? (
-    // Still a place to drop into: a category with nothing in it is
-    // exactly where somebody drags the first thing. Said differently when
-    // the things in it are all one level down, because "nothing here" next
-    // to five sub-categories reads as a bug.
+}): React.JSX.Element | null {
+  if (category.assets.length > 0) {
+    return (
+      <SortableContext
+        items={tileIds}
+        // A grid rather than a column, which is the only thing about this
+        // that is not the board — and only for a tile of its own, or every
+        // other category shuffles for a drag it is not part of.
+        strategy={tilesStepAside}
+      >
+        <ul ref={setNodeRef} className={styles.tiles}>
+          {category.assets.map((asset) => (
+            <Tile
+              key={asset.id}
+              asset={asset}
+              categoryId={category.id}
+              currency={currency}
+              canMove={canWrite}
+              onOpen={onOpen}
+            />
+          ))}
+        </ul>
+      </SortableContext>
+    );
+  }
+
+  /*
+   * Nothing at all, when what it holds is categories.
+   *
+   * A sub-category is something in it. A line under five of them saying the
+   * category had nothing filed directly read as though it held nothing, which
+   * is the opposite of what the screen above the line was showing.
+   *
+   * No drop is lost with the line. A tile carried over a category lands on its
+   * heading — `overTheTiles` answers with the heading before it ever asks about
+   * this space — which is the same place a closed category takes one.
+   */
+  if (category.categories.length > 0) {
+    return null;
+  }
+
+  // Still a place to drop into: a category with nothing in it is exactly where
+  // somebody drags the first thing.
+  return (
     <p ref={setNodeRef} className={styles.categoryEmpty}>
-      {category.categories.length === 0
-        ? 'Nothing in this category yet.'
-        : 'Nothing filed directly in this one.'}
+      Nothing in this category yet.
     </p>
-  ) : (
-    <SortableContext
-      items={tileIds}
-      // A grid rather than a column, which is the only thing about this
-      // that is not the board — and only for a tile of its own, or every
-      // other category shuffles for a drag it is not part of.
-      strategy={tilesStepAside}
-    >
-      <ul ref={setNodeRef} className={styles.tiles}>
-        {category.assets.map((asset) => (
-          <Tile
-            key={asset.id}
-            asset={asset}
-            categoryId={category.id}
-            currency={currency}
-            canMove={canWrite}
-            onOpen={onOpen}
-          />
-        ))}
-      </ul>
-    </SortableContext>
   );
 }
 
