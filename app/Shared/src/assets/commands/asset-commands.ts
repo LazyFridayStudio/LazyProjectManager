@@ -160,6 +160,19 @@ export const updateAssetCommand = defineCommand(
 );
 
 /**
+ * Takes an asset out of the library.
+ *
+ * Everything on it goes with it — its reference images, its working files, its
+ * stages, its tags, the hours logged against it and its links to cards — and
+ * all of it waits a week in the bin, where putting the asset back brings the
+ * lot. The cards it was linked to stay where they are.
+ */
+export const deleteAssetCommand = defineCommand(
+  'assets.deleteAsset',
+  z.object({ assetId: z.string().uuid() }),
+);
+
+/**
  * Says a card is about an asset.
  *
  * One relation rather than several: a card relates to another card in a few ways

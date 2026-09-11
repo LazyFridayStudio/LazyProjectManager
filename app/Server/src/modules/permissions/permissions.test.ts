@@ -539,6 +539,40 @@ describe('GIVEN an install with a team and a project', () => {
       expect(deleted.statusCode).toBe(403);
     });
 
+    it('THEN somebody may fill the library in without being allowed to empty it', async () => {
+      await ruleForMira('asset.delete', 'deny');
+
+      const categoryId = (
+        await command('assets.createCategory', {
+          projectId,
+          name: 'Environment Props',
+          color: '#63aeeb',
+        })
+      ).json<{ id: string }>().id;
+      const asset = await command(
+        'assets.createAsset',
+        { projectId, categoryId, name: 'Ruined watchtower' },
+        miraCookie,
+      );
+
+      expect(asset.statusCode).toBe(200);
+
+      const assetId = asset.json<{ id: string }>().id;
+      const panel = await server.inject({
+        method: 'GET',
+        url: `/api/q/assets.detail?assetId=${assetId}`,
+        cookies: { lpm_session: miraCookie },
+      });
+
+      // The panel asks the same policy the command does, so there is no Delete
+      // button for her to press and be refused by.
+      expect(panel.json<{ data: { canDelete: boolean } }>().data.canDelete).toBe(false);
+
+      const deleted = await command('assets.deleteAsset', { assetId }, miraCookie);
+
+      expect(deleted.statusCode).toBe(403);
+    });
+
     it('THEN denying each action under a heading refuses each of them', async () => {
       // What pressing Deny on a catalogue writes: one rule per action. The
       // heading itself is never stored, so this is the whole of its meaning.
