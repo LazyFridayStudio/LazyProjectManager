@@ -11,6 +11,7 @@ export {
   ASSET_KEY_PREFIX,
   ASSET_STATUSES,
   DEFAULT_ASSET_CATEGORY,
+  MAXIMUM_ASSET_CATEGORY_NAME_LENGTH,
   MAXIMUM_TAGS_PER_ASSET,
   type AssetStatus,
 } from './asset-vocabulary.js';

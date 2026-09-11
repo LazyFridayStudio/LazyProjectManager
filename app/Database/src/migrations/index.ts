@@ -60,6 +60,7 @@ import * as aThemeYouWriteYourself from './0057-a-theme-you-write-yourself.js';
 import * as howOftenARepositorySyncs from './0058-how-often-a-repository-syncs.js';
 import * as oneSyncAtATime from './0059-one-sync-at-a-time.js';
 import * as aCategoryInsideACategory from './0060-a-category-inside-a-category.js';
+import * as aNameCanWaitForTheEndOfACommand from './0061-a-name-can-wait-for-the-end-of-a-command.js';
 
 /**
  * Migrations are registered here by hand rather than discovered from disk.
@@ -130,6 +131,7 @@ const migrationsByName: Readonly<Record<string, Migration>> = {
   '0058-how-often-a-repository-syncs': howOftenARepositorySyncs,
   '0059-one-sync-at-a-time': oneSyncAtATime,
   '0060-a-category-inside-a-category': aCategoryInsideACategory,
+  '0061-a-name-can-wait-for-the-end-of-a-command': aNameCanWaitForTheEndOfACommand,
 };
 
 export const migrationProvider: MigrationProvider = {

@@ -22,9 +22,7 @@ import {
   loadMembershipRole,
   loadProjectForWrite,
 } from '../../projects/project-access.js';
-
-/** Named in `0060-a-category-inside-a-category`, and the only clash this insert expects. */
-const CATEGORY_NAME_CONSTRAINT = 'asset_category_name_unique_among_siblings';
+import { CATEGORY_NAME_CONSTRAINT } from '../category-names.js';
 
 interface CreateCategoryInput {
   commandId: string;

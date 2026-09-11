@@ -357,6 +357,18 @@ export async function restoreFrom(
 ): Promise<void> {
   const parts = RECIPES[binned.kind].parts;
 
+  /*
+   * Whatever can wait until the whole thing is back, waits.
+   *
+   * A thing comes back in pieces — its rows, then the repairs that undo what its
+   * delete moved — and is only whole once the last of them has landed. A `Props`
+   * deleted out from over a `Props` comes back to a level its own child is
+   * standing in, and stops clashing only when a repair moves the child back
+   * inside it. `all` rather than a name, because the bin does not know which of
+   * its tables carry a constraint that can wait; one made deferrable said so.
+   */
+  await sql`set constraints all deferred`.execute(transaction.database);
+
   for (const saved of binned.rows) {
     const part = parts.find((each) => each.table === saved.table);
 
@@ -374,6 +386,10 @@ export async function restoreFrom(
   for (const repair of binned.repairs) {
     await applyRepair(transaction, repair);
   }
+
+  // Checked now rather than at the commit, so a thing that genuinely cannot fit
+  // back fails inside the restore that tried.
+  await sql`set constraints all immediate`.execute(transaction.database);
 }
 
 /**
