@@ -1080,6 +1080,83 @@ test.describe.serial('a studio setting up for the first time', () => {
     await expect(page.getByRole('button', { name: /Set dressing/ })).toHaveCount(0);
   });
 
+  test('does not call a category empty when there are categories inside it', async () => {
+    /*
+     * A category holding only categories said "Nothing filed directly in this
+     * one" underneath them, which read as though it held nothing. That line was
+     * also the space the first asset was dropped into, so taking it away has to
+     * leave somewhere to drop — the heading.
+     */
+    const made = page.getByRole('dialog', { name: 'New category' });
+
+    await page.getByRole('button', { name: 'New category' }).click();
+    await made.getByLabel('Name').fill('Set dressing');
+    await made.getByRole('button', { name: 'Add category' }).click();
+    await expect(made).toBeHidden();
+
+    await page.getByRole('button', { name: 'New category' }).click();
+    await made.getByLabel('Name').fill('Clutter');
+    await made.getByLabel('Inside').selectOption({ label: 'Set dressing' });
+    await made.getByRole('button', { name: 'Add category' }).click();
+    await expect(made).toBeHidden();
+
+    const dressing = page.locator('section', {
+      has: page.getByRole('button', { name: /Set dressing/ }),
+    });
+
+    await openCategory(/Set dressing/);
+
+    // Open and showing what it holds first, so the missing line means something
+    // rather than being what a closed category looks like.
+    await expect(categoryHeading(/Clutter/)).toBeVisible();
+    // Whatever the wording: any line starting "Nothing" is the one being asked
+    // about.
+    await expect(dressing.getByText(/^Nothing/)).toHaveCount(0);
+
+    await openCategory(new RegExp(CATEGORY));
+    await dragTileOntoHeading(
+      page.getByRole('button', { name: new RegExp(ASSET) }),
+      categoryHeading(/Set dressing/),
+    );
+
+    // Into the heading it was dropped on, not into the category inside it.
+    await expect(dressing.getByRole('button', { name: new RegExp(ASSET) })).toBeVisible();
+    await expect(categoryHeading(/Clutter/)).toContainText('(0 items)');
+
+    /*
+     * Reloaded, so the server is what says where it went.
+     *
+     * Clutter is drawn closed again, so an asset showing under Set dressing is
+     * one filed in Set dressing itself.
+     */
+    await page.reload();
+    await openCategory(/Set dressing/);
+
+    await expect(dressing.getByRole('button', { name: new RegExp(ASSET) })).toBeVisible();
+    await expect(categoryHeading(/Clutter/)).toContainText('(0 items)');
+
+    // And back where it started, because the journey is one install carried
+    // from test to test and a later one renames this asset's category.
+    await openCategory(new RegExp(CATEGORY));
+    await dragTileOntoHeading(
+      dressing.getByRole('button', { name: new RegExp(ASSET) }),
+      categoryHeading(new RegExp(CATEGORY)),
+    );
+
+    await expect(
+      page
+        .locator('section', { has: page.getByRole('button', { name: new RegExp(CATEGORY) }) })
+        .getByRole('button', { name: new RegExp(ASSET) }),
+    ).toBeVisible();
+
+    await deleteCategory('Clutter');
+
+    // With nothing in it at all, it does say so.
+    await expect(dressing.getByText('Nothing in this category yet.')).toBeVisible();
+
+    await deleteCategory('Set dressing');
+  });
+
   test('narrows the library by a word and by a tag', async () => {
     // A second asset in a second category, so there is something for a filter
     // to leave out.
@@ -2186,6 +2263,64 @@ test.describe.serial('a studio setting up for the first time', () => {
   async function dropAndSettle(): Promise<void> {
     await page.mouse.up();
     await page.waitForTimeout(DND_KIT_SWALLOWS_CLICKS_FOR_MS * 2);
+  }
+
+  /**
+   * Carries an asset's tile onto a category's heading, and lets go.
+   *
+   * Aimed twice, because the library is redrawn while the tile travels. The
+   * moment it leaves its category, everything below that category moves up by
+   * the height of the row it no longer holds — so a heading measured before the
+   * drag is somewhere else by the time the pointer arrives, and the pointer is
+   * over whatever moved up underneath it. The second aim is at where the
+   * heading is now.
+   */
+  async function dragTileOntoHeading(tile: Locator, heading: Locator): Promise<void> {
+    const from = await tile.boundingBox();
+
+    if (from === null) {
+      throw new Error('Expected the tile to drag to be on screen.');
+    }
+
+    await page.mouse.move(from.x + from.width / 2, from.y + 20);
+    await page.mouse.down();
+    await page.mouse.move(from.x + from.width / 2 + 12, from.y + 20, { steps: 4 });
+
+    await moveOnto(heading, 20);
+    await moveOnto(heading, 5);
+
+    await dropAndSettle();
+  }
+
+  /** The pointer, on the middle of whatever the locator names right now. */
+  async function moveOnto(target: Locator, steps: number): Promise<void> {
+    const box = await target.boundingBox();
+
+    if (box === null) {
+      throw new Error('Expected the place to drop onto to be on screen.');
+    }
+
+    const middle = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+    await page.mouse.move(middle.x, middle.y, { steps });
+    // Once more where it already is: the last move is what dnd-kit measures
+    // against, and a drop on the same coordinate as the previous step is one it
+    // never saw arrive.
+    await page.mouse.move(middle.x, middle.y);
+  }
+
+  /** Deletes a category from its heading, and waits for the heading to go. */
+  async function deleteCategory(name: string): Promise<void> {
+    await categoryHeading(new RegExp(name))
+      .locator('..')
+      .getByRole('button', { name: 'Delete' })
+      .click();
+    await page
+      .getByRole('dialog', { name: `Delete ${name}?` })
+      .getByRole('button', { name: 'Delete' })
+      .click();
+
+    await expect(categoryHeading(new RegExp(name))).toHaveCount(0);
   }
 
   /**
