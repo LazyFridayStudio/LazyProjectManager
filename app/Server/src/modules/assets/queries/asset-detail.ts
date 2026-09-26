@@ -20,6 +20,7 @@ import {
   assertProjectPermission,
   canReachProject,
   loadMembershipRole,
+  mayDo,
 } from '../../projects/project-access.js';
 import { readWorkDone } from '../../work/read-work-done.js';
 
@@ -82,6 +83,9 @@ export const assetDetailHandler = defineQueryHandler({
       // Kysely types a SQL boolean as one that might arrive as a number, since
       // some drivers hand one back. `pg` does not, and the view says boolean.
       cards: cards.map((card) => ({ ...card, closed: Boolean(card.closed) })),
+      // Asked once here rather than worked out again on the screen, so the
+      // Delete button and the command behind it cannot disagree about who may.
+      canDelete: mayDo({ actor, role, action: 'asset.delete' }),
     };
   },
 });
@@ -320,7 +324,10 @@ function personNamed(person: {
 
 function toDetail(
   row: AssetRow,
-): Omit<AssetDetailView, 'cards' | 'files' | 'references' | 'subtasks' | 'tags' | 'work'> {
+): Omit<
+  AssetDetailView,
+  'canDelete' | 'cards' | 'files' | 'references' | 'subtasks' | 'tags' | 'work'
+> {
   return {
     id: row.id,
     assetKey: row.assetKey,

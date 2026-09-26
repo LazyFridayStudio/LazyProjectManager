@@ -1231,6 +1231,56 @@ describe('GIVEN a project with things to make', () => {
     });
   });
 
+  describe('WHEN an asset is deleted', () => {
+    /** The asset's panel, however the server answers. */
+    async function openAsset(assetId: string): Promise<Awaited<ReturnType<typeof server.inject>>> {
+      return server.inject({
+        method: 'GET',
+        url: `/api/q/assets.detail?assetId=${assetId}`,
+        cookies: { lpm_session: ownerCookie },
+      });
+    }
+
+    it('THEN its panel says the person reading it may delete it', async () => {
+      const props = await addCategory('Environment Props');
+      const assetId = (await addAsset(props, 'Ruined watchtower')).json<{ id: string }>().id;
+
+      const panel = await openAsset(assetId);
+
+      expect(panel.json<{ data: AssetDetailView }>().data.canDelete).toBe(true);
+    });
+
+    it('THEN it leaves the library, and the others stay', async () => {
+      const props = await addCategory('Environment Props');
+      const assetId = (await addAsset(props, 'Ruined watchtower')).json<{ id: string }>().id;
+      await addAsset(props, 'Harbour crane');
+
+      const response = await command('assets.deleteAsset', { assetId });
+
+      expect(response.statusCode).toBe(200);
+      expect((await library()).categories[0]?.assets.map((asset) => asset.name)).toEqual([
+        'Harbour crane',
+      ]);
+    });
+
+    it('THEN its panel is gone with it', async () => {
+      const props = await addCategory('Environment Props');
+      const assetId = (await addAsset(props, 'Ruined watchtower')).json<{ id: string }>().id;
+
+      await command('assets.deleteAsset', { assetId });
+
+      expect((await openAsset(assetId)).statusCode).toBe(404);
+    });
+
+    it('THEN an asset from another account is refused', async () => {
+      const response = await command('assets.deleteAsset', {
+        assetId: '018f0000-0000-7000-8000-000000000000',
+      });
+
+      expect(response.statusCode).toBe(404);
+    });
+  });
+
   describe('WHEN an asset is filed under a word', () => {
     it('THEN the tag shows on the panel and on the tile, alphabetical', async () => {
       const props = await addCategory('Environment Props');

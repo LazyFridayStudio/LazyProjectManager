@@ -118,6 +118,13 @@ export const assetDetailViewSchema = z.object({
   files: z.array(assetFileSchema),
   /** The cards about it, open ones first. */
   cards: z.array(assetCardLinkSchema),
+  /**
+   * Whether the person reading this may delete the asset.
+   *
+   * Asked by the server rather than worked out on the screen, so the button and
+   * the command behind it cannot disagree about who that is.
+   */
+  canDelete: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

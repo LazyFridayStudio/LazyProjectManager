@@ -9,6 +9,7 @@ import {
   createAssetCategoryCommand,
   createAssetCommand,
   deleteAssetCategoryCommand,
+  deleteAssetCommand,
   linkAssetFileCommand,
   moveAssetReferenceCommand,
   promoteAssetReferenceCommand,
@@ -286,6 +287,29 @@ export function useDeleteAssetCategory(
     mutationFn: (input: { categoryId: string }) =>
       client.command(deleteAssetCategoryCommand, input),
     onSuccess: refresh,
+  });
+}
+
+/**
+ * Takes an asset out of the library.
+ *
+ * The library is refetched because the tile has gone, and so is any card that
+ * was about the asset: its panel would otherwise go on listing a link to
+ * something that no longer exists.
+ */
+export function useDeleteAsset(
+  slug: string,
+): ReturnType<typeof useMutation<unknown, Error, { assetId: string }>> {
+  const { client, baseUrl } = useApiClient();
+  const queryClient = useQueryClient();
+  const refresh = useLibraryRefresh(slug);
+
+  return useMutation({
+    mutationFn: (input: { assetId: string }) => client.command(deleteAssetCommand, input),
+    onSuccess: async () => {
+      await refresh();
+      await queryClient.invalidateQueries({ queryKey: ['card', baseUrl] });
+    },
   });
 }
 

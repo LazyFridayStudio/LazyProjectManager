@@ -56,6 +56,7 @@ export const CATALOGUES = {
       'asset.view',
       'asset.create',
       'asset.update',
+      'asset.delete',
       'asset.manageCategory',
       'file.upload',
       'file.remove',
@@ -256,6 +257,8 @@ export const RULE_DESCRIPTIONS: Readonly<Record<PermittedAction, string>> = {
   'asset.create': 'Add an asset to the library.',
   'asset.update':
     'Change an asset: what it is called, how far along it is, its tags, its reference images, its working files, and which cards it is about.',
+  'asset.delete':
+    'Delete an asset outright, and every reference image, working file, stage and tag on it. It waits a week in the bin before it is really gone. Separate from changing one, because a studio that lets everybody fill the library in does not necessarily let everybody empty it.',
   'asset.manageCategory':
     'Add, rename or remove a category in the asset library. The shelves rather than what is on them.',
   'file.upload': 'Attach a file to a card or an asset.',

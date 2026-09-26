@@ -16,6 +16,7 @@ import {
   Loading,
   PencilIcon,
   Select,
+  TrashIcon,
   useModalDialog,
 } from '../ui/index.js';
 import { MarkdownField, MarkdownText } from '../markdown/index.js';
@@ -29,6 +30,7 @@ import {
 } from '../../logic/projects/format-project-values.js';
 import { AssetReferenceSheet } from './AssetReferenceSheet.js';
 import { useAsset, useUpdateAsset } from '../../logic/assets/use-assets.js';
+import { useAskToDeleteAsset } from '../../logic/assets/use-delete-asset.js';
 import { PersonPicker } from '../projects/index.js';
 import styles from './AssetLibraryScreen.module.css';
 import { WorkLog } from '../work/index.js';
@@ -141,6 +143,7 @@ function AssetForm({ asset, projectSlug, onDone, onOpenCard }: AssetFormProps): 
   const updateAsset = useUpdateAsset(projectSlug, asset.id);
   const problems = readFieldProblems(updateAsset.error);
   const canWrite = !asset.project.archived;
+  const askToDelete = useAskToDeleteAsset(projectSlug, onDone);
 
   // A refetch after saving, or somebody else's change arriving, is the authority
   // on what the asset is. Keyed off `updatedAt` so typing is not interrupted by
@@ -228,6 +231,23 @@ function AssetForm({ asset, projectSlug, onDone, onOpenCard }: AssetFormProps): 
                     <PencilIcon size={14} />
                   </ButtonIcon>
                 </Button>
+                {asset.canDelete && (
+                  // Beside Edit, as a card's is: these are the two things
+                  // somebody does to the asset itself, and the red is what
+                  // tells them apart.
+                  <Button
+                    tone="stop"
+                    aria-label="Delete asset"
+                    title="Delete asset"
+                    onClick={() => {
+                      askToDelete(asset);
+                    }}
+                  >
+                    <ButtonIcon>
+                      <TrashIcon size={14} />
+                    </ButtonIcon>
+                  </Button>
+                )}
               </>
             )}
             {canWrite && isEditing && (

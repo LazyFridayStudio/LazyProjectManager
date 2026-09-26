@@ -15,6 +15,7 @@ export const RECOVERABLE_KINDS = [
   'projectDoc',
   'projectRelease',
   'assetCategory',
+  'asset',
   'card',
 ] as const;
 

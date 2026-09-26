@@ -29,6 +29,9 @@ const CATEGORY = 'Environment Props';
 
 const ASSET = 'Ruined watchtower';
 
+/** An asset made to be deleted, so the journey's own library is left as it was. */
+const STRAY_ASSET = 'Duplicate crate';
+
 /**
  * One transparent pixel, as a PNG.
  *
@@ -949,6 +952,41 @@ test.describe.serial('a studio setting up for the first time', () => {
 
     await panel.getByRole('button', { name: 'Close' }).click();
     await expect(tile).not.toContainText('/2');
+  });
+
+  test('deletes an asset, and says it can be had back', async () => {
+    /*
+     * The one thing the library could not do. An asset added twice, or typed
+     * into the wrong category and filed there, stayed in it for good.
+     */
+    await categoryHeading(new RegExp(CATEGORY))
+      .locator('..')
+      .getByRole('button', { name: 'Add', exact: true })
+      .click();
+
+    const made = page.getByRole('dialog', { name: 'New asset' });
+    await made.getByLabel('Asset name').fill(STRAY_ASSET);
+    await made.getByRole('button', { name: 'Add asset' }).click();
+    await expect(made).toBeHidden();
+
+    await openCategory(new RegExp(CATEGORY));
+    await page.getByRole('button', { name: new RegExp(STRAY_ASSET) }).click();
+
+    const panel = page.getByRole('dialog', { name: 'Asset' });
+    await panel.getByRole('button', { name: 'Delete asset' }).click();
+
+    // Named by what it is called, and the consequence says both halves: what
+    // goes, and that there is a way out.
+    const confirm = page.getByRole('dialog', { name: `Delete ${STRAY_ASSET}?` });
+    await expect(confirm).toContainText('Nothing else is on it.');
+    await expect(confirm).toContainText('waits a week in the bin');
+    await confirm.getByRole('button', { name: 'Delete' }).click();
+
+    // The panel closes rather than sitting over an asset that has gone.
+    await expect(panel).toBeHidden();
+    await expect(page.getByRole('button', { name: new RegExp(STRAY_ASSET) })).toHaveCount(0, {
+      timeout: 20_000,
+    });
   });
 
   test('drags an asset into the order it should be in', async () => {
@@ -3033,8 +3071,9 @@ test.describe.serial('a studio setting up for the first time', () => {
     await expect(row).toContainText('7 days left');
 
     /*
-     * The rest of the bin is the journey's own earlier deletions — a category,
-     * a document and a card — which is the feature working rather than noise.
+     * The rest of the bin is the journey's own earlier deletions — categories, a
+     * document, a card and an asset — which is the feature working rather than
+     * noise.
      * Only this row is expected to leave.
      */
     await row.getByRole('button', { name: 'Put it back' }).click();

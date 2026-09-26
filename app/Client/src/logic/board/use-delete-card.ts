@@ -2,6 +2,7 @@ import type { CardDetailView } from '@lpm/shared';
 
 import { describeFailure } from '../../api/failure-messages.js';
 import { useDisplay } from '../../components/ui/index.js';
+import { asList, countOf } from '../../lib/counted-list.js';
 import { useDeleteCard } from './use-cards.js';
 
 /**
@@ -77,16 +78,4 @@ function whatStays(under: number): string {
   }
 
   return ` The ${String(under)} cards under it stay on the board and stop being grouped.`;
-}
-
-/** Null for none of something, which is a thing to leave out rather than say. */
-function countOf(many: number, one: string, several: string): string | null {
-  return many === 0 ? null : `${String(many)} ${many === 1 ? one : several}`;
-}
-
-/** `a`, `a and b`, `a, b and c`. */
-function asList(parts: readonly string[]): string {
-  if (parts.length === 1) return parts[0] ?? '';
-
-  return `${parts.slice(0, -1).join(', ')} and ${parts.at(-1) ?? ''}`;
 }

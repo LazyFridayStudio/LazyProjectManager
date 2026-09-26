@@ -287,7 +287,12 @@ so the two cannot come to disagree about what a button is or what it is called.
   other does not build.
 - A recipe lists the tables to put back, parents first. Rows under the thing get
   `needs` where their other end could be gone by then — a link with nowhere to
-  point is left out rather than failing the whole restore.
+  point is left out rather than failing the whole restore. A column pointing at
+  nothing needs nothing: a linked file has no stored file behind it.
+- The thing itself gets `requires` for a parent that can go while it waits. An
+  asset is always in a category, so restoring one whose category has been
+  deleted since is refused in words — put the category back first — rather
+  than on a foreign key.
 - What the delete changed on rows it did **not** delete goes in `repairs`,
   gathered by the caller. A repair is only applied while the column still holds
   what the delete left there: somebody who refiled the asset afterwards meant it.
@@ -301,8 +306,8 @@ so the two cannot come to disagree about what a button is or what it is called.
   including inside a `jsonb` column — and those keys are column names that have
   to go back exactly as they came out.
 - Not everything is binned. A tag, a session, a link between two cards are edits
-  to a thing rather than the loss of one. Projects, lists and assets archive
-  instead, and already have a way back.
+  to a thing rather than the loss of one. Projects and lists archive instead,
+  and already have a way back.
 
 ## Rate limits
 

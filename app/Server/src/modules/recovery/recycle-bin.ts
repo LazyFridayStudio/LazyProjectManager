@@ -42,9 +42,28 @@ interface Part {
    * one of those groups was deleted and the link has nowhere to point — and a
    * restore that fails wholesale over a link is worse than one that comes back
    * with the links that still mean something. Never set on the thing itself: if
-   * *its* parent is gone, that is a failure worth saying out loud.
+   * *its* parent is gone, that is a failure worth saying out loud — which is
+   * what `requires` is for.
+   *
+   * A column that points at nothing needs nothing. A linked working file has no
+   * stored file behind it, and is still a file.
    */
   readonly needs?: readonly { readonly column: string; readonly table: string }[];
+  /**
+   * What the thing itself cannot come back without, and what to say if it has
+   * gone.
+   *
+   * The failure `needs` leaves to the thing, said in words. A row under the
+   * thing can be left out and a milestone can be forgotten, but an asset is
+   * always in a category — so restoring one whose category was deleted since is
+   * refused before anything is written, with a sentence somebody can act on
+   * rather than a foreign key they cannot.
+   */
+  readonly requires?: readonly {
+    readonly column: string;
+    readonly table: string;
+    readonly refusal: string;
+  }[];
   /**
    * Columns emptied on the way back in, when what they pointed at has gone.
    *
@@ -80,8 +99,8 @@ interface Recipe {
  * full of them is a bin nobody reads. The test is whether somebody would say
  * "I deleted the wrong one".
  *
- * Projects, lists and assets are absent for the opposite reason: they archive
- * rather than delete, and already have a way back.
+ * Projects and lists are absent for the opposite reason: they archive rather
+ * than delete, and already have a way back.
  */
 const RECIPES = {
   team: {
@@ -142,6 +161,39 @@ const RECIPES = {
   assetCategory: {
     what: 'Asset category',
     parts: [{ table: 'asset_category', by: 'id' }],
+  },
+  asset: {
+    what: 'Asset',
+    parts: [
+      {
+        table: 'asset',
+        by: 'id',
+        /*
+         * An asset is always in a category, and a category can be deleted while
+         * the asset waits. It went after the asset did, so it is still in the
+         * bin to be put back first — and saying so is a restore somebody can
+         * finish, where a foreign key failure is one they cannot.
+         */
+        requires: [
+          {
+            column: 'category_id',
+            table: 'asset_category',
+            refusal:
+              'The category this asset was in has been deleted since. Put the category back first, then the asset.',
+          },
+        ],
+      },
+      { table: 'asset_reference', by: 'asset_id', needs: [{ column: 'file_id', table: 'file' }] },
+      // Linked files as well as stored ones: a link points at no stored file,
+      // and `needs` lets it through.
+      { table: 'asset_file', by: 'asset_id', needs: [{ column: 'file_id', table: 'file' }] },
+      { table: 'asset_tag', by: 'asset_id' },
+      { table: 'asset_subtask', by: 'asset_id' },
+      // The hours logged against it, which are the one part of an asset nobody
+      // could type back in from memory.
+      { table: 'work_log', by: 'asset_id' },
+      { table: 'card_asset_link', by: 'asset_id', needs: [{ column: 'card_id', table: 'card' }] },
+    ],
   },
   card: {
     what: 'Card',
@@ -408,28 +460,16 @@ async function forgetWhatIsGone(
   let kept = rows;
 
   for (const forget of part.forgets ?? []) {
-    const pointedAt = [
-      ...new Set(
-        kept.map((row) => row[forget.column]).filter((id): id is string => typeof id === 'string'),
-      ),
-    ];
-
-    if (pointedAt.length === 0) {
-      continue;
-    }
-
-    const found = await sql<{ id: string }>`
-      select each.id::text as id
-      from ${sql.table(forget.table)} as each
-      where each.id = any(${sql.val(pointedAt)}::uuid[])
-    `.execute(transaction.database);
-
-    const stillThere = new Set(found.rows.map((row) => row.id));
+    const present = await idsStillThere(
+      transaction,
+      forget.table,
+      idsPointedAt(kept, forget.column),
+    );
 
     kept = kept.map((row) => {
       const value = row[forget.column];
 
-      return typeof value === 'string' && !stillThere.has(value)
+      return typeof value === 'string' && !present.has(value)
         ? { ...row, [forget.column]: null }
         : row;
     });
@@ -438,21 +478,74 @@ async function forgetWhatIsGone(
   return kept;
 }
 
+/**
+ * Refuses, in words, a thing whose own parent has gone since.
+ *
+ * Checked before the thing's rows are written — it is always the first part — so
+ * the refusal is the whole of what happens, rather than a restore half done.
+ */
+async function refuseWhatCannotComeBack(
+  transaction: CommandTransaction,
+  part: Part,
+  rows: readonly Record<string, unknown>[],
+): Promise<void> {
+  for (const requirement of part.requires ?? []) {
+    const wanted = idsPointedAt(rows, requirement.column);
+    const present = await idsStillThere(transaction, requirement.table, wanted);
+
+    if (wanted.some((id) => !present.has(id))) {
+      throw new InvariantViolatedError(requirement.refusal);
+    }
+  }
+}
+
+/** Every id one column of these rows points at, once each. */
+function idsPointedAt(rows: readonly Record<string, unknown>[], column: string): string[] {
+  return [
+    ...new Set(rows.map((row) => row[column]).filter((id): id is string => typeof id === 'string')),
+  ];
+}
+
+/** Which of these ids are still rows of the table. */
+async function idsStillThere(
+  transaction: CommandTransaction,
+  table: string,
+  ids: readonly string[],
+): Promise<ReadonlySet<string>> {
+  if (ids.length === 0) {
+    return new Set();
+  }
+
+  const found = await sql<{ id: string }>`
+    select each.id::text as id
+    from ${sql.table(table)} as each
+    where each.id = any(${sql.val(ids)}::uuid[])
+  `.execute(transaction.database);
+
+  return new Set(found.rows.map((row) => row.id));
+}
+
 async function insertPart(
   transaction: CommandTransaction,
   part: Part,
   rows: readonly Record<string, unknown>[],
 ): Promise<void> {
+  await refuseWhatCannotComeBack(transaction, part, rows);
+
   const table = sql.table(part.table);
   const payload = JSON.stringify(await forgetWhatIsGone(transaction, part, rows));
 
   // Each `needs` is one more reason a row is left out. The things themselves
   // have none, so a missing parent stays a failure rather than a silent
-  // nothing.
+  // nothing. A column pointing at nothing is let through: there is nothing
+  // there to have gone.
   const stillThere = (part.needs ?? []).map(
-    (need) => sql`exists (
-      select 1 from ${sql.table(need.table)} as other
-      where other.id = back.${sql.ref(need.column)}
+    (need) => sql`(
+      back.${sql.ref(need.column)} is null
+      or exists (
+        select 1 from ${sql.table(need.table)} as other
+        where other.id = back.${sql.ref(need.column)}
+      )
     )`,
   );
 
