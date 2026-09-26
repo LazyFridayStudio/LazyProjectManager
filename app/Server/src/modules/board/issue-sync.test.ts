@@ -199,6 +199,21 @@ describe('GIVEN a project whose work is tracked as issues on a repository', () =
     };
   }
 
+  /**
+   * Like [forgeHolding], but answers the recent page and the changed-since page
+   * differently — the only way to stand for an issue too old to be on the first.
+   */
+  function forgeHoldingPages(pages: {
+    readonly recent: readonly Record<string, unknown>[];
+    readonly changed: readonly Record<string, unknown>[];
+  }) {
+    const recentForge = forgeHolding(pages.recent);
+    const changedForge = forgeHolding(pages.changed);
+
+    return (url: string, init?: RequestInit): Promise<Response> =>
+      url.includes('since=') ? changedForge(url, init) : recentForge(url, init);
+  }
+
   /** What was asked of the forge, without the token requests nobody is testing. */
   function askedOf(fragment: string): { method: string; url: string; body: string }[] {
     return asked.filter((each) => each.url.includes(fragment));
@@ -940,6 +955,98 @@ describe('GIVEN a project whose work is tracked as issues on a repository', () =
       expect(issuePagesAsked()).toHaveLength(1);
       expect(issuePagesAsked()[0]).toContain('state=all');
       expect(await cardsOnBoard()).toHaveLength(1);
+    });
+  });
+
+  describe('WHEN an issue has slipped out of the newest hundred', () => {
+    /** Issues made after the linked one, enough to fill the recent page on their own. */
+    function aHundredNewerIssues(state: 'open' | 'closed' = 'open'): Record<string, unknown>[] {
+      return Array.from({ length: 100 }, (_, index) =>
+        forgeIssue({
+          id: 10_000 + index,
+          number: 500 + index,
+          title: `Newer ${String(index)}`,
+          state,
+        }),
+      );
+    }
+
+    async function linkOneCard(): Promise<void> {
+      await connectRepository();
+      forge = forgeHolding([forgeIssue()]);
+      await sync();
+      expect(await cardsOnBoard()).toHaveLength(1);
+      asked = [];
+    }
+
+    it('THEN its card still closes when it does', async () => {
+      // GIVEN a card linked while its issue was recent
+      await linkOneCard();
+
+      // WHEN a hundred newer issues push it off the first page, and it closes
+      forge = forgeHoldingPages({
+        recent: aHundredNewerIssues(),
+        changed: [forgeIssue({ state: 'closed', updated_at: '2026-09-01T09:00:00Z' })],
+      });
+      await sync();
+
+      // THEN the changed-since page brings it back, and the card is finished
+      const card = (await cardsOnBoard()).find(
+        (each) => each.title === 'Crane winch clips through the deck',
+      );
+      expect(card?.list).toBe('Done');
+    });
+
+    it('THEN the sync asks for everything that changed, not only what closed', async () => {
+      // GIVEN a card linked while its issue was recent
+      await linkOneCard();
+
+      // WHEN the board syncs again
+      forge = forgeHoldingPages({ recent: [], changed: [] });
+      await sync();
+
+      // THEN the second page is every state, newest change first — a reopen or a
+      // rename of an old issue is as lost as a close without it
+      const changedPage = askedOf('since=')[0]?.url ?? '';
+      expect(changedPage).toContain('state=all');
+      expect(changedPage).toContain('sort=updated');
+    });
+
+    it('THEN an issue on both pages makes one card, not two', async () => {
+      // GIVEN a card linked while its issue was recent
+      await linkOneCard();
+
+      // WHEN it is both recent and recently changed
+      forge = forgeHoldingPages({
+        recent: [forgeIssue({ title: 'Winch clips at full travel' })],
+        changed: [forgeIssue({ title: 'Winch clips at full travel' })],
+      });
+      await sync();
+
+      // THEN it is settled once
+      expect(await cardsOnBoard()).toHaveLength(1);
+    });
+
+    it('THEN with open issues only, a hundred open issues do not crowd out the closed page', async () => {
+      // GIVEN a linked card, and a project that asks for open issues only
+      await linkOneCard();
+      await testDatabase.database
+        .updateTable('project')
+        .set({ syncOpenIssuesOnly: true })
+        .execute();
+
+      // WHEN a full page of open issues arrives beside its closing
+      forge = forgeHoldingPages({
+        recent: aHundredNewerIssues(),
+        changed: [forgeIssue({ state: 'closed', updated_at: '2026-09-01T09:00:00Z' })],
+      });
+      await sync();
+
+      // THEN the closed page was not cut off to make room, and the card is finished
+      const card = (await cardsOnBoard()).find(
+        (each) => each.title === 'Crane winch clips through the deck',
+      );
+      expect(card?.list).toBe('Done');
     });
   });
 
