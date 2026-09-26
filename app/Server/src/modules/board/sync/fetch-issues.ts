@@ -26,58 +26,74 @@ export interface IssueRequest {
 /**
  * Reads the repository's issues.
  *
- * `state=all` is the default and the reason is good: a card that has to move to
- * Done needs its issue to still be in the answer, and asking for open issues
- * alone would mean an issue closing simply vanished — which reads as a card
- * that was never there rather than one that is finished.
+ * Two pages, when there is anything to settle.
  *
- * One page, because paging until a studio's whole history is in would be a
- * button press that takes a minute and fills a board nobody scrolls.
+ * **The first is the recent page**, one hundred issues newest first. `state=all`
+ * by default, because a card that has to move to Done needs its issue to still be
+ * in the answer. With `openOnly` it asks for open issues instead, so the hundred
+ * is spent on work that is still to do rather than on a repository's closed
+ * history — which on anything with a past is most of it.
  *
- * **With `openOnly` it is two requests instead.** The first asks for open
- * issues, so the hundred is spent on work that is still to do rather than on a
- * repository's closed history — which on anything with a past is most of it,
- * and is what leaves an open issue older than the last hundred created never
- * arriving at all. The second asks only for what has closed since the board
- * last looked, which is what keeps a linked card settling: without it the
- * setting would strand every card whose issue closed while it was on.
+ * **The second is everything that changed since the board last looked.** The
+ * recent page is ordered by when an issue was *made*, so an older issue is not in
+ * it however recently it closed, and GitHub counts pull requests toward the
+ * hundred as well. Without this page a card whose issue has slipped out of the
+ * newest hundred never hears that it closed, reopened or was renamed: it sits
+ * where it is, open, for good (#15). With `openOnly` it asks for closed issues
+ * alone, so a reopened one still arrives through the open page and closed history
+ * nobody linked is not asked for.
  *
- * The second is skipped when there is nothing linked to settle — a repository
- * connected a moment ago, where the answer could only be history nobody asked
- * for. It is skipped when the board has never reconciled for the same reason:
- * `since` would be unbounded and the request would fetch the very history the
- * setting exists to leave behind.
+ * Neither page is cut short to fit the other. Capping the pair at a hundred used
+ * to drop the whole second page once a repository had a hundred open issues —
+ * the very cards it exists to settle.
+ *
+ * The second page is skipped when there is nothing linked to settle — a
+ * repository connected a moment ago, where the answer could only be history
+ * nobody asked for. It is skipped when the board has never reconciled for the
+ * same reason: `since` would be unbounded.
  */
 export async function fetchForgeIssues(
   reader: RepositoryReader,
   request: IssueRequest = { syncedAt: null, openOnly: false, hasLinkedCards: false },
 ): Promise<ForgeIssue[]> {
-  if (!request.openOnly) {
-    return readPage(reader, `state=all&per_page=${String(PER_PAGE)}&sort=created&direction=desc`);
-  }
-
-  const open = await readPage(
+  const recent = await readPage(
     reader,
-    `state=open&per_page=${String(PER_PAGE)}&sort=created&direction=desc`,
+    `state=${request.openOnly ? 'open' : 'all'}&per_page=${String(PER_PAGE)}&sort=created&direction=desc`,
   );
 
   if (request.syncedAt === null || !request.hasLinkedCards) {
-    return open;
+    return recent;
   }
 
   /*
-   * Everything that has closed since the board last looked.
-   *
    * `since` is the forge's own filter on when an issue last changed, so this is
-   * a small answer that gets smaller the more often the sync runs — and a
-   * delivery now makes it run promptly rather than on the half hour.
+   * a small answer that gets smaller the more often the sync runs.
    */
-  const closed = await readPage(
+  const changed = await readPage(
     reader,
-    `state=closed&since=${request.syncedAt.toISOString()}&per_page=${String(PER_PAGE)}`,
+    `state=${request.openOnly ? 'closed' : 'all'}&since=${request.syncedAt.toISOString()}` +
+      `&per_page=${String(PER_PAGE)}&sort=updated&direction=desc`,
   );
 
-  return [...open, ...closed].slice(0, MOST_ISSUES);
+  return withoutRepeats([...recent, ...changed]);
+}
+
+/**
+ * Each issue once. An issue that is both recent and recently changed is on both
+ * pages, and settling it twice would move its card twice.
+ */
+function withoutRepeats(issues: readonly ForgeIssue[]): ForgeIssue[] {
+  const seen = new Set<string>();
+
+  return issues.filter((issue) => {
+    if (seen.has(issue.externalId)) {
+      return false;
+    }
+
+    seen.add(issue.externalId);
+
+    return true;
+  });
 }
 
 async function readPage(reader: RepositoryReader, search: string): Promise<ForgeIssue[]> {
