@@ -1,6 +1,6 @@
 {
   "name": "@lpm/database",
-  "version": "0.47.16",
+  "version": "0.47.17",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@lpm/shared": "workspace:*",
-    "kysely": "0.29.5",
+    "kysely": "0.29.6",
     "pg": "8.23.0"
   },
   "devDependencies": {
