@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -10,6 +11,7 @@ import {
 import { createPortal } from 'react-dom';
 
 import { joinClassNames } from '../../../lib/join-class-names.js';
+import { arrive, leave } from '../motion.js';
 
 import { Asking, type Asked, type ConfirmRequest, type TextRequest } from './Asking.js';
 import {
@@ -62,6 +64,10 @@ export function DisplayProvider({ children }: { children: React.ReactNode }): Re
    *
    * One at a time, because a question is asked in answer to something somebody
    * just pressed and they cannot press two things at once.
+   *
+   * Answering settles the promise straight away, so whatever was waiting on
+   * the answer gets on with it; the question itself is only taken away once
+   * its dialog has finished leaving.
    */
   const [asked, setAsked] = useState<Asked | null>(null);
 
@@ -69,6 +75,7 @@ export function DisplayProvider({ children }: { children: React.ReactNode }): Re
   // most three things, and one that reads as 1, 2, 3 makes a failing test
   // legible.
   const nextId = useRef(0);
+  const nextQuestion = useRef(0);
 
   const show = useCallback((tone: DisplayTone, text: string) => {
     nextId.current += 1;
@@ -96,25 +103,13 @@ export function DisplayProvider({ children }: { children: React.ReactNode }): Re
       },
       askToConfirm: (request: ConfirmRequest) =>
         new Promise<boolean>((settle) => {
-          setAsked({
-            kind: 'confirm',
-            request,
-            settle: (said) => {
-              setAsked(null);
-              settle(said);
-            },
-          });
+          nextQuestion.current += 1;
+          setAsked({ id: nextQuestion.current, kind: 'confirm', request, settle });
         }),
       askForText: (request: TextRequest) =>
         new Promise<string | null>((settle) => {
-          setAsked({
-            kind: 'text',
-            request,
-            settle: (said) => {
-              setAsked(null);
-              settle(said);
-            },
-          });
+          nextQuestion.current += 1;
+          setAsked({ id: nextQuestion.current, kind: 'text', request, settle });
         }),
     }),
     [show],
@@ -123,7 +118,19 @@ export function DisplayProvider({ children }: { children: React.ReactNode }): Re
   return (
     <DisplayContext.Provider value={display}>
       {children}
-      {asked !== null && <Asking asked={asked} />}
+      {asked !== null && (
+        <Asking
+          // A question asked while the last one is still leaving is a new
+          // dialog, not the old one with different words in it.
+          key={asked.id}
+          asked={asked}
+          onGone={() => {
+            // Only if it is still the one on screen: a newer question has
+            // replaced it, and is not this one's to take away.
+            setAsked((current) => (current?.id === asked.id ? null : current));
+          }}
+        />
+      )}
       <DisplayHost shown={shown} onDismiss={dismiss} />
     </DisplayContext.Provider>
   );
@@ -168,7 +175,9 @@ function useMessageContainer(count: number): HTMLElement | null {
 
     // The last one, because dialogs in this product open over each other: a
     // card panel opens over the asset panel that linked to it.
-    const open = document.querySelectorAll<HTMLDialogElement>('dialog[open]');
+    // Not one that is on its way out, which is still open until it has gone and
+    // would take the message with it.
+    const open = document.querySelectorAll<HTMLDialogElement>('dialog[open]:not([data-closing])');
 
     setContainer(open[open.length - 1] ?? document.body);
   }, [count]);
@@ -219,18 +228,46 @@ function Shown({
   message: DisplayMessage;
   onDismiss: (id: string) => void;
 }): React.JSX.Element {
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Faded out first and taken off the list once it has, however it goes: by
+  // the dismiss button or by running out of time.
+  const goAway = useCallback(() => {
+    if (ref.current === null) {
       onDismiss(message.id);
-    }, lifetimeOf(message.tone));
+
+      return;
+    }
+
+    leave(ref.current, 'fade', () => {
+      onDismiss(message.id);
+    });
+  }, [message.id, onDismiss]);
+
+  /*
+   * A fade, and deliberately nothing that moves.
+   *
+   * A message that slides into place is a message whose edges are somewhere
+   * else for the first frames after it appears, and somebody reaching for its
+   * dismiss button — or a test doing the same — is aiming at a box that has
+   * moved. The fade says "this is new" without that.
+   */
+  useLayoutEffect(() => {
+    if (ref.current !== null) {
+      arrive(ref.current, 'fade');
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(goAway, lifetimeOf(message.tone));
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [message.id, message.tone, onDismiss]);
+  }, [message.tone, goAway]);
 
   return (
-    <div className={styles.message} data-tone={message.tone} role={roleFor(message.tone)}>
+    <div ref={ref} className={styles.message} data-tone={message.tone} role={roleFor(message.tone)}>
       <div className={styles.body}>
         <span className={styles.label}>{labelFor(message.tone)}</span>
         <span className={styles.text}>{message.text}</span>
@@ -240,9 +277,7 @@ function Shown({
         className={styles.dismiss}
         // The word, not a bare glyph: a lone ✕ is announced as "times".
         aria-label="Dismiss"
-        onClick={() => {
-          onDismiss(message.id);
-        }}
+        onClick={goAway}
       >
         ✕
       </button>

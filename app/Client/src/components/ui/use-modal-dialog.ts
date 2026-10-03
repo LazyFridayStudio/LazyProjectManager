@@ -1,10 +1,13 @@
 import { useEffect, useRef, type RefObject } from 'react';
 
+import { arrive, halt, leave } from './motion.js';
+
 export interface ModalDialog {
   /** Spread onto the `dialog` element. */
   readonly dialogProps: {
     readonly ref: RefObject<HTMLDialogElement | null>;
     readonly onClose: () => void;
+    readonly onCancel: (event: React.SyntheticEvent<HTMLDialogElement>) => void;
     readonly onPointerDown: (event: React.PointerEvent<HTMLDialogElement>) => void;
     readonly onClick: (event: React.MouseEvent<HTMLDialogElement>) => void;
   };
@@ -35,15 +38,22 @@ export function isAPressOnTheBackdrop(
 /**
  * A modal that opens on mount and closes the three ways people expect.
  *
- * Escape is the browser's, on a native `dialog`. The other two are here: a press
- * on the backdrop, and whatever the dialog itself decides is done.
+ * Escape, a press on the backdrop, and whatever the dialog itself decides is
+ * done. All three go the same way out: the dialog moves out of sight first and
+ * closes once it has, and `onClose` hears about it then.
+ *
+ * `panel` is for the card and the asset, which open over a whole screen and rise
+ * into place; anything smaller grows where it stands.
  *
  * The backdrop is part of the `dialog` element rather than a separate node, so a
  * press on it arrives with the dialog as its target — anything inside reports
  * the thing that was actually pressed. That is the whole test, and it only holds
  * while the dialog has no padding of its own for a press to land in.
  */
-export function useModalDialog(onClose: () => void): ModalDialog {
+export function useModalDialog(
+  onClose: () => void,
+  movement: 'dialog' | 'panel' = 'dialog',
+): ModalDialog {
   const dialogRef = useRef<HTMLDialogElement>(null);
   /*
    * Where the pointer went down, kept until the click that follows it.
@@ -55,17 +65,62 @@ export function useModalDialog(onClose: () => void): ModalDialog {
   const pressedOn = useRef<EventTarget | null>(null);
 
   useEffect(() => {
-    dialogRef.current?.showModal();
+    const dialog = dialogRef.current;
+
+    if (dialog === null) {
+      return;
+    }
+
+    dialog.showModal();
+    arrive(dialog, movement);
+
+    // Taken away by whoever rendered it — a route change, a second panel opened
+    // in its place — rather than closed, with nothing left to tween.
+    return () => {
+      halt(dialog);
+    };
+    // Opened once, on mount: the movement is fixed for the life of a dialog.
   }, []);
 
   const close = (): void => {
-    dialogRef.current?.close();
+    const dialog = dialogRef.current;
+
+    // Once: a second press of Close while the first is still on its way out is
+    // the same request, not a second one.
+    if (dialog === null || dialog.dataset.closing !== undefined) {
+      return;
+    }
+
+    /*
+     * Marked while it leaves, because it is still open until it has gone.
+     *
+     * Anything looking for the dialog somebody is working in — the display
+     * putting a message where it can be seen — should look past one that is
+     * on its way out, or the message leaves with it.
+     */
+    dialog.dataset.closing = '';
+    leave(dialog, movement, () => {
+      dialog.close();
+    });
   };
 
   return {
     dialogProps: {
       ref: dialogRef,
       onClose,
+      /*
+       * Escape, held back so it leaves the way the other two do.
+       *
+       * The browser closes a dialog on Escape in the same frame, which would be
+       * the one way out that snapped shut. It only lets a page hold one Escape
+       * back per keypress somebody actually made, so a second one in a row
+       * still closes it at once — and that is right: somebody pressing Escape
+       * twice wants it gone, not animated.
+       */
+      onCancel: (event) => {
+        event.preventDefault();
+        close();
+      },
       onPointerDown: (event) => {
         pressedOn.current = event.target;
       },

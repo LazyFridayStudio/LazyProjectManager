@@ -57,6 +57,32 @@ h3 {
   font-size: var(--font-size-h3);
 }
 
+/*
+ * How much of a dialog's backdrop is showing.
+ *
+ * All of it, except while the dialog is arriving or leaving: the motion helper
+ * moves this number on the dialog, and the backdrop — which is drawn apart from
+ * the dialog, in the top layer — inherits it from there. Each dialog's own
+ * stylesheet still says what colour its backdrop is.
+ *
+ * Registered as a number, because the browser only tweens a custom property it
+ * knows the type of; an unregistered one flips from one end to the other
+ * halfway through.
+ */
+@property --backdrop-shown {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+
+dialog {
+  --backdrop-shown: 1;
+}
+
+dialog::backdrop {
+  opacity: var(--backdrop-shown);
+}
+
 /* Screens own their own layout and padding — the login screen is full-bleed so
    its animated canvas can reach the window edges. */
 body {

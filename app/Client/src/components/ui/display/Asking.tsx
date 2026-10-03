@@ -32,14 +32,22 @@ export interface TextRequest {
   readonly confirmLabel?: string;
 }
 
-/** A question, and the way back to whoever asked it. */
+/**
+ * A question, and the way back to whoever asked it.
+ *
+ * `settle` answers the promise the asker is waiting on. Only the first call
+ * counts, which is what lets the yes button answer and then close the dialog —
+ * whose closing, by any route, is otherwise a no.
+ */
 export type Asked =
   | {
+      readonly id: number;
       readonly kind: 'confirm';
       readonly request: ConfirmRequest;
       readonly settle: (said: boolean) => void;
     }
   | {
+      readonly id: number;
       readonly kind: 'text';
       readonly request: TextRequest;
       readonly settle: (said: string | null) => void;
@@ -59,25 +67,35 @@ export type Asked =
  * question, and their buttons read `OK` and `Cancel` whatever is about to
  * happen. This says the verb.
  */
-export function Asking({ asked }: { asked: Asked }): React.JSX.Element {
+export function Asking({
+  asked,
+  onGone,
+}: {
+  asked: Asked;
+  /** The dialog has finished leaving, and the question can be taken away. */
+  onGone: () => void;
+}): React.JSX.Element {
   return asked.kind === 'confirm' ? (
-    <Confirming request={asked.request} settle={asked.settle} />
+    <Confirming request={asked.request} settle={asked.settle} onGone={onGone} />
   ) : (
-    <AskingForText request={asked.request} settle={asked.settle} />
+    <AskingForText request={asked.request} settle={asked.settle} onGone={onGone} />
   );
 }
 
 function Confirming({
   request,
   settle,
+  onGone,
 }: {
   request: ConfirmRequest;
   settle: (said: boolean) => void;
+  onGone: () => void;
 }): React.JSX.Element {
   // Closing by any route is a no: escape, the backdrop and Cancel all mean the
   // same thing, and a question nobody answered has not been agreed to.
   const dialog = useModalDialog(() => {
     settle(false);
+    onGone();
   });
 
   return (
@@ -117,13 +135,16 @@ function Confirming({
 function AskingForText({
   request,
   settle,
+  onGone,
 }: {
   request: TextRequest;
   settle: (said: string | null) => void;
+  onGone: () => void;
 }): React.JSX.Element {
   const [text, setText] = useState(request.value ?? '');
   const dialog = useModalDialog(() => {
     settle(null);
+    onGone();
   });
 
   const answer = (): void => {

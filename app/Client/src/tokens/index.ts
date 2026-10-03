@@ -55,4 +55,11 @@ export {
   tileHoverBackground,
 } from './interaction-state-tokens.js';
 
+export {
+  cubicBezierToCss,
+  motionDurationMs,
+  motionEasing,
+  type CubicBezier,
+} from './motion-tokens.js';
+
 export { renderCssCustomProperties } from './render-css-custom-properties.js';

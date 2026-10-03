@@ -36,6 +36,7 @@ import {
   rowHoverBackground,
   tileHoverBackground,
 } from './interaction-state-tokens.js';
+import { cubicBezierToCss, motionDurationMs, motionEasing } from './motion-tokens.js';
 
 type CustomPropertyDeclaration = readonly [name: string, value: string];
 
@@ -61,7 +62,17 @@ export function renderCssCustomProperties(): string {
       ...typographyDeclarations(),
       ...shapeDeclarations(),
       ...interactionStateDeclarations(),
+      ...motionDeclarations(),
     ]),
+    /*
+     * Somebody who has asked for less movement gets none from a stylesheet.
+     *
+     * Here, once, rather than as a media query beside every transition: a
+     * hover that reveals a control still reveals it, it just stops fading in.
+     * What tweens from script is turned off in the motion helper, on the same
+     * question.
+     */
+    `@media (prefers-reduced-motion: reduce) {\n${renderRule(':root', [['--motion-hint', '0ms']])}\n}`,
     /*
      * A theme is something an element carries, not only the document.
      *
@@ -93,6 +104,18 @@ export function renderCssCustomProperties(): string {
  */
 export function renderPaperRule(): string {
   return renderRule('.lpm-paper', paperThemeDeclarations());
+}
+
+/**
+ * The motion a stylesheet may still do for itself: a hover answering the
+ * pointer. Anything that appears, disappears or changes size tweens from
+ * script instead, so these are the only two a stylesheet needs.
+ */
+function motionDeclarations(): readonly CustomPropertyDeclaration[] {
+  return [
+    ['--motion-hint', `${String(motionDurationMs.hint)}ms`],
+    ['--motion-ease', cubicBezierToCss(motionEasing.arrive)],
+  ];
 }
 
 function renderRule(selector: string, declarations: readonly CustomPropertyDeclaration[]): string {

@@ -13,6 +13,17 @@ export {
 export { Field } from './Field.js';
 export { ChevronIcon, DownloadIcon, PencilIcon, PlusIcon, TrashIcon } from './icons.js';
 export { Loading } from './Loading.js';
+export {
+  arrive,
+  halt,
+  leave,
+  prefersLessMotion,
+  resize,
+  useArrivesWith,
+  usePresence,
+  useWidthFollows,
+  type Movement,
+} from './motion.js';
 export { Panel } from './Panel.js';
 export { Select, type SelectOption } from './Select.js';
 export { useModalDialog, type ModalDialog } from './use-modal-dialog.js';

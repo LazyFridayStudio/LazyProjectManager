@@ -7,7 +7,7 @@ import { useNavigate, useSearch } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 
 import { describeFailure } from '../../api/failure-messages.js';
-import { Button } from '../ui/index.js';
+import { Button, usePresence } from '../ui/index.js';
 import { joinClassNames } from '../../lib/join-class-names.js';
 import styles from './BoardScreen.module.css';
 import { CardChipTile, DraggedCard } from './CardChipTile.js';
@@ -98,6 +98,7 @@ function Board({ view }: { view: BoardView }): React.JSX.Element {
    */
   const [filters, setFilters] = useState<TaskFilters>(NO_FILTERS);
   const [isFilterShown, setIsFilterShown] = useState(false);
+  const filterPanel = usePresence<HTMLDivElement>(isFilterShown || isFiltering(filters), 'reveal');
 
   const update = (change: Partial<BoardInteraction>): void => {
     setInteraction((current) => ({ ...current, ...change }));
@@ -145,13 +146,15 @@ function Board({ view }: { view: BoardView }): React.JSX.Element {
         {/* Shown while it is open, and also while the board is still narrowed
             with it shut — a board quietly hiding half its cards needs the way
             back in front of somebody, not one press away. */}
-        {(isFilterShown || isFiltering(filters)) && (
-          <TaskFilterPanel
-            filters={filters}
-            people={peopleOnTheBoard(view)}
-            hasUnassigned={someCardIsUnassigned(view)}
-            onChange={setFilters}
-          />
+        {filterPanel.isPresent && (
+          <div ref={filterPanel.ref}>
+            <TaskFilterPanel
+              filters={filters}
+              people={peopleOnTheBoard(view)}
+              hasUnassigned={someCardIsUnassigned(view)}
+              onChange={setFilters}
+            />
+          </div>
         )}
 
         <DndContext {...dragging.context}>

@@ -137,23 +137,3 @@
   outline: var(--focus-ring);
   outline-offset: var(--focus-ring-offset);
 }
-
-/*
- * A fade, and deliberately nothing that moves.
- *
- * A message that slides into place is a message whose edges are somewhere else
- * for the first frames after it appears, and somebody reaching for its dismiss
- * button — or a test doing the same — is aiming at a box that has moved. The
- * fade says "this is new" without that.
- */
-@media (prefers-reduced-motion: no-preference) {
-  .message {
-    animation: arrive 140ms ease-out;
-  }
-}
-
-@keyframes arrive {
-  from {
-    opacity: 0;
-  }
-}

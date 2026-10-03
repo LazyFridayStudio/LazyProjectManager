@@ -4,6 +4,7 @@ import { accentRamp, darkThemeColors, lightThemeColors, paperThemeColors } from 
 import { colorByAssetStatus } from './asset-status-colors.js';
 import { colorByCardType } from './card-type-colors.js';
 import { renderCssCustomProperties } from './render-css-custom-properties.js';
+import { motionDurationMs } from './motion-tokens.js';
 import { fontSizesPx, headingFontWeight, titleFontWeight } from './typography-tokens.js';
 
 describe('GIVEN the design tokens rendered to a stylesheet', () => {
@@ -182,6 +183,20 @@ describe('GIVEN the design tokens rendered to a stylesheet', () => {
       // disagree, every accented surface shifts by one tone.
       expect(darkThemeColors.accent).toBe(accentRamp[600]);
       expect(stylesheet).toContain(`--color-accent: ${accentRamp[600]};`);
+    });
+  });
+
+  describe('WHEN a stylesheet answers the pointer with a fade', () => {
+    it('THEN it takes its timing from the same numbers everything else moves by', () => {
+      expect(stylesheet).toContain(`--motion-hint: ${String(motionDurationMs.hint)}ms;`);
+    });
+
+    it('THEN somebody who asked for less movement gets none, said once for all of them', () => {
+      const reduced = stylesheet.slice(
+        stylesheet.indexOf('@media (prefers-reduced-motion: reduce)'),
+      );
+
+      expect(reduced).toContain('--motion-hint: 0ms;');
     });
   });
 });

@@ -67,6 +67,8 @@
 .downwards {
   top: calc(100% + 8px);
   right: 0;
+  /* It grows out of the mark it hangs from. */
+  transform-origin: top right;
 }
 
 /*
@@ -77,6 +79,7 @@
 .upwards {
   bottom: calc(100% + 8px);
   left: 0;
+  transform-origin: bottom left;
 }
 
 .waiting {

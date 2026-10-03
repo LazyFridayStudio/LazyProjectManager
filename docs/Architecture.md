@@ -46,6 +46,7 @@ Nothing here is built for a load that will not arrive.
 | Realtime   | WebSocket, the server pushing invalidations                | A board has to feel live                                      |
 | Web        | React 19, Vite 6, TanStack Router and Query                |                                                               |
 | Styling    | Tokens generated to CSS custom properties, and CSS Modules | The tokens are the contract. No Tailwind                      |
+| Motion     | Motion, behind `components/ui/motion.ts`                   | MIT. GSAP was asked for, but its licence is not AGPL's        |
 | Auth       | Session cookie, Argon2id, no third-party IdP               | Self-hosted first                                             |
 | Deploy     | Docker Compose: app, worker, postgres, redis, minio        | One command                                                   |
 

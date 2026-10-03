@@ -4,7 +4,7 @@ import {
   type AssetDetailView,
   type AssetStatus,
 } from '@lpm/shared';
-import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 
 import { describeFailure, readFieldProblems } from '../../api/failure-messages.js';
 import { joinClassNames } from '../../lib/join-class-names.js';
@@ -17,6 +17,7 @@ import {
   PencilIcon,
   Select,
   TrashIcon,
+  useArrivesWith,
   useModalDialog,
 } from '../ui/index.js';
 import { MarkdownField, MarkdownText } from '../markdown/index.js';
@@ -30,7 +31,7 @@ import {
   toMinorUnits,
 } from '../../logic/projects/format-project-values.js';
 import { AssetReferenceSheet } from './AssetReferenceSheet.js';
-import { useAsset, useUpdateAsset } from '../../logic/assets/use-assets.js';
+import { useAsset, useUpdateAsset, type UpdateAssetInput } from '../../logic/assets/use-assets.js';
 import { useAskToDeleteAsset } from '../../logic/assets/use-delete-asset.js';
 import { PersonPicker } from '../projects/index.js';
 import styles from './AssetLibraryScreen.module.css';
@@ -76,8 +77,13 @@ export function AssetDetailDialog({
   onOpenCard,
   onOpenAsset,
 }: AssetDetailDialogProps): React.JSX.Element {
-  const dialog = useModalDialog(onClose);
+  const dialog = useModalDialog(onClose, 'panel');
   const asset = useAsset(assetId);
+  const contents = useRef<HTMLFormElement>(null);
+
+  // Following a link keeps the panel and moves the next asset into it, so it
+  // reads as the same window showing something else rather than a page change.
+  useArrivesWith(contents, asset.data?.id, 'swap');
 
   return (
     <dialog {...dialog.dialogProps} className={styles.detailDialog} aria-label="Asset">
@@ -92,6 +98,7 @@ export function AssetDetailDialog({
       {asset.isSuccess && (
         <AssetForm
           key={asset.data.id}
+          ref={contents}
           asset={asset.data}
           projectSlug={projectSlug}
           onDone={dialog.close}
@@ -127,6 +134,20 @@ function toForm(asset: AssetDetailView): AssetFormState {
   };
 }
 
+/** What the panel's boxes say, as the change to save. The way back from `toForm`. */
+function fromForm(assetId: string, form: AssetFormState): UpdateAssetInput {
+  return {
+    assetId,
+    name: form.name.trim(),
+    status: form.status,
+    estimatedCostMinor: form.cost.trim() === '' ? null : toMinorUnits(form.cost),
+    dueOn: form.dueOn === '' ? null : form.dueOn,
+    description: form.description.trim() === '' ? null : form.description,
+    assigneeId: chosenOrNobody(form.assigneeId),
+    reporterId: chosenOrNobody(form.reporterId),
+  };
+}
+
 /**
  * An empty box is nobody, rather than somebody called nothing.
  *
@@ -142,12 +163,19 @@ function chosenOrNobody(userId: string): string | null {
 type Openers = Pick<AssetDetailDialogProps, 'onOpenCard' | 'onOpenAsset'>;
 
 interface AssetFormProps extends Openers {
+  readonly ref: React.Ref<HTMLFormElement>;
   readonly asset: AssetDetailView;
   readonly projectSlug: string;
   readonly onDone: () => void;
 }
 
-function AssetForm({ asset, projectSlug, onDone, ...openers }: AssetFormProps): React.JSX.Element {
+function AssetForm({
+  ref,
+  asset,
+  projectSlug,
+  onDone,
+  ...openers
+}: AssetFormProps): React.JSX.Element {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<AssetFormState>(() => toForm(asset));
   const updateAsset = useUpdateAsset(projectSlug, asset.id);
@@ -163,28 +191,17 @@ function AssetForm({ asset, projectSlug, onDone, ...openers }: AssetFormProps): 
   }, [asset.updatedAt]);
 
   const submit = (): void => {
-    updateAsset.mutate(
-      {
-        assetId: asset.id,
-        name: form.name.trim(),
-        status: form.status,
-        estimatedCostMinor: form.cost.trim() === '' ? null : toMinorUnits(form.cost),
-        dueOn: form.dueOn === '' ? null : form.dueOn,
-        description: form.description.trim() === '' ? null : form.description,
-        assigneeId: chosenOrNobody(form.assigneeId),
-        reporterId: chosenOrNobody(form.reporterId),
-      },
-      {
-        onSuccess: onDone,
-        // A problem with a field stays on that field, where the thing to change
-        // is. Anything else — a refused write, a server that went away — has
-        // nowhere to be but the display.
-      },
-    );
+    updateAsset.mutate(fromForm(asset.id, form), {
+      onSuccess: onDone,
+      // A problem with a field stays on that field, where the thing to change
+      // is. Anything else — a refused write, a server that went away — has
+      // nowhere to be but the display.
+    });
   };
 
   return (
     <form
+      ref={ref}
       className={styles.detailForm}
       onSubmit={(event) => {
         event.preventDefault();

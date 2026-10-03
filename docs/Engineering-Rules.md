@@ -351,6 +351,24 @@ so the two cannot come to disagree about what a button is or what it is called.
   moved. The type scale has, twice, and deliberately — see below. A token is
   changed by argument in one place, never by a screen setting its own.
 
+### Motion
+
+- Anything that appears, disappears or changes size — a dialog, a panel, a
+  menu, a message, a section unfolding — moves through `components/ui/motion.ts`.
+  A component names what is moving (`dialog`, `panel`, `menu`, `reveal` …) and
+  the helper decides how long it takes and along what curve. Nothing else
+  imports the animation library; lint refuses it.
+- The durations and the easing are tokens (`motion-tokens.ts`). A stylesheet
+  that still fades something itself, a hover revealing a control, reads them
+  as `--motion-hint` and `--motion-ease`. A time written into a `transition` is
+  refused by a test; the two spinners are the only exception.
+- `prefers-reduced-motion: reduce` turns all of it off: the helper skips every
+  tween, and the tokens set `--motion-hint` to `0ms`. The end-to-end suites run
+  that way, so they never wait on a tween.
+- A closing thing stays on the page until it has finished leaving. A dialog is
+  marked `data-closing` while it does, so nothing mistakes it for the one
+  somebody is working in.
+
 ### One name per tone
 
 A component stylesheet never writes a colour down and never works one out. Both
