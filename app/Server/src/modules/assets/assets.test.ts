@@ -1006,17 +1006,20 @@ describe('GIVEN a project with things to make', () => {
     it('THEN a boss lists everything it drops, by name', async () => {
       const { boss, helm } = await bossAndDrop();
       const weapons = await addCategory('Melee');
-      const sword = (await addAsset(weapons, 'Hound-fang sword')).json<{ id: string }>().id;
-      const heart = (await addAsset(weapons, 'Hound heart')).json<{ id: string }>().id;
+      const sword = (await addAsset(weapons, 'Fang sword')).json<{ id: string }>().id;
+      const heart = (await addAsset(weapons, 'Cursed heart')).json<{ id: string }>().id;
 
       await command('assets.linkAsset', { assetId: boss, toAssetId: sword });
       await command('assets.linkAsset', { assetId: boss, toAssetId: helm });
       // From the other end, which is the same link.
       await command('assets.linkAsset', { assetId: heart, toAssetId: boss });
 
+      // Names that differ at the first letter, so the order is the same under
+      // any collation: one that ignores a hyphen and one that sorts it after a
+      // space disagree about `Hound heart` and `Hound-fang sword`.
       expect((await detail(boss)).linkedAssets.map((linked) => linked.name)).toEqual([
-        'Hound heart',
-        'Hound-fang sword',
+        'Cursed heart',
+        'Fang sword',
         'Hound-skull helm',
       ]);
       // The drops are linked to the boss, not to each other.
