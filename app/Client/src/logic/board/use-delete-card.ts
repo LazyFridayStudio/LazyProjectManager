@@ -30,17 +30,28 @@ export function useAskToDeleteCard(
 
       if (!said) return;
 
-      remove.mutate(
-        { cardId: card.id },
-        {
-          // The panel is showing a card that no longer exists, so it closes
-          // rather than sitting there with a Save button on it.
-          onSuccess: onDeleted,
-          onError: (error) => {
-            display.showError(describeFailure(error));
-          },
+      const deleted = await remove.mutateAsync({ cardId: card.id }).then(
+        () => true,
+        (error: unknown) => {
+          display.showError(describeFailure(asError(error)));
+
+          return false;
         },
       );
+
+      if (!deleted) return;
+
+      /*
+       * The panel is showing a card that no longer exists, so it closes
+       * rather than sitting there with a Save button on it.
+       *
+       * Awaited here rather than handed to `mutate` as `onSuccess`, because
+       * that callback is dropped if the form that asked has unmounted by the
+       * time the delete answers — and it often has: the realtime event for
+       * the delete refetches the open panel, finds nothing there, and takes
+       * the form away first. The panel was then left open over the gap.
+       */
+      onDeleted();
     })();
   };
 }
@@ -78,4 +89,9 @@ function whatStays(under: number): string {
   }
 
   return ` The ${String(under)} cards under it stay on the board and stop being grouped.`;
+}
+
+/** What a rejected command arrives as, which TanStack types no tighter than `unknown`. */
+function asError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
 }
