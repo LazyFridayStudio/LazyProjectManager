@@ -29,17 +29,28 @@ export function useAskToDeleteAsset(
 
       if (!said) return;
 
-      remove.mutate(
-        { assetId: asset.id },
-        {
-          // The panel is showing an asset that no longer exists, so it closes
-          // rather than sitting there with an Edit button on it.
-          onSuccess: onDeleted,
-          onError: (error) => {
-            display.showError(describeFailure(error));
-          },
+      const deleted = await remove.mutateAsync({ assetId: asset.id }).then(
+        () => true,
+        (error: unknown) => {
+          display.showError(describeFailure(asError(error)));
+
+          return false;
         },
       );
+
+      if (!deleted) return;
+
+      /*
+       * The panel is showing an asset that no longer exists, so it closes
+       * rather than sitting there with an Edit button on it.
+       *
+       * Awaited here rather than handed to `mutate` as `onSuccess`, because
+       * that callback is dropped if the form that asked has unmounted by the
+       * time the delete answers — and it often has: the realtime event for
+       * the delete refetches the open panel, finds nothing there, and takes
+       * the form away first. The panel was then left open over the gap.
+       */
+      onDeleted();
     })();
   };
 }
@@ -90,4 +101,9 @@ function whichAssetsStay(linked: number): string {
   }
 
   return ` The ${String(linked)} assets linked to it stay in the library.`;
+}
+
+/** What a rejected command arrives as, which TanStack types no tighter than `unknown`. */
+function asError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
 }

@@ -25,9 +25,17 @@ this before putting it on a network.
 
 ## Upgrade
 
+Download the new release's zip and copy its `compose.yml` over the one in **this
+folder**, keeping your `.env`. Then:
+
 ```bash
 docker compose pull && docker compose up -d
 ```
+
+`pull` fetches the images the `compose.yml` here names, so a new release's
+images only arrive with its `compose.yml` — the other services are pinned there,
+not only the app. Stay in this folder: Docker names the data volumes after it,
+and the same install unzipped somewhere else starts with empty ones.
 
 Migrations run when the app container starts, so there is no separate step. Pin
 a specific version by setting `LPM_VERSION` in `.env`.
@@ -104,6 +112,11 @@ Change `APP_PORT` in `.env` if something already uses 24571.
 
 **"This server has not been set up yet" after you already set it up.** The
 database volume was removed. `docker compose down -v` deletes it.
+
+**`pull access denied for minio/minio`.** MinIO took its images off Docker Hub
+in September 2026, and installs from before 1.3.1 still name them. Take the
+`compose.yml` from 1.3.1 or later, as under [Upgrade](#upgrade). Your files stay
+where they are: it is the same server, built by Chainguard.
 
 **`manifest unknown` when pulling.** `LPM_VERSION` in `.env` names a version that
 was never released. Pick one from the

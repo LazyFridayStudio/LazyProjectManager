@@ -185,8 +185,17 @@ services:
       retries: 10
 
   minio:
-    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    # MinIO's own images are gone: it deleted them from Docker Hub on
+    # 2026-09-11, and Quay stopped serving them to anybody not signed in two
+    # weeks later. Chainguard builds the same server from source and publishes
+    # it free. Pinned by digest, because the free tier only publishes `latest`
+    # and an install has to pull the image it was tested with.
+    image: cgr.dev/chainguard/minio@sha256:4cf4831a2bbcf13ddca09c1cbcc9faff716dd3c4247e0babc32864b8ee8e0034
     restart: unless-stopped
+    # Root, as MinIO's own image ran. Chainguard's runs as an unprivileged user,
+    # which cannot write to a volume an earlier install created as root — MinIO
+    # then refuses to start at all, taking every upload with it.
+    user: '0:0'
     command: ['server', '/data', '--console-address', ':9001']
     environment:
       MINIO_ROOT_USER: lpm

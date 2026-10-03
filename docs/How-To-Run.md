@@ -269,11 +269,19 @@ docker compose up -d
 
 **Open <http://localhost:24571>**
 
-To upgrade later:
+To upgrade later, copy the new release's `compose.yml` over the old one in the
+same folder, keep `.env`, and:
 
 ```bash
 docker compose pull && docker compose up -d
 ```
+
+`pull` only fetches what the `compose.yml` in front of it names, and the other
+services are pinned there too — so without the new file, an install keeps
+asking for whatever its old one said. That is how an install from before 1.3.1
+fails with `pull access denied for minio/minio`: MinIO took its images off
+Docker Hub, and 1.3.1 moved to Chainguard's build of the same server. Stay in the
+same folder, because the data volumes are named after it.
 
 Migrations run when it starts, so there is no separate step.
 
