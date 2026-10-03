@@ -193,6 +193,16 @@ const RECIPES = {
       // could type back in from memory.
       { table: 'work_log', by: 'asset_id' },
       { table: 'card_asset_link', by: 'asset_id', needs: [{ column: 'card_id', table: 'card' }] },
+      // Either end may be this asset, as a card's links to cards are. The other
+      // end is only put back while it still exists.
+      {
+        table: 'asset_link',
+        by: ['first_asset_id', 'second_asset_id'],
+        needs: [
+          { column: 'first_asset_id', table: 'asset' },
+          { column: 'second_asset_id', table: 'asset' },
+        ],
+      },
     ],
   },
   card: {

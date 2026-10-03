@@ -24,6 +24,7 @@ export {
   deleteAssetCommand,
   linkAssetCommand,
   linkAssetFileCommand,
+  linkAssetsCommand,
   moveAssetCategoryCommand,
   moveAssetCommand,
   moveAssetReferenceCommand,
@@ -33,6 +34,7 @@ export {
   removeAssetSubtaskCommand,
   tagAssetCommand,
   unlinkAssetCommand,
+  unlinkAssetsCommand,
   untagAssetCommand,
   updateAssetCategoryCommand,
   updateAssetCommand,
@@ -45,10 +47,12 @@ export {
   assetDetailViewSchema,
   assetFileSchema,
   assetReferenceSchema,
+  linkedAssetSchema,
   type AssetCardLink,
   type AssetDetailView,
   type AssetFile,
   type AssetReference,
+  type LinkedAsset,
 } from './queries/asset-detail.js';
 
 export {

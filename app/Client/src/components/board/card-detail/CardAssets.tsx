@@ -1,8 +1,8 @@
 import { describeAssetStatus, type CardDetailView } from '@lpm/shared';
 import { useState } from 'react';
 
-import { useAssetLibrary, useLinkAsset, useUnlinkAsset } from '../../../logic/assets/use-assets.js';
-import { joinClassNames } from '../../../lib/join-class-names.js';
+import { useLinkAsset, useUnlinkAsset } from '../../../logic/assets/use-assets.js';
+import { AssetPicker } from '../../assets/AssetPicker.js';
 import styles from './CardActivity.module.css';
 
 export interface CardAssetsProps {
@@ -93,88 +93,29 @@ export function CardAssets({
         </ul>
       )}
 
-      {isPicking && <AssetPicker card={card} projectSlug={projectSlug} />}
+      {isPicking && <CardAssetPicker card={card} projectSlug={projectSlug} />}
     </section>
   );
 }
 
-/**
- * What there is to link to.
- *
- * The library the project already has, filtered as somebody types. It is read
- * through the same query the asset screen uses rather than a search of its own —
- * a project's library is small enough to hold, and one endpoint fewer is one
- * fewer to keep in step.
- */
-function AssetPicker({
+/** The library, less what the card is already about. */
+function CardAssetPicker({
   card,
   projectSlug,
 }: {
   card: CardDetailView;
   projectSlug: string;
 }): React.JSX.Element {
-  const library = useAssetLibrary(projectSlug);
   const link = useLinkAsset(projectSlug, card.id);
-  const [search, setSearch] = useState('');
-
-  const linked = new Set(card.assetLinks.map((existing) => existing.assetId));
-  const needle = search.trim().toLowerCase();
-
-  const offered = (library.data?.categories ?? [])
-    .flatMap((category) =>
-      category.assets.map((asset) => ({ ...asset, categoryName: category.name })),
-    )
-    .filter((asset) => !linked.has(asset.id))
-    .filter((asset) => needle === '' || asset.name.toLowerCase().includes(needle))
-    .slice(0, MAXIMUM_OFFERED);
 
   return (
-    <div className={styles.picker}>
-      <input
-        type="search"
-        className={styles.pickerSearch}
-        aria-label="Search assets"
-        placeholder="Search the library"
-        autoFocus
-        value={search}
-        onChange={(event) => {
-          setSearch(event.target.value);
-        }}
-      />
-
-      {library.isPending && <p className={styles.empty}>Loading the library…</p>}
-
-      {library.isSuccess && offered.length === 0 && (
-        <p className={styles.empty}>
-          {needle === '' ? 'Nothing in the library yet.' : 'Nothing matches that.'}
-        </p>
-      )}
-
-      <ul className={styles.tiles}>
-        {offered.map((asset) => (
-          <li key={asset.id} className={styles.tile}>
-            <button
-              type="button"
-              className={joinClassNames(styles.tileOpen)}
-              disabled={link.isPending}
-              onClick={() => {
-                link.mutate({ cardId: card.id, assetId: asset.id });
-              }}
-            >
-              <span className={styles.linkKind} title={asset.categoryName}>
-                {asset.categoryName}
-              </span>
-              <span className={styles.rowTitle} title={asset.name}>
-                {asset.name}
-              </span>
-              <span className={styles.state}>{describeAssetStatus(asset.status)}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <AssetPicker
+      projectSlug={projectSlug}
+      exclude={new Set(card.assetLinks.map((existing) => existing.assetId))}
+      busy={link.isPending}
+      onPick={(assetId) => {
+        link.mutate({ cardId: card.id, assetId });
+      }}
+    />
   );
 }
-
-/** Enough to choose from without turning the panel into the library itself. */
-const MAXIMUM_OFFERED = 12;

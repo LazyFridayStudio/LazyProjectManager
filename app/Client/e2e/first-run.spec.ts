@@ -32,6 +32,9 @@ const ASSET = 'Ruined watchtower';
 /** An asset made to be deleted, so the journey's own library is left as it was. */
 const STRAY_ASSET = 'Duplicate crate';
 
+/** Something that goes with the watchtower, linked to it and then let go of. */
+const LINKED_ASSET = 'Watchtower bell';
+
 /**
  * One transparent pixel, as a PNG.
  *
@@ -987,6 +990,68 @@ test.describe.serial('a studio setting up for the first time', () => {
     await expect(page.getByRole('button', { name: new RegExp(STRAY_ASSET) })).toHaveCount(0, {
       timeout: 20_000,
     });
+  });
+
+  test('links an asset to another, and each one says so', async () => {
+    /*
+     * A boss and what it drops, a set and its pieces: things filed apart that
+     * still go together. Linked from one panel, the link shows on both, and
+     * either side can let go of it.
+     */
+    await categoryHeading(new RegExp(CATEGORY))
+      .locator('..')
+      .getByRole('button', { name: 'Add', exact: true })
+      .click();
+
+    const made = page.getByRole('dialog', { name: 'New asset' });
+    await made.getByLabel('Asset name').fill(LINKED_ASSET);
+    await made.getByRole('button', { name: 'Add asset' }).click();
+    await expect(made).toBeHidden();
+
+    await openCategory(new RegExp(CATEGORY));
+    await page.getByRole('button', { name: new RegExp(ASSET) }).click();
+
+    const panel = page.getByRole('dialog', { name: 'Asset' });
+    const links = panel.getByRole('region', { name: 'Linked assets' });
+
+    await links.getByRole('button', { name: '+ Link' }).click();
+    await links.getByLabel('Search assets').fill('bell');
+    await links.getByRole('button', { name: new RegExp(LINKED_ASSET) }).click();
+    await links.getByRole('button', { name: 'Done' }).click();
+
+    // The row, named by its category and then its name — not the Unlink beside
+    // it, which names the asset too.
+    const toBell = links.getByRole('button', { name: new RegExp(`${CATEGORY}.*${LINKED_ASSET}`) });
+
+    await expect(toBell).toBeVisible();
+
+    // Followed, the panel becomes the bell, which already says what it goes
+    // with: nobody linked it from this end.
+    await toBell.click();
+    await expect(panel.getByRole('heading', { name: LINKED_ASSET })).toBeVisible();
+
+    const toWatchtower = links.getByRole('button', { name: new RegExp(`${CATEGORY}.*${ASSET}`) });
+
+    await expect(toWatchtower).toBeVisible();
+
+    // Let go of from this end, and the bell itself stays.
+    await links.getByRole('button', { name: `Unlink ${ASSET}` }).click();
+    await expect(toWatchtower).toBeHidden();
+    await expect(panel.getByRole('heading', { name: LINKED_ASSET })).toBeVisible();
+
+    // And gone, leaving the library as the rest of the journey found it.
+    await panel.getByRole('button', { name: 'Delete asset' }).click();
+    await page
+      .getByRole('dialog', { name: `Delete ${LINKED_ASSET}?` })
+      .getByRole('button', { name: 'Delete' })
+      .click();
+    await expect(panel).toBeHidden();
+
+    // The watchtower no longer lists it either.
+    await page.getByRole('button', { name: new RegExp(ASSET) }).click();
+    await expect(panel.getByRole('heading', { name: ASSET })).toBeVisible();
+    await expect(links.getByRole('button', { name: new RegExp(LINKED_ASSET) })).toHaveCount(0);
+    await panel.getByRole('button', { name: 'Close' }).click();
   });
 
   test('drags an asset into the order it should be in', async () => {

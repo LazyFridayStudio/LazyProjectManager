@@ -2,6 +2,8 @@ export { createAssetCategoryHandler, createAssetHandler } from './commands/creat
 
 export { linkAssetHandler, unlinkAssetHandler } from './commands/link-asset.js';
 
+export { linkAssetsHandler, unlinkAssetsHandler } from './commands/link-assets.js';
+
 export {
   moveAssetReferenceHandler,
   promoteAssetReferenceHandler,

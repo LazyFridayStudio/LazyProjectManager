@@ -30,6 +30,28 @@ export const assetCardLinkSchema = z.object({
 export type AssetCardLink = z.infer<typeof assetCardLinkSchema>;
 
 /**
+ * Another asset this one goes with.
+ *
+ * Enough to say what it is without opening it: a helm on the Voryoc Hound's
+ * panel reads as a helm, filed under Helmets, and finished or not.
+ */
+export const linkedAssetSchema = z.object({
+  /** What `assets.unlinkAsset` takes. The same from either end of the link. */
+  linkId: z.string().uuid(),
+  assetId: z.string().uuid(),
+  assetKey: z.string(),
+  name: z.string(),
+  status: assetStatusSchema,
+  category: z.object({
+    id: z.string().uuid(),
+    name: z.string(),
+    color: z.string(),
+  }),
+});
+
+export type LinkedAsset = z.infer<typeof linkedAssetSchema>;
+
+/**
  * One picture of the asset.
  *
  * An asset gathers a sheet of these — a silhouette, colour keys, a material
@@ -118,6 +140,8 @@ export const assetDetailViewSchema = z.object({
   files: z.array(assetFileSchema),
   /** The cards about it, open ones first. */
   cards: z.array(assetCardLinkSchema),
+  /** The other assets it goes with, by name. */
+  linkedAssets: z.array(linkedAssetSchema),
   /**
    * Whether the person reading this may delete the asset.
    *
@@ -125,6 +149,8 @@ export const assetDetailViewSchema = z.object({
    * the command behind it cannot disagree about who that is.
    */
   canDelete: z.boolean(),
+  /** Whether they may link it to another asset, or unlink one. Asked the same way. */
+  canLink: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

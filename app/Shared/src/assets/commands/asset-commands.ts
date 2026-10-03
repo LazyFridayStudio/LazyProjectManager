@@ -163,9 +163,9 @@ export const updateAssetCommand = defineCommand(
  * Takes an asset out of the library.
  *
  * Everything on it goes with it — its reference images, its working files, its
- * stages, its tags, the hours logged against it and its links to cards — and
- * all of it waits a week in the bin, where putting the asset back brings the
- * lot. The cards it was linked to stay where they are.
+ * stages, its tags, the hours logged against it and its links to cards and to
+ * other assets — and all of it waits a week in the bin, where putting the asset
+ * back brings the lot. The cards and assets it was linked to stay where they are.
  */
 export const deleteAssetCommand = defineCommand(
   'assets.deleteAsset',
@@ -190,6 +190,32 @@ export const linkAssetCommand = defineCommand(
 /** Takes that back. The card and the asset both stay where they are. */
 export const unlinkAssetCommand = defineCommand(
   'assets.unlinkCard',
+  z.object({ linkId: z.string().uuid() }),
+);
+
+/**
+ * Says two assets go together: a boss and what it drops, a set and its pieces.
+ *
+ * One relation, and the same from either end. A drop "comes from" its boss and
+ * the boss "drops" it, but both panels saying "linked to" covers it, and a
+ * direction would be one more thing to get the wrong way round when linking.
+ *
+ * Both have to be in the same project, as a card and its asset do. Asking twice
+ * is not an error, from either end: the pair is one link whichever asset the
+ * request came from.
+ */
+export const linkAssetsCommand = defineCommand(
+  'assets.linkAsset',
+  z.object({
+    assetId: z.string().uuid(),
+    /** The asset to link it to. */
+    toAssetId: z.string().uuid(),
+  }),
+);
+
+/** Takes that back. Both assets stay exactly as they were. */
+export const unlinkAssetsCommand = defineCommand(
+  'assets.unlinkAsset',
   z.object({ linkId: z.string().uuid() }),
 );
 

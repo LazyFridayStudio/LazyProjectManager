@@ -5,6 +5,7 @@ import {
   type AssetReference,
   type CardAssignee,
   type FileState,
+  type LinkedAsset,
 } from '@lpm/shared';
 
 import { defineQueryHandler } from '../../../cqrs/query-registry.js';
@@ -60,8 +61,9 @@ export const assetDetailHandler = defineQueryHandler({
       throw new AssetNotFoundError();
     }
 
-    const [cards, references, files, tags, subtasks, work] = await Promise.all([
+    const [cards, linkedAssets, references, files, tags, subtasks, work] = await Promise.all([
       selectCards(context.database, row.id),
+      selectLinkedAssets(context.database, row.id),
       selectReferences(context.database, row.id),
       selectFiles(context.database, row.id),
       selectTags(context.database, row.id),
@@ -83,9 +85,11 @@ export const assetDetailHandler = defineQueryHandler({
       // Kysely types a SQL boolean as one that might arrive as a number, since
       // some drivers hand one back. `pg` does not, and the view says boolean.
       cards: cards.map((card) => ({ ...card, closed: Boolean(card.closed) })),
+      linkedAssets: linkedAssets.map(toLinkedAsset),
       // Asked once here rather than worked out again on the screen, so the
       // Delete button and the command behind it cannot disagree about who may.
       canDelete: mayDo({ actor, role, action: 'asset.delete' }),
+      canLink: mayDo({ actor, role, action: 'asset.link' }),
     };
   },
 });
@@ -289,6 +293,58 @@ function selectCards(database: RequestContext['database'], assetId: string) {
     .execute();
 }
 
+/**
+ * The other assets this one goes with, by name.
+ *
+ * A pair is stored once, lower id first, so this one may be either end of it:
+ * the asset wanted is whichever end is not this one. By name rather than by
+ * when they were linked, because a boss with fourteen drops is a list somebody
+ * scans for the helm.
+ */
+function selectLinkedAssets(database: RequestContext['database'], assetId: string) {
+  return database
+    .selectFrom('assetLink')
+    .innerJoin('asset', (join) =>
+      join.on((builder) =>
+        builder.or([
+          builder('asset.id', '=', builder.ref('assetLink.firstAssetId')),
+          builder('asset.id', '=', builder.ref('assetLink.secondAssetId')),
+        ]),
+      ),
+    )
+    .innerJoin('assetCategory', 'assetCategory.id', 'asset.categoryId')
+    .select([
+      'assetLink.id as linkId',
+      'asset.id as assetId',
+      'asset.assetKey',
+      'asset.name',
+      'asset.status',
+      'assetCategory.id as categoryId',
+      'assetCategory.name as categoryName',
+      'assetCategory.color as categoryColor',
+    ])
+    .where((builder) =>
+      builder.or([
+        builder('assetLink.firstAssetId', '=', assetId),
+        builder('assetLink.secondAssetId', '=', assetId),
+      ]),
+    )
+    .where('asset.id', '!=', assetId)
+    .orderBy('asset.name')
+    .execute();
+}
+
+function toLinkedAsset(row: Awaited<ReturnType<typeof selectLinkedAssets>>[number]): LinkedAsset {
+  return {
+    linkId: row.linkId,
+    assetId: row.assetId,
+    assetKey: row.assetKey,
+    name: row.name,
+    status: row.status,
+    category: { id: row.categoryId, name: row.categoryName, color: row.categoryColor },
+  };
+}
+
 type AssetRow = NonNullable<Awaited<ReturnType<typeof selectAsset>>>;
 
 /**
@@ -326,7 +382,15 @@ function toDetail(
   row: AssetRow,
 ): Omit<
   AssetDetailView,
-  'canDelete' | 'cards' | 'files' | 'references' | 'subtasks' | 'tags' | 'work'
+  | 'canDelete'
+  | 'canLink'
+  | 'cards'
+  | 'files'
+  | 'linkedAssets'
+  | 'references'
+  | 'subtasks'
+  | 'tags'
+  | 'work'
 > {
   return {
     id: row.id,

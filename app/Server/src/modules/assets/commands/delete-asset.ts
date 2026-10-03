@@ -31,8 +31,8 @@ interface DeleteRequest {
  * not otherwise say so.
  *
  * Everything hanging off the asset cascades in the database — its pictures, its
- * files, its stages, its tags, the hours logged against it, its links to cards —
- * so all of it would go silently. The bin copy is taken first, so a restore
+ * files, its stages, its tags, the hours logged against it, its links to cards
+ * and to other assets — so all of it would go silently. The bin copy is taken first, so a restore
  * brings back the asset as it stood rather than an empty tile with the right
  * name.
  */

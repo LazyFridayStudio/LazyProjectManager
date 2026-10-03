@@ -212,6 +212,7 @@ describe('GIVEN the migration set', () => {
         '0059-one-sync-at-a-time',
         '0060-a-category-inside-a-category',
         '0061-a-name-can-wait-for-the-end-of-a-command',
+        '0062-an-asset-can-be-linked-to-another',
       ]);
       expect(provided).toEqual(names);
     });
@@ -284,6 +285,7 @@ describe('GIVEN the migration set', () => {
         '0059-one-sync-at-a-time',
         '0060-a-category-inside-a-category',
         '0061-a-name-can-wait-for-the-end-of-a-command',
+        '0062-an-asset-can-be-linked-to-another',
       ]);
     });
   });
@@ -330,6 +332,7 @@ describe('GIVEN the migration set', () => {
           'asset_subtask',
           'asset_sequence',
           'card_asset_link',
+          'asset_link',
           'project_doc',
           'milestone',
           'project_release',
@@ -368,6 +371,15 @@ describe('GIVEN the migration set', () => {
   });
 
   describe('WHEN migrations are rolled back one at a time', () => {
+    it('THEN the links between assets go, and the assets stay', async () => {
+      const { error } = await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
+      const remaining = await tableNames();
+
+      expect(error).toBeUndefined();
+      expect(remaining).not.toContain('asset_link');
+      expect(remaining).toEqual(expect.arrayContaining(['asset', 'card_asset_link']));
+    });
+
     it('THEN a category name is checked at every row again', async () => {
       const { error } = await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
 
@@ -972,6 +984,7 @@ describe('GIVEN the migration set', () => {
           'scm_connection',
           'asset',
           'card_asset_link',
+          'asset_link',
           'project_doc',
           'milestone',
           'project_release',
@@ -997,8 +1010,9 @@ describe('GIVEN the migration set', () => {
    */
   describe('WHEN a library filed with subcategories is migrated', () => {
     it('THEN every subcategory becomes a category, and the assets move into it', async () => {
-      // Back past the step that lets a name wait as well, which came after the
-      // tree and depends on the index it made.
+      // Back past the steps that came after the tree as well: linking assets,
+      // and letting a name wait, which depends on the index the tree made.
+      await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
       await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
       await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
 
@@ -1059,6 +1073,62 @@ describe('GIVEN the migration set', () => {
           // Nothing typed in the box, so it stays where it was.
           { name: 'Crate', category: 'Props' },
           { name: 'Curtain', category: 'Cloth' },
+        ]);
+      });
+    });
+  });
+
+  /*
+   * Run after the library above, on the account it made, so it too starts from
+   * a complete schema and leaves one.
+   */
+  describe('WHEN groups written before assets could be linked are migrated', () => {
+    it('THEN each says about linking assets what it said about changing them', async () => {
+      await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
+
+      const allows = '00000000-0000-4000-8000-00000000a901';
+      const denies = '00000000-0000-4000-8000-00000000a902';
+      const silent = '00000000-0000-4000-8000-00000000a903';
+
+      await withTestDatabase(async (database) => {
+        for (const [id, name] of [
+          [allows, 'Files and assets'],
+          [denies, 'Read the library only'],
+          [silent, 'Board and cards'],
+        ] as const) {
+          await sql`
+            insert into permission_group (id, account_id, name) values (${id}, ${ACCOUNT}, ${name})
+          `.execute(database);
+        }
+
+        for (const [groupId, action, effect] of [
+          [allows, 'asset.update', 'allow'],
+          [denies, 'asset.update', 'deny'],
+          [silent, 'card.update', 'allow'],
+        ] as const) {
+          await sql`
+            insert into permission_rule (account_id, group_id, action, effect)
+            values (${ACCOUNT}, ${groupId}, ${action}, ${effect})
+          `.execute(database);
+        }
+      });
+
+      const { error } = await runMigrations(urlForDatabase(TEST_DATABASE_NAME));
+
+      expect(error).toBeUndefined();
+
+      await withTestDatabase(async (database) => {
+        const linking = await sql<{ group_id: string; effect: string }>`
+          select group_id, effect from permission_rule
+          where action = 'asset.link' order by group_id
+        `.execute(database);
+
+        expect(linking.rows).toEqual([
+          { group_id: allows, effect: 'allow' },
+          // A group that keeps somebody out of the library keeps them from
+          // rearranging what is in it, too.
+          { group_id: denies, effect: 'deny' },
+          // Nothing said about assets, so nothing said about linking them.
         ]);
       });
     });

@@ -1,5 +1,5 @@
 import { createTestDatabase, seedInstall, type TestDatabase } from '@lpm/database/testing';
-import type { DeletedThingsView } from '@lpm/shared';
+import type { AssetDetailView, DeletedThingsView } from '@lpm/shared';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
@@ -570,6 +570,19 @@ describe('GIVEN an install where things get deleted', () => {
       return { categoryId, assetId };
     }
 
+    /** The names on an asset's panel under Linked assets. */
+    async function linkedTo(assetId: string): Promise<string[]> {
+      const response = await server.inject({
+        method: 'GET',
+        url: `/api/q/assets.detail?assetId=${assetId}`,
+        cookies: { lpm_session: ownerCookie },
+      });
+
+      return response
+        .json<{ data: AssetDetailView }>()
+        .data.linkedAssets.map((linked) => linked.name);
+    }
+
     /** Puts back the one thing in the bin that is an asset. */
     async function restoreTheAsset(): Promise<Awaited<ReturnType<typeof server.inject>>> {
       const forAsset = (await bin()).things.find((thing) => thing.what === 'Asset');
@@ -633,6 +646,47 @@ describe('GIVEN an install where things get deleted', () => {
       // A linked file points at no stored file, and comes back all the same.
       expect(files).toEqual([{ label: 'watchtower.blend' }]);
       expect(links).toEqual([{ cardId }]);
+    });
+
+    it('THEN its links to other assets go with it, and come back with it', async () => {
+      const { categoryId, assetId: boss } = await makeAsset('Voryoc Hound');
+      const helm = (
+        await command('assets.createAsset', { projectId, categoryId, name: 'Hound-skull helm' })
+      ).json<{ id: string }>().id;
+      const sword = (
+        await command('assets.createAsset', { projectId, categoryId, name: 'Hound-fang sword' })
+      ).json<{ id: string }>().id;
+
+      // One from each end, since either may be the one the bin is holding.
+      await command('assets.linkAsset', { assetId: boss, toAssetId: helm });
+      await command('assets.linkAsset', { assetId: sword, toAssetId: boss });
+      await command('assets.deleteAsset', { assetId: boss });
+
+      expect(await linkedTo(helm)).toEqual([]);
+
+      const restored = await restoreTheAsset();
+
+      expect(restored.statusCode).toBe(200);
+      expect(await linkedTo(boss)).toEqual(['Hound-fang sword', 'Hound-skull helm']);
+      // And the drops say where they come from again.
+      expect(await linkedTo(helm)).toEqual(['Voryoc Hound']);
+    });
+
+    it('THEN a link to an asset deleted since is left out, and the asset comes back', async () => {
+      const { categoryId, assetId: boss } = await makeAsset('Voryoc Hound');
+      const helm = (
+        await command('assets.createAsset', { projectId, categoryId, name: 'Hound-skull helm' })
+      ).json<{ id: string }>().id;
+
+      await command('assets.linkAsset', { assetId: boss, toAssetId: helm });
+      await command('assets.deleteAsset', { assetId: boss });
+      await command('assets.deleteAsset', { assetId: helm });
+
+      const forBoss = (await bin()).things.find((thing) => thing.name === 'Voryoc Hound');
+      const restored = await command('recovery.restore', { deletedThingId: forBoss?.id });
+
+      expect(restored.statusCode).toBe(200);
+      expect(await linkedTo(boss)).toEqual([]);
     });
 
     it('THEN it is refused, saying why, while the category it was in is deleted', async () => {

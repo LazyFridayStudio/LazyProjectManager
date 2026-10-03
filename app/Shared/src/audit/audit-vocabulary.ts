@@ -63,6 +63,8 @@ const PHRASE_BY_EVENT: Readonly<Record<string, string>> = {
   'board.subtaskUpdated': 'Ticked a sub-task off',
   'board.subtaskRemoved': 'Removed a sub-task',
   'assets.assetDeleted': 'Deleted an asset',
+  'assets.assetLinked': 'Linked two assets',
+  'assets.assetUnlinked': 'Unlinked two assets',
   'assets.moved': 'Moved an asset',
   'assets.categoryMoved': 'Moved a category',
   // A stage of an asset rather than a step of a card, and the trail says which:

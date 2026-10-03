@@ -14,6 +14,7 @@ import type {
 import type {
   AssetCategoryTable,
   AssetFileTable,
+  AssetLinkTable,
   AssetReferenceTable,
   AssetSequenceTable,
   AssetTable,
@@ -99,6 +100,7 @@ export interface DatabaseSchema {
   assetTag: AssetTagTable;
   assetSequence: AssetSequenceTable;
   cardAssetLink: CardAssetLinkTable;
+  assetLink: AssetLinkTable;
   commandLog: CommandLogTable;
   domainEvent: DomainEventTable;
   deletedThing: DeletedThingTable;
