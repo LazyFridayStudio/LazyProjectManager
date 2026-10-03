@@ -2,7 +2,7 @@ import type { WaitingMention } from '@lpm/shared';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 
-import { Avatar } from '../ui/index.js';
+import { Avatar, usePresence } from '../ui/index.js';
 import { joinClassNames } from '../../lib/join-class-names.js';
 import { formatTimeAgo } from '../../logic/projects/format-project-values.js';
 import { useSeeMention, useWaitingMentions } from '../../logic/auth/use-mentions.js';
@@ -34,6 +34,7 @@ export interface NotificationMarkProps {
 export function NotificationMark({ opens }: NotificationMarkProps): React.JSX.Element | null {
   const waiting = useWaitingMentions();
   const [isOpen, setIsOpen] = useState(false);
+  const list = usePresence<HTMLDivElement>(isOpen, 'menu');
   const total = waiting.data?.total ?? 0;
 
   if (total === 0) {
@@ -57,8 +58,9 @@ export function NotificationMark({ opens }: NotificationMarkProps): React.JSX.El
         {total > 99 ? '99+' : total}
       </button>
 
-      {isOpen && (
+      {list.isPresent && (
         <Waiting
+          ref={list.ref}
           opens={opens}
           mentions={waiting.data?.mentions ?? []}
           total={total}
@@ -80,11 +82,13 @@ export function NotificationMark({ opens }: NotificationMarkProps): React.JSX.El
  * into view.
  */
 function Waiting({
+  ref,
   opens,
   mentions,
   total,
   onDone,
 }: {
+  readonly ref: React.Ref<HTMLDivElement>;
   readonly opens: 'down' | 'up';
   readonly mentions: readonly WaitingMention[];
   readonly total: number;
@@ -95,6 +99,7 @@ function Waiting({
 
   return (
     <div
+      ref={ref}
       className={joinClassNames(styles.panel, opens === 'up' ? styles.upwards : styles.downwards)}
       role="dialog"
       aria-label="Waiting for you"

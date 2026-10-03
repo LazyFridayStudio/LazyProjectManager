@@ -13,7 +13,15 @@ import { ScreenHeader } from '../shell/ScreenHeader.js';
 import { useEffect, useMemo, useState } from 'react';
 
 import { describeFailure } from '../../api/failure-messages.js';
-import { Button, ButtonIcon, ChevronIcon, PencilIcon, PlusIcon, TrashIcon } from '../ui/index.js';
+import {
+  Button,
+  ButtonIcon,
+  ChevronIcon,
+  PencilIcon,
+  PlusIcon,
+  TrashIcon,
+  usePresence,
+} from '../ui/index.js';
 import { formatMoney } from '../../logic/projects/format-project-values.js';
 import { CardDetailDialog } from '../board/card-detail/CardDetailDialog.js';
 import { AssetDetailDialog } from './AssetDetailDialog.js';
@@ -110,6 +118,7 @@ function Library({ view, slug, filters, onFilter }: LibraryProps): React.JSX.Ele
   const total = view.categories.reduce((sum, category) => sum + category.estimatedMinor, 0);
   const count = view.categories.reduce((sum, category) => sum + category.count, 0);
   const narrowed = isFiltering(filters);
+  const filterPanel = usePresence<HTMLDivElement>(isFilterShown || narrowed, 'reveal');
 
   /*
    * The same array as long as the same categories are in it.
@@ -148,16 +157,18 @@ function Library({ view, slug, filters, onFilter }: LibraryProps): React.JSX.Ele
           }}
         />
 
-        {(isFilterShown || narrowed) && (
-          <AssetFilterPanel
-            filters={filters}
-            availableTags={view.availableTags}
-            onChange={onFilter}
-            onHide={() => {
-              setIsFilterShown(false);
-              onFilter(NO_FILTERS);
-            }}
-          />
+        {filterPanel.isPresent && (
+          <div ref={filterPanel.ref}>
+            <AssetFilterPanel
+              filters={filters}
+              availableTags={view.availableTags}
+              onChange={onFilter}
+              onHide={() => {
+                setIsFilterShown(false);
+                onFilter(NO_FILTERS);
+              }}
+            />
+          </div>
         )}
 
         {view.categories.length === 0 ? (
@@ -585,6 +596,7 @@ function Category({
    * overrule that.
    */
   const [isOpen, setIsOpen] = useState(isAskedFor);
+  const contents = usePresence<HTMLDivElement>(isOpen, 'reveal');
 
   useEffect(() => {
     if (isAskedFor) {
@@ -696,8 +708,8 @@ function Category({
           Categories before tiles: a heading is read as a group of headings
           first and a shelf of things second, and putting the tiles above them
           would bury the finer table of contents under a screen of pictures. */}
-      {isOpen && (
-        <div className={styles.categoryContents}>
+      {contents.isPresent && (
+        <div ref={contents.ref} className={styles.categoryContents}>
           {category.categories.map((child) => (
             <Category key={child.id} {...inherited} category={child} depth={depth + 1} />
           ))}

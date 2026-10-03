@@ -9,7 +9,7 @@ import {
   type TimelineGrouping,
 } from '@lpm/shared';
 
-import { Avatar, Button, ChevronIcon } from '../ui/index.js';
+import { Avatar, Button, ChevronIcon, usePresence } from '../ui/index.js';
 import { describeFailure } from '../../api/failure-messages.js';
 import { LoadingProject } from '../shell/LoadingProject.js';
 import { ProjectShell } from '../shell/ProjectShell.js';
@@ -213,6 +213,7 @@ function Group({
   view: ProjectTimelineView;
 }): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(true);
+  const bands = usePresence<HTMLDivElement>(isOpen, 'reveal');
   const total = group.hoursByDay.reduce((sum, hours) => sum + hours, 0);
 
   return (
@@ -254,37 +255,40 @@ function Group({
         </span>
       </button>
 
-      {isOpen &&
-        group.bars.map((bar) => (
-          <div key={bar.cardId} className={styles.bandRow}>
-            <span className={styles.bandName}>
-              <span className={styles.bandTitle}>{bar.title}</span>
-              <span className={styles.bandNote}>
-                {bar.cardKey} · {bar.estimated ? formatHours(bar.hours) : 'no estimate'}
+      {bands.isPresent && (
+        <div ref={bands.ref}>
+          {group.bars.map((bar) => (
+            <div key={bar.cardId} className={styles.bandRow}>
+              <span className={styles.bandName}>
+                <span className={styles.bandTitle}>{bar.title}</span>
+                <span className={styles.bandNote}>
+                  {bar.cardKey} · {bar.estimated ? formatHours(bar.hours) : 'no estimate'}
+                </span>
               </span>
-            </span>
-            <span className={styles.band}>
-              <span className={styles.bandTrack}>
-                {view.days.map((day) => (
-                  <span key={day.date} className={styles.bandCell} data-weekend={day.isWeekend} />
-                ))}
+              <span className={styles.band}>
+                <span className={styles.bandTrack}>
+                  {view.days.map((day) => (
+                    <span key={day.date} className={styles.bandCell} data-weekend={day.isWeekend} />
+                  ))}
+                </span>
+                <span
+                  className={styles.bar}
+                  title={`${bar.title} — ${bar.listName}`}
+                  data-clipped={bar.startsEarlier}
+                  style={{
+                    left: `${String((bar.startIndex / TIMELINE_DAYS) * 100)}%`,
+                    width: `${String((bar.spanDays / TIMELINE_DAYS) * 100)}%`,
+                    background: bar.listColor ?? 'var(--color-accent)',
+                  }}
+                />
               </span>
-              <span
-                className={styles.bar}
-                title={`${bar.title} — ${bar.listName}`}
-                data-clipped={bar.startsEarlier}
-                style={{
-                  left: `${String((bar.startIndex / TIMELINE_DAYS) * 100)}%`,
-                  width: `${String((bar.spanDays / TIMELINE_DAYS) * 100)}%`,
-                  background: bar.listColor ?? 'var(--color-accent)',
-                }}
-              />
-            </span>
-          </div>
-        ))}
+            </div>
+          ))}
 
-      {isOpen && group.bars.length === 0 && (
-        <p className={styles.free}>Nothing dated in this fortnight.</p>
+          {group.bars.length === 0 && (
+            <p className={styles.free}>Nothing dated in this fortnight.</p>
+          )}
+        </div>
       )}
     </div>
   );

@@ -187,7 +187,7 @@
 .makeThumbnail {
   opacity: 0;
   cursor: pointer;
-  transition: opacity 120ms ease-out;
+  transition: opacity var(--motion-hint) var(--motion-ease);
 }
 
 .thumbnailHolder:hover .makeThumbnail,
@@ -210,12 +210,6 @@
 .thumbnailHolder[data-dragging='true'] .makeThumbnail {
   opacity: 0;
   pointer-events: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .makeThumbnail {
-    transition: none;
-  }
 }
 
 /*

@@ -34,9 +34,6 @@
   top: 0;
   height: 100vh;
   overflow: hidden;
-  /* Only the width moves. Animating the content would mean text sliding about
-     inside a box that is already the wrong size for it. */
-  transition: width 120ms ease;
 }
 
 /*

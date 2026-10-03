@@ -314,13 +314,7 @@
   /* The mark that says a drop would land here arrives and leaves rather than
      snapping, which is the difference between a mark that follows a pointer and
      one that flickers at it. */
-  transition: background 90ms ease-out;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .categoryHead {
-    transition: none;
-  }
+  transition: background var(--motion-hint) var(--motion-ease);
 }
 
 /*

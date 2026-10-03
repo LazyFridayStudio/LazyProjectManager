@@ -9,7 +9,7 @@ import {
 import { useState } from 'react';
 
 import { describeFailure } from '../../api/failure-messages.js';
-import { Button, ChevronIcon, Loading } from '../ui/index.js';
+import { Button, ChevronIcon, Loading, usePresence } from '../ui/index.js';
 import { InstallShell } from '../shell/InstallShell.js';
 import { EditPermissionGroupDialog } from './EditPermissionGroupDialog.js';
 import { NewPermissionGroupDialog } from './NewPermissionGroupDialog.js';
@@ -187,6 +187,7 @@ function Catalogue({
   chosen: Map<string, PermissionEffect>;
 }): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
+  const rules = usePresence<HTMLDivElement>(isOpen, 'reveal');
   const setRule = useSetRule();
 
   const effects = catalogue.actions.map((action) => chosen.get(action.value) ?? null);
@@ -225,8 +226,8 @@ function Catalogue({
         />
       </div>
 
-      {isOpen && (
-        <>
+      {rules.isPresent && (
+        <div ref={rules.ref}>
           <p className={styles.catalogueAbout}>{catalogue.description}</p>
 
           <ul className={styles.rules}>
@@ -247,7 +248,7 @@ function Catalogue({
               </li>
             ))}
           </ul>
-        </>
+        </div>
       )}
     </section>
   );

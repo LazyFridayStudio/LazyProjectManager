@@ -7,6 +7,7 @@ import {
   type WorkspaceCategory,
 } from '@lpm/shared';
 
+import { useWidthFollows } from '../ui/index.js';
 import { AccountButton } from '../account/AccountButton.js';
 import { NotificationMark } from '../account/NotificationMark.js';
 import { useRealtimeInvalidation } from '../../logic/realtime/index.js';
@@ -116,11 +117,15 @@ export function ProjectShell({
   useRealtimeInvalidation(project.id);
 
   const [isCollapsed, toggleCollapsed] = useSidebarCollapsed();
+  // Only the width moves. Animating the content would mean text sliding about
+  // inside a box that is already the wrong size for it.
+  const sidebar = useWidthFollows<HTMLElement>(isCollapsed);
   const workspace = useWorkspace(project.slug);
 
   return (
     <div className={styles.shell}>
       <nav
+        ref={sidebar.ref}
         className={joinClassNames(styles.sidebar, isCollapsed && styles.sidebarCollapsed)}
         aria-label="Project"
       >
@@ -128,7 +133,10 @@ export function ProjectShell({
           project={project}
           logoUrl={workspace.data?.project.logoUrl ?? null}
           isCollapsed={isCollapsed}
-          onToggle={toggleCollapsed}
+          onToggle={() => {
+            sidebar.beforeChange();
+            toggleCollapsed();
+          }}
         />
 
         {/* The part that scrolls. A long document's contents list can be taller

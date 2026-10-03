@@ -4,6 +4,13 @@ import tseslint from 'typescript-eslint';
 import prettierConfig from 'eslint-config-prettier';
 import globals from 'globals';
 
+/** The client's one way to the server, which every client file is held to. */
+const clientTalksThroughTheContract = {
+  group: ['@lpm/database', '@lpm/server'],
+  message:
+    'The browser talks to the server over the command/query contract. Import @lpm/shared only.',
+};
+
 /**
  * Layers may only import downwards. `packages/domain` is the innermost layer and
  * holds pure business rules, so it may not reach for IO, HTTP or the database;
@@ -69,10 +76,11 @@ const layerImportBoundaries = [
         'error',
         {
           patterns: [
+            clientTalksThroughTheContract,
             {
-              group: ['@lpm/database', '@lpm/server'],
+              group: ['motion', 'motion/*', 'framer-motion', 'framer-motion/*'],
               message:
-                'The browser talks to the server over the command/query contract. Import @lpm/shared only.',
+                'Tween through components/ui/motion.ts, which holds the durations, the easing and the reduced-motion check in one place.',
             },
           ],
         },
@@ -106,6 +114,14 @@ const layerImportBoundaries = [
           message: 'Say it with showError or showNotice from useDisplay.',
         },
       ],
+    },
+  },
+  {
+    // The one file the animation library is imported into, so everything that
+    // moves takes its timing and its reduced-motion check from the same place.
+    files: ['app/Client/src/components/ui/motion.ts'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [clientTalksThroughTheContract] }],
     },
   },
 ];

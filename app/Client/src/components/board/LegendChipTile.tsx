@@ -5,7 +5,7 @@ import { useState } from 'react';
 
 import { getColorForCardType } from '../../tokens/card-type-colors.js';
 import { joinClassNames } from '../../lib/join-class-names.js';
-import { ChevronIcon } from '../ui/index.js';
+import { ChevronIcon, usePresence } from '../ui/index.js';
 import styles from './LegendChipTile.module.css';
 
 export interface LegendChipTileProps {
@@ -49,6 +49,7 @@ export function LegendChipTile({
 }: LegendChipTileProps): React.JSX.Element {
   const sortable = useSortable({ id: card.id, disabled: !canMove });
   const [isOpen, setIsOpen] = useState(false);
+  const clump = usePresence<HTMLUListElement>(isOpen, 'reveal');
 
   const done = card.gathers.filter((gathered) => gathered.closed).length;
 
@@ -109,8 +110,8 @@ export function LegendChipTile({
             </span>
           </button>
 
-          {isOpen && (
-            <ul className={styles.clump}>
+          {clump.isPresent && (
+            <ul ref={clump.ref} className={styles.clump}>
               {card.gathers.map((gathered) => (
                 <Gathered key={gathered.id} card={gathered} onOpen={onOpen} />
               ))}

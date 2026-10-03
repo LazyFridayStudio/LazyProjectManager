@@ -17,12 +17,13 @@ import {
   PencilIcon,
   Select,
   TrashIcon,
+  useArrivesWith,
   useModalDialog,
 } from '../../ui/index.js';
 import { useMilestonePlan } from '../../../logic/milestones/use-milestones.js';
 import { PersonPicker } from '../../projects/index.js';
 import { formatTimeAgo } from '../../../logic/projects/format-project-values.js';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { useCardDetail } from '../../../logic/board/use-cards.js';
 import { useAskToDeleteCard } from '../../../logic/board/use-delete-card.js';
@@ -76,8 +77,12 @@ export function CardDetailDialog({
   onOpenCard,
   onOpenAsset,
 }: CardDetailDialogProps): React.JSX.Element {
-  const dialog = useModalDialog(onClose);
+  const dialog = useModalDialog(onClose, 'panel');
   const card = useCardDetail(cardId);
+  const contents = useRef<HTMLFormElement>(null);
+
+  // Following a link keeps the panel and moves the next card into it.
+  useArrivesWith(contents, card.data?.id, 'swap');
 
   return (
     <dialog {...dialog.dialogProps} className={styles.dialog} aria-label="Card">
@@ -92,6 +97,7 @@ export function CardDetailDialog({
           // Keyed by the card, so following a link starts the next one as it
           // opens rather than carrying this one's half-finished edit into it.
           key={card.data.id}
+          ref={contents}
           card={card.data}
           projectSlug={projectSlug}
           canWrite={canWrite}
@@ -105,6 +111,7 @@ export function CardDetailDialog({
 }
 
 interface CardFormProps {
+  readonly ref: React.Ref<HTMLFormElement>;
   readonly card: CardDetailView;
   readonly projectSlug: string;
   readonly canWrite: boolean;
@@ -114,6 +121,7 @@ interface CardFormProps {
 }
 
 function CardForm({
+  ref,
   card,
   projectSlug,
   canWrite,
@@ -140,6 +148,7 @@ function CardForm({
 
   return (
     <form
+      ref={ref}
       className={styles.form}
       onSubmit={(event) => {
         event.preventDefault();

@@ -61,6 +61,8 @@ export default defineConfig({
     viewport: { width: 1600, height: 1000 },
     deviceScaleFactor: 1,
     colorScheme: 'dark',
+    // Still, so a picture is never taken of a panel halfway into place.
+    contextOptions: { reducedMotion: 'reduce' },
   },
 
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],

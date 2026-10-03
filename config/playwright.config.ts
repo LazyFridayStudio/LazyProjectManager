@@ -97,6 +97,19 @@ export default defineConfig({
      * expects to be kept waiting.
      */
     actionTimeout: 20_000,
+    /*
+     * As somebody who has asked for less movement, so nothing tweens.
+     *
+     * Every dialog, panel and section in the app moves into place and out of
+     * it. A test that clicks while one is still arriving waits for it to hold
+     * still, and one that checks a thing has gone waits for it to finish
+     * leaving — time spent on nothing the journey asks about, on every step,
+     * and a change in timing under the drag step's known refetch race. With
+     * this the app arrives and leaves in a single frame, as it did before any
+     * of it moved. The motion helper's own answer to the setting is what this
+     * leans on, so the journey also proves that answer is honoured.
+     */
+    contextOptions: { reducedMotion: 'reduce' },
   },
 
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
