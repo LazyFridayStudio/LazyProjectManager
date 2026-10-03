@@ -48,9 +48,10 @@ export function useAskToDeleteAsset(
  * What somebody is agreeing to, in the order it matters.
  *
  * What is on the asset first, because that is the part out of sight. Then the
- * cards it was linked to, which do *not* go — somebody deleting the watchtower
- * needs to know the work on it stays on the board. The week last: it is what
- * makes the answer easy to give.
+ * cards and assets it was linked to, which do *not* go — somebody deleting the
+ * watchtower needs to know the work on it stays on the board, and somebody
+ * deleting a boss that the helm it drops stays in the library. The week last:
+ * it is what makes the answer easy to give.
  */
 function whatGoesWithIt(asset: AssetDetailView): string {
   const held = [
@@ -62,7 +63,7 @@ function whatGoesWithIt(asset: AssetDetailView): string {
 
   const goes = held.length === 0 ? 'Nothing else is on it.' : `It takes ${asList(held)} with it.`;
 
-  return `${goes}${whatStays(asset.cards.length)} It waits a week in the bin, and can be put back until then.`;
+  return `${goes}${whatStays(asset.cards.length)}${whichAssetsStay(asset.linkedAssets.length)} It waits a week in the bin, and can be put back until then.`;
 }
 
 /** The cards that were about it, which stay where they are. */
@@ -76,4 +77,17 @@ function whatStays(linked: number): string {
   }
 
   return ` The ${String(linked)} cards linked to it stay on the board.`;
+}
+
+/** The other assets it went with, which stay where they are filed. */
+function whichAssetsStay(linked: number): string {
+  if (linked === 0) {
+    return '';
+  }
+
+  if (linked === 1) {
+    return ' The asset linked to it stays in the library.';
+  }
+
+  return ` The ${String(linked)} assets linked to it stay in the library.`;
 }

@@ -21,6 +21,7 @@ import {
 } from '../ui/index.js';
 import { MarkdownField, MarkdownText } from '../markdown/index.js';
 import { AssetFiles } from './AssetFiles.js';
+import { AssetLinks } from './AssetLinks.js';
 import { AssetSubtasks } from './AssetSubtasks.js';
 import { AssetTags } from './AssetTags.js';
 import {
@@ -49,6 +50,11 @@ export interface AssetDetailDialogProps {
    * open one — the board renders this over itself and already has a card panel.
    */
   readonly onOpenCard?: (cardId: string) => void;
+  /**
+   * Opens another asset in this one's place: one it is linked to. Absent where
+   * the screen has no way to change which asset is open.
+   */
+  readonly onOpenAsset?: (assetId: string) => void;
 }
 
 /**
@@ -68,6 +74,7 @@ export function AssetDetailDialog({
   projectSlug,
   onClose,
   onOpenCard,
+  onOpenAsset,
 }: AssetDetailDialogProps): React.JSX.Element {
   const dialog = useModalDialog(onClose);
   const asset = useAsset(assetId);
@@ -89,6 +96,7 @@ export function AssetDetailDialog({
           projectSlug={projectSlug}
           onDone={dialog.close}
           onOpenCard={onOpenCard}
+          onOpenAsset={onOpenAsset}
         />
       )}
     </dialog>
@@ -130,14 +138,16 @@ function chosenOrNobody(userId: string): string | null {
   return userId === '' ? null : userId;
 }
 
-interface AssetFormProps {
+/** Where the panel can go from here: a card about the asset, or an asset it goes with. */
+type Openers = Pick<AssetDetailDialogProps, 'onOpenCard' | 'onOpenAsset'>;
+
+interface AssetFormProps extends Openers {
   readonly asset: AssetDetailView;
   readonly projectSlug: string;
   readonly onDone: () => void;
-  readonly onOpenCard?: (cardId: string) => void;
 }
 
-function AssetForm({ asset, projectSlug, onDone, onOpenCard }: AssetFormProps): React.JSX.Element {
+function AssetForm({ asset, projectSlug, onDone, ...openers }: AssetFormProps): React.JSX.Element {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<AssetFormState>(() => toForm(asset));
   const updateAsset = useUpdateAsset(projectSlug, asset.id);
@@ -208,12 +218,7 @@ function AssetForm({ asset, projectSlug, onDone, onOpenCard }: AssetFormProps): 
           {isEditing ? (
             <Editing form={form} problems={problems} asset={asset} onChange={setForm} />
           ) : (
-            <Reading
-              asset={asset}
-              projectSlug={projectSlug}
-              canWrite={canWrite}
-              onOpenCard={onOpenCard}
-            />
+            <Reading asset={asset} projectSlug={projectSlug} canWrite={canWrite} {...openers} />
           )}
 
           <div className={styles.detailActions}>
@@ -273,15 +278,20 @@ function AssetForm({ asset, projectSlug, onDone, onOpenCard }: AssetFormProps): 
   );
 }
 
-interface ReadingProps {
+interface ReadingProps extends Openers {
   readonly asset: AssetDetailView;
   readonly projectSlug: string;
   readonly canWrite: boolean;
-  readonly onOpenCard?: (cardId: string) => void;
 }
 
 /** The asset as it reads, which is what opening one is usually for. */
-function Reading({ asset, projectSlug, canWrite, onOpenCard }: ReadingProps): React.JSX.Element {
+function Reading({
+  asset,
+  projectSlug,
+  canWrite,
+  onOpenCard,
+  onOpenAsset,
+}: ReadingProps): React.JSX.Element {
   return (
     <>
       <div>
@@ -352,6 +362,13 @@ function Reading({ asset, projectSlug, canWrite, onOpenCard }: ReadingProps): Re
       />
 
       <LinkedCards asset={asset} onOpenCard={onOpenCard} />
+
+      <AssetLinks
+        asset={asset}
+        projectSlug={projectSlug}
+        canWrite={canWrite && asset.canLink}
+        onOpenAsset={onOpenAsset}
+      />
     </>
   );
 }

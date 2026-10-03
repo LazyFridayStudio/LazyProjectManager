@@ -4,7 +4,9 @@ import {
   moveAssetCommand,
   assetDetailQuery,
   linkAssetCommand,
+  linkAssetsCommand,
   unlinkAssetCommand,
+  unlinkAssetsCommand,
   assetLibraryQuery,
   createAssetCategoryCommand,
   createAssetCommand,
@@ -384,6 +386,45 @@ function useLinkRefresh(projectSlug: string, cardId: string): () => Promise<void
     await queryClient.invalidateQueries({ queryKey: ['card', baseUrl, cardId] });
     await queryClient.invalidateQueries({ queryKey: ['asset', baseUrl] });
     await queryClient.invalidateQueries({ queryKey: ['assets', baseUrl, projectSlug] });
+  };
+}
+
+export type LinkAssetsInput = z.input<typeof linkAssetsCommand.inputSchema>;
+
+/**
+ * Says two assets go together, or takes that back.
+ *
+ * Every open asset is refetched rather than the one the link was made from: the
+ * link shows on both panels, and the other one is usually opened next.
+ */
+export function useLinkAssets(): ReturnType<typeof useMutation<unknown, Error, LinkAssetsInput>> {
+  const { client } = useApiClient();
+  const refresh = useEveryAssetRefresh();
+
+  return useMutation({
+    mutationFn: (input: LinkAssetsInput) => client.command(linkAssetsCommand, input),
+    onSuccess: refresh,
+  });
+}
+
+export function useUnlinkAssets(): ReturnType<
+  typeof useMutation<unknown, Error, { linkId: string }>
+> {
+  const { client } = useApiClient();
+  const refresh = useEveryAssetRefresh();
+
+  return useMutation({
+    mutationFn: (input: { linkId: string }) => client.command(unlinkAssetsCommand, input),
+    onSuccess: refresh,
+  });
+}
+
+function useEveryAssetRefresh(): () => Promise<void> {
+  const { baseUrl } = useApiClient();
+  const queryClient = useQueryClient();
+
+  return async () => {
+    await queryClient.invalidateQueries({ queryKey: ['asset', baseUrl] });
   };
 }
 

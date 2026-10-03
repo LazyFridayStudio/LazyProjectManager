@@ -615,6 +615,9 @@ function BoardDialogs({
           onClose={() => {
             update({ openedAsset: null });
           }}
+          onOpenAsset={(assetId) => {
+            update({ openedAsset: assetId });
+          }}
         />
       )}
 

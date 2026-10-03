@@ -57,6 +57,7 @@ export const CATALOGUES = {
       'asset.create',
       'asset.update',
       'asset.delete',
+      'asset.link',
       'asset.manageCategory',
       'file.upload',
       'file.remove',
@@ -259,6 +260,8 @@ export const RULE_DESCRIPTIONS: Readonly<Record<PermittedAction, string>> = {
     'Change an asset: what it is called, how far along it is, its tags, its reference images, its working files, and which cards it is about.',
   'asset.delete':
     'Delete an asset outright, and every reference image, working file, stage and tag on it. It waits a week in the bin before it is really gone. Separate from changing one, because a studio that lets everybody fill the library in does not necessarily let everybody empty it.',
+  'asset.link':
+    'Link one asset to another in the same project, or unlink them: a boss and what it drops, a set and its pieces. Separate from changing an asset, the way linking cards is separate from editing one, because a link changes what two assets say about each other.',
   'asset.manageCategory':
     'Add, rename or remove a category in the asset library. The shelves rather than what is on them.',
   'file.upload': 'Attach a file to a card or an asset.',

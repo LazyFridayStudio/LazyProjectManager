@@ -156,3 +156,18 @@ export interface CardAssetLinkTable {
   assetId: string;
   createdAt: CreatedAt;
 }
+
+/**
+ * Which assets belong with which other assets: a boss and what it drops.
+ *
+ * One row per pair, the lower id first whichever end asked, so the pair is
+ * unique rather than each direction of it. Nothing about the link reads
+ * differently from the other end.
+ */
+export interface AssetLinkTable {
+  id: Generated<string>;
+  accountId: string;
+  firstAssetId: string;
+  secondAssetId: string;
+  createdAt: CreatedAt;
+}

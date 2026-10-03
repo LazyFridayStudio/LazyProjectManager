@@ -573,6 +573,60 @@ describe('GIVEN an install with a team and a project', () => {
       expect(deleted.statusCode).toBe(403);
     });
 
+    it('THEN somebody may change assets without being allowed to link them', async () => {
+      await ruleForMira('asset.link', 'deny');
+
+      const categoryId = (
+        await command('assets.createCategory', {
+          projectId,
+          name: 'World Bosses',
+          color: '#63aeeb',
+        })
+      ).json<{ id: string }>().id;
+      const boss = (
+        await command('assets.createAsset', { projectId, categoryId, name: 'Voryoc Hound' })
+      ).json<{ id: string }>().id;
+      const helm = (
+        await command('assets.createAsset', { projectId, categoryId, name: 'Hound-skull helm' })
+      ).json<{ id: string }>().id;
+
+      const renamed = await command(
+        'assets.updateAsset',
+        { assetId: helm, name: 'Hound-skull helm (worn)' },
+        miraCookie,
+      );
+
+      expect(renamed.statusCode).toBe(200);
+
+      const panel = await server.inject({
+        method: 'GET',
+        url: `/api/q/assets.detail?assetId=${boss}`,
+        cookies: { lpm_session: miraCookie },
+      });
+
+      // No + Link for her to press and be refused by.
+      expect(panel.json<{ data: { canLink: boolean } }>().data.canLink).toBe(false);
+
+      const linked = await command(
+        'assets.linkAsset',
+        { assetId: boss, toAssetId: helm },
+        miraCookie,
+      );
+
+      expect(linked.statusCode).toBe(403);
+      expect(linked.json<{ message: string }>().message).toContain('asset.link');
+
+      // Nor can she take back one somebody else made.
+      const made = await command('assets.linkAsset', { assetId: boss, toAssetId: helm });
+      const unlinked = await command(
+        'assets.unlinkAsset',
+        { linkId: made.json<{ id: string }>().id },
+        miraCookie,
+      );
+
+      expect(unlinked.statusCode).toBe(403);
+    });
+
     it('THEN denying each action under a heading refuses each of them', async () => {
       // What pressing Deny on a catalogue writes: one rule per action. The
       // heading itself is never stored, so this is the whole of its meaning.

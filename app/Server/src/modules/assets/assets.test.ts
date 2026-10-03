@@ -971,6 +971,197 @@ describe('GIVEN a project with things to make', () => {
     });
   });
 
+  describe('WHEN two assets are said to go together', () => {
+    /** A boss and one thing it drops, filed under different categories. */
+    async function bossAndDrop(): Promise<{ boss: string; helm: string }> {
+      const bosses = await addCategory('World Bosses');
+      const helmets = await addCategory('Helmets');
+      const boss = (await addAsset(bosses, 'Voryoc Hound')).json<{ id: string }>().id;
+      const helm = (await addAsset(helmets, 'Hound-skull helm')).json<{ id: string }>().id;
+
+      return { boss, helm };
+    }
+
+    it('THEN each one names the other, whichever it was linked from', async () => {
+      const { boss, helm } = await bossAndDrop();
+
+      const response = await command('assets.linkAsset', { assetId: boss, toAssetId: helm });
+
+      expect(response.statusCode).toBe(200);
+      expect((await detail(boss)).linkedAssets).toEqual([
+        {
+          linkId: response.json<{ id: string }>().id,
+          assetId: helm,
+          assetKey: 'SLTM-AST-2',
+          name: 'Hound-skull helm',
+          status: 'concept',
+          category: expect.objectContaining({ name: 'Helmets' }) as unknown,
+        },
+      ]);
+      expect((await detail(helm)).linkedAssets).toMatchObject([
+        { assetId: boss, name: 'Voryoc Hound', category: { name: 'World Bosses' } },
+      ]);
+    });
+
+    it('THEN a boss lists everything it drops, by name', async () => {
+      const { boss, helm } = await bossAndDrop();
+      const weapons = await addCategory('Melee');
+      const sword = (await addAsset(weapons, 'Fang sword')).json<{ id: string }>().id;
+      const heart = (await addAsset(weapons, 'Cursed heart')).json<{ id: string }>().id;
+
+      await command('assets.linkAsset', { assetId: boss, toAssetId: sword });
+      await command('assets.linkAsset', { assetId: boss, toAssetId: helm });
+      // From the other end, which is the same link.
+      await command('assets.linkAsset', { assetId: heart, toAssetId: boss });
+
+      // Names that differ at the first letter, so the order is the same under
+      // any collation: one that ignores a hyphen and one that sorts it after a
+      // space disagree about `Hound heart` and `Hound-fang sword`.
+      expect((await detail(boss)).linkedAssets.map((linked) => linked.name)).toEqual([
+        'Cursed heart',
+        'Fang sword',
+        'Hound-skull helm',
+      ]);
+      // The drops are linked to the boss, not to each other.
+      expect((await detail(sword)).linkedAssets.map((linked) => linked.name)).toEqual([
+        'Voryoc Hound',
+      ]);
+    });
+
+    it('THEN saying it twice, from either end, leaves one link', async () => {
+      const { boss, helm } = await bossAndDrop();
+
+      const first = await command('assets.linkAsset', { assetId: boss, toAssetId: helm });
+      const again = await command('assets.linkAsset', { assetId: boss, toAssetId: helm });
+      const reversed = await command('assets.linkAsset', { assetId: helm, toAssetId: boss });
+
+      expect(again.statusCode).toBe(200);
+      expect(reversed.statusCode).toBe(200);
+      // The one link, named by the same id whoever asked.
+      expect(reversed.json<{ id: string }>().id).toBe(first.json<{ id: string }>().id);
+      expect((await detail(boss)).linkedAssets).toHaveLength(1);
+      expect((await detail(helm)).linkedAssets).toHaveLength(1);
+    });
+
+    it('THEN an asset cannot be linked to itself', async () => {
+      const { boss } = await bossAndDrop();
+
+      const response = await command('assets.linkAsset', { assetId: boss, toAssetId: boss });
+
+      expect(response.statusCode).toBe(422);
+      expect(response.json<{ message: string }>().message).toContain('itself');
+      expect((await detail(boss)).linkedAssets).toEqual([]);
+    });
+
+    it('THEN an asset in another project cannot be linked', async () => {
+      const { boss } = await bossAndDrop();
+      const other = (
+        await command('projects.create', { name: 'Drowned Reach', code: 'DRCH' })
+      ).json<{ id: string }>().id;
+      const theirCategory = (
+        await command('assets.createCategory', {
+          projectId: other,
+          name: 'Helmets',
+          color: '#adadad',
+        })
+      ).json<{ id: string }>().id;
+      const theirAsset = (
+        await command('assets.createAsset', {
+          projectId: other,
+          categoryId: theirCategory,
+          name: 'Theirs',
+        })
+      ).json<{ id: string }>().id;
+
+      // Refused from either end: neither library can follow a link into the
+      // other one.
+      const fromOurs = await command('assets.linkAsset', { assetId: boss, toAssetId: theirAsset });
+      const fromTheirs = await command('assets.linkAsset', {
+        assetId: theirAsset,
+        toAssetId: boss,
+      });
+
+      expect(fromOurs.statusCode).toBe(404);
+      expect(fromTheirs.statusCode).toBe(404);
+      expect((await detail(boss)).linkedAssets).toEqual([]);
+      expect((await detail(theirAsset)).linkedAssets).toEqual([]);
+    });
+
+    it('THEN an asset from another account is refused', async () => {
+      const { boss } = await bossAndDrop();
+
+      const response = await command('assets.linkAsset', {
+        assetId: '018f0000-0000-7000-8000-000000000000',
+        toAssetId: boss,
+      });
+
+      expect(response.statusCode).toBe(404);
+    });
+
+    it('THEN unlinking from the other end takes it off both, and changes nothing else', async () => {
+      const { boss, helm } = await bossAndDrop();
+
+      await command('assets.linkAsset', { assetId: boss, toAssetId: helm });
+      await command('assets.addTag', { assetId: helm, tag: 'act-1' });
+
+      const before = await detail(helm);
+      const [link] = before.linkedAssets;
+
+      const response = await command('assets.unlinkAsset', { linkId: link?.linkId ?? '' });
+
+      expect(response.statusCode).toBe(200);
+      expect((await detail(boss)).linkedAssets).toEqual([]);
+
+      const after = await detail(helm);
+
+      expect(after.linkedAssets).toEqual([]);
+      expect({ ...after, linkedAssets: before.linkedAssets }).toEqual(before);
+      expect((await detail(boss)).name).toBe('Voryoc Hound');
+    });
+
+    it('THEN unlinking something already unlinked is not an error', async () => {
+      const response = await command('assets.unlinkAsset', {
+        linkId: '018f0000-0000-7000-8000-000000000000',
+      });
+
+      expect(response.statusCode).toBe(200);
+    });
+
+    it('THEN every link and unlink is on the audit trail', async () => {
+      const { boss, helm } = await bossAndDrop();
+
+      await command('assets.linkAsset', { assetId: boss, toAssetId: helm });
+      // Asked again, which changes nothing and so records nothing.
+      await command('assets.linkAsset', { assetId: helm, toAssetId: boss });
+
+      const [link] = (await detail(boss)).linkedAssets;
+
+      await command('assets.unlinkAsset', { linkId: link?.linkId ?? '' });
+
+      const events = await testDatabase.database
+        .selectFrom('domainEvent')
+        .select(['name', 'aggregateId', 'payload'])
+        .where('name', 'in', ['assets.assetLinked', 'assets.assetUnlinked'])
+        .orderBy('id')
+        .execute();
+
+      expect(events.map((event) => event.name)).toEqual([
+        'assets.assetLinked',
+        'assets.assetUnlinked',
+      ]);
+      expect(events[0]).toMatchObject({
+        aggregateId: boss,
+        payload: { projectId, linkedAssetId: helm },
+      });
+    });
+
+    it('THEN the panel says the person reading it may link it', async () => {
+      const { boss } = await bossAndDrop();
+
+      expect((await detail(boss)).canLink).toBe(true);
+    });
+  });
+
   describe('WHEN an asset is given a key', () => {
     it('THEN it is the project code, AST, and the next number', async () => {
       const props = await addCategory('Environment Props');

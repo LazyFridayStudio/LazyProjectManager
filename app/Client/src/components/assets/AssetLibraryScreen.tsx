@@ -814,6 +814,7 @@ function Opened({
           onClose={() => {
             onOpenAsset(null);
           }}
+          onOpenAsset={onOpenAsset}
         />
       )}
 
