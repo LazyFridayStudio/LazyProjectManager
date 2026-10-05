@@ -10,17 +10,17 @@
     "start:worker": "node ./dist/worker.js"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1126.0",
+    "@aws-sdk/client-s3": "3.1145.0",
     "@fastify/cookie": "11.1.2",
     "@fastify/rate-limit": "^11.2.0",
-    "@fastify/static": "10.1.2",
-    "@fastify/websocket": "11.3.0",
+    "@fastify/static": "10.1.5",
+    "@fastify/websocket": "11.3.1",
     "@lpm/database": "workspace:*",
     "@lpm/shared": "workspace:*",
-    "@node-rs/argon2": "2.2.0",
-    "fastify": "5.12.3",
+    "@node-rs/argon2": "2.2.1",
+    "fastify": "5.12.5",
     "ioredis": "5.11.1",
-    "sharp": "0.35.4",
+    "sharp": "0.35.5",
     "zod": "3.25.76"
   },
   "devDependencies": {
