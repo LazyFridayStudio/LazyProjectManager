@@ -1,4 +1,4 @@
-import { describeTemplateTabs, templateFromTabs, type AssetDetailView } from '@lpm/shared';
+import { describeTemplateTabs, templateFromAsset, type AssetDetailView } from '@lpm/shared';
 import { useState } from 'react';
 
 import { describeFailure, readFieldProblems } from '../../api/failure-messages.js';
@@ -22,28 +22,21 @@ export interface AssetTabsSummaryProps {
  * The asset's tabs, listed on its Overview: how far along each job is, without
  * opening any of them.
  *
- * Ticking one off here is the same as ticking it off on the tab. Beneath the
- * list, the ways to fill it from the project's templates, and to keep this
- * asset's tabs as one.
+ * A block of the Overview. Ticking one off here, while the asset is being
+ * edited, is the same as ticking it off on the tab.
  */
 export function AssetTabsSummary({
   asset,
   projectSlug,
   canWrite,
   onOpenTab,
-}: AssetTabsSummaryProps): React.JSX.Element | null {
+}: AssetTabsSummaryProps): React.JSX.Element {
   const display = useDisplay();
   const update = useUpdateAssetTab(projectSlug, asset.id);
   const inFlight = update.isPending ? update.variables : undefined;
   const shows = (tab: { id: string; done: boolean }): boolean =>
     inFlight?.assetTabId === tab.id && inFlight.done !== undefined ? inFlight.done : tab.done;
   const done = asset.tabs.filter((tab) => shows(tab)).length;
-
-  // Nothing broken up and nothing to be done about it: the heading would only
-  // be saying the asset is one job, which the space it takes says better.
-  if (asset.tabs.length === 0 && !canWrite) {
-    return null;
-  }
 
   return (
     <section className={styles.summary} aria-label="Tabs">
@@ -58,8 +51,9 @@ export function AssetTabsSummary({
 
       {asset.tabs.length === 0 ? (
         <p className={styles.empty}>
-          One job so far. Add a tab for each part of the work — Mesh, Rig, Animation — or start from
-          a template.
+          {canWrite
+            ? 'One job so far. Add a tab for each part of the work — Mesh, Rig, Animation — or start from a template.'
+            : 'One job so far.'}
         </p>
       ) : (
         <ul className={styles.summaryRows}>
@@ -100,10 +94,29 @@ export function AssetTabsSummary({
           ))}
         </ul>
       )}
+    </section>
+  );
+}
 
-      {canWrite && <ApplyTemplate asset={asset} projectSlug={projectSlug} />}
-
-      {canWrite && asset.canManageTemplates && asset.tabs.length > 0 && (
+/**
+ * Starting this asset from one of the project's templates, and keeping this
+ * asset as one.
+ *
+ * At the foot of the Overview while it is being edited, whatever blocks it
+ * shows: a template is tabs and an Overview both, so neither block is the
+ * place for it.
+ */
+export function AssetTemplateActions({
+  asset,
+  projectSlug,
+}: {
+  readonly asset: AssetDetailView;
+  readonly projectSlug: string;
+}): React.JSX.Element {
+  return (
+    <section className={styles.summary} aria-label="Templates">
+      <ApplyTemplate asset={asset} projectSlug={projectSlug} />
+      {asset.canManageTemplates && (asset.tabs.length > 0 || asset.overview.length > 0) && (
         <SaveAsTemplate asset={asset} />
       )}
     </section>
@@ -201,7 +214,7 @@ function SaveAsTemplate({ asset }: { readonly asset: AssetDetailView }): React.J
             setName('');
           }}
         >
-          Save tabs as a template
+          Save as a template
         </Button>
       </div>
     );
@@ -229,7 +242,7 @@ function SaveAsTemplate({ asset }: { readonly asset: AssetDetailView }): React.J
             {
               projectId: asset.project.id,
               name: name.trim(),
-              definition: templateFromTabs(asset.tabs),
+              definition: templateFromAsset(asset),
             },
             {
               onSuccess: () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { describeTemplateTabs, templateFromTabs } from './asset-templates.js';
+import { describeTemplateTabs, templateFromAsset } from './asset-templates.js';
 import { assetTemplateDefinitionSchema } from './asset-vocabulary.js';
 import type { AssetTab } from './queries/asset-detail.js';
 
@@ -38,7 +38,13 @@ const RIG: AssetTab = {
 
 describe('GIVEN the tabs of an asset somebody has been working on', () => {
   describe('WHEN they are saved as a template', () => {
-    const definition = templateFromTabs([RIG]);
+    const definition = templateFromAsset({
+      tabs: [RIG],
+      overview: [
+        { id: '00000000-0000-4000-8000-000000000008', kind: 'estimate', body: null, items: [] },
+        { id: '00000000-0000-4000-8000-000000000009', kind: 'tags', body: null, items: [] },
+      ],
+    });
 
     it('THEN what the tabs say is kept: titles, notes and checklist lines', () => {
       expect(definition).toEqual({
@@ -53,6 +59,8 @@ describe('GIVEN the tabs of an asset somebody has been working on', () => {
             ],
           },
         ],
+        // Which sections the Overview shows, and nothing that was in them.
+        overview: [{ kind: 'estimate' }, { kind: 'tags' }],
       });
     });
 
@@ -69,11 +77,20 @@ describe('GIVEN the tabs of an asset somebody has been working on', () => {
 
   describe('WHEN a notes block was never written in', () => {
     it('THEN it is kept as an empty note rather than dropped', () => {
-      const empty = templateFromTabs([
-        { ...RIG, blocks: [{ id: RIG.id, kind: 'notes', body: null, items: [] }] },
-      ]);
+      const empty = templateFromAsset({
+        tabs: [{ ...RIG, blocks: [{ id: RIG.id, kind: 'notes', body: null, items: [] }] }],
+        overview: [],
+      });
 
       expect(empty.tabs[0]?.blocks).toEqual([{ kind: 'notes', body: '' }]);
+    });
+  });
+});
+
+describe('GIVEN a template saved before the Overview had blocks', () => {
+  describe('WHEN it is read', () => {
+    it('THEN it reads as one that adds nothing to the Overview', () => {
+      expect(assetTemplateDefinitionSchema.parse({ tabs: [] })).toEqual({ tabs: [], overview: [] });
     });
   });
 });

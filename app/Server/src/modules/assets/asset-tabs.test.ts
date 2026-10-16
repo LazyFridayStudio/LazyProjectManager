@@ -56,6 +56,7 @@ const CREATURE: AssetTemplateDefinition = {
     { title: 'Rig', blocks: [{ kind: 'notes', body: 'Humanoid skeleton.' }, { kind: 'files' }] },
     { title: 'Animation', blocks: [{ kind: 'work' }] },
   ],
+  overview: [],
 };
 
 describe('GIVEN an asset worked in tabs', () => {
@@ -688,9 +689,163 @@ describe('GIVEN an asset worked in tabs', () => {
     });
   });
 
+  describe('WHEN the Overview is built from blocks', () => {
+    async function addToOverview(
+      assetId: string,
+      kind: string,
+      extra: Record<string, unknown> = {},
+    ): Promise<Awaited<ReturnType<typeof server.inject>>> {
+      return command('assets.addBlock', { assetId, kind, ...extra });
+    }
+
+    async function overviewKinds(assetId: string): Promise<string[]> {
+      return (await detail(assetId)).overview.map((block) => block.kind);
+    }
+
+    it('THEN a new asset shows nothing beyond what every asset has', async () => {
+      expect((await detail(await addAsset())).overview).toEqual([]);
+    });
+
+    it('THEN its blocks come back in the order they were added, and move like a tab’s', async () => {
+      const assetId = await addAsset();
+
+      await addToOverview(assetId, 'estimate');
+      await addToOverview(assetId, 'tags');
+      const notes = (await addToOverview(assetId, 'notes', { body: 'Hero prop.' })).json<{
+        id: string;
+      }>().id;
+
+      expect(await overviewKinds(assetId)).toEqual(['estimate', 'tags', 'notes']);
+
+      const [estimate] = (await detail(assetId)).overview;
+
+      await command('assets.moveBlock', { blockId: notes, beforeBlockId: estimate?.id });
+
+      expect(await overviewKinds(assetId)).toEqual(['notes', 'estimate', 'tags']);
+      expect((await detail(assetId)).overview[0]?.body).toBe('Hero prop.');
+    });
+
+    it('THEN a section the asset has is shown once, and what is written can be several', async () => {
+      const assetId = await addAsset();
+
+      await addToOverview(assetId, 'tags');
+      const second = await addToOverview(assetId, 'tags');
+
+      expect(second.statusCode).toBe(422);
+      expect(second.json<{ message: string }>().message).toContain('tags block');
+      expect((await addToOverview(assetId, 'checklist')).statusCode).toBe(200);
+      expect((await addToOverview(assetId, 'checklist')).statusCode).toBe(200);
+    });
+
+    it('THEN a checklist on it takes lines like one on a tab', async () => {
+      const assetId = await addAsset();
+      const blockId = (await addToOverview(assetId, 'checklist')).json<{ id: string }>().id;
+
+      await command('assets.addChecklistItem', { blockId, title: 'Sign-off' });
+
+      expect((await detail(assetId)).overview[0]?.items).toMatchObject([
+        { title: 'Sign-off', done: false },
+      ]);
+    });
+
+    it('THEN the asset’s own sections are refused on a tab', async () => {
+      const assetId = await addAsset();
+      const rig = await addTab(assetId, 'Rig');
+
+      const refused = await command('assets.addBlock', { assetTabId: rig, kind: 'estimate' });
+
+      expect(refused.statusCode).toBe(422);
+      expect(refused.json<{ message: string }>().message).toContain('goes on the Overview');
+    });
+
+    it('THEN a block that names both a tab and an asset, or neither, is refused', async () => {
+      const assetId = await addAsset();
+      const rig = await addTab(assetId, 'Rig');
+
+      expect(
+        (await command('assets.addBlock', { assetId, assetTabId: rig, kind: 'notes' })).statusCode,
+      ).toBe(422);
+      expect((await command('assets.addBlock', { kind: 'notes' })).statusCode).toBe(422);
+    });
+
+    it('THEN taking a section off hides it, and what it showed stays on the asset', async () => {
+      const assetId = await addAsset();
+      const tags = (await addToOverview(assetId, 'tags')).json<{ id: string }>().id;
+
+      await command('assets.addTag', { assetId, tag: 'harbour' });
+      await command('assets.removeBlock', { blockId: tags });
+
+      const view = await detail(assetId);
+
+      expect(view.overview).toEqual([]);
+      expect(view.tags).toEqual(['harbour']);
+    });
+
+    it('THEN a link made to it from elsewhere shows on its Overview', async () => {
+      const boss = await addAsset('Voryoc Hound');
+      const helm = await addAsset('Hound-skull helm');
+
+      await command('assets.linkAsset', { assetId: boss, toAssetId: helm });
+      // Twice, from the other end: shown once.
+      await command('assets.linkAsset', { assetId: helm, toAssetId: boss });
+
+      expect(await overviewKinds(boss)).toEqual(['assets']);
+      expect(await overviewKinds(helm)).toEqual(['assets']);
+
+      const list = await testDatabase.database
+        .selectFrom('list')
+        .select('id')
+        .orderBy('position')
+        .executeTakeFirstOrThrow();
+      const cardId = await idOf(
+        command('board.createCard', { projectId, listId: list.id, title: 'Model it', type: 'art' }),
+      );
+
+      await command('assets.linkCard', { cardId, assetId: helm });
+
+      expect(await overviewKinds(helm)).toEqual(['assets', 'cards']);
+    });
+
+    it('THEN deleting a tab leaves the Overview alone', async () => {
+      const assetId = await addAsset();
+      const rig = await addTab(assetId, 'Rig');
+
+      await addToOverview(assetId, 'tabs');
+      await command('assets.deleteTab', { assetTabId: rig });
+
+      expect(await overviewKinds(assetId)).toEqual(['tabs']);
+    });
+
+    it('THEN a template carries it, and adds only what the asset does not show already', async () => {
+      const templateId = await createTemplate('Prop', {
+        tabs: [],
+        overview: [{ kind: 'estimate' }, { kind: 'tags' }, { kind: 'notes', body: 'Brief.' }],
+      });
+      const assetId = await addAsset();
+
+      await addToOverview(assetId, 'tags');
+      await command('assets.applyTemplate', { assetId, templateId });
+
+      expect(await overviewKinds(assetId)).toEqual(['tags', 'estimate', 'notes']);
+      expect((await detail(assetId)).overview[2]?.body).toBe('Brief.');
+    });
+
+    it('THEN an asset started from a template shows what it names', async () => {
+      const templateId = await createTemplate('Prop', {
+        tabs: [{ title: 'Mesh', blocks: [] }],
+        overview: [{ kind: 'tabs' }, { kind: 'files' }],
+      });
+
+      const assetId = await addAsset('Crate', { templateId });
+
+      expect(await overviewKinds(assetId)).toEqual(['tabs', 'files']);
+      expect(await titles(assetId)).toEqual(['Mesh']);
+    });
+  });
+
   describe('WHEN the project keeps templates', () => {
     it('THEN they are listed by name, with what each would make', async () => {
-      await createTemplate('Static prop', { tabs: [{ title: 'Mesh', blocks: [] }] });
+      await createTemplate('Static prop', { tabs: [{ title: 'Mesh', blocks: [] }], overview: [] });
       await createTemplate('Creature');
 
       const view = await templates();
@@ -718,7 +873,7 @@ describe('GIVEN an asset worked in tabs', () => {
       await command('assets.updateTemplate', { templateId, name: 'Rigged creature' });
       await command('assets.updateTemplate', {
         templateId,
-        definition: { tabs: [{ title: 'Mesh', blocks: [] }] },
+        definition: { tabs: [{ title: 'Mesh', blocks: [] }], overview: [] },
       });
 
       expect((await templates()).templates).toMatchObject([
@@ -835,7 +990,10 @@ describe('GIVEN an asset worked in tabs', () => {
 
     it('THEN another template can be named instead', async () => {
       const creature = await createTemplate('Creature');
-      const prop = await createTemplate('Prop', { tabs: [{ title: 'Model', blocks: [] }] });
+      const prop = await createTemplate('Prop', {
+        tabs: [{ title: 'Model', blocks: [] }],
+        overview: [],
+      });
 
       await command('assets.updateCategory', { categoryId, defaultTemplateId: creature });
 

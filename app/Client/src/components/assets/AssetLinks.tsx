@@ -44,12 +44,6 @@ export function AssetLinks({
     },
   };
 
-  // Nothing linked and no way to link: the heading would only say there is
-  // nothing here, which the space it takes says better.
-  if (asset.linkedAssets.length === 0 && !canWrite) {
-    return null;
-  }
-
   return (
     // Named, for the reason the card's list is: while somebody is linking, the
     // picker under it offers rows of the same shape, and what is already linked
@@ -69,6 +63,10 @@ export function AssetLinks({
           </button>
         )}
       </h3>
+
+      {/* Said rather than left blank: this is on the Overview because somebody
+          put it there, and a heading over nothing reads as still loading. */}
+      {asset.linkedAssets.length === 0 && !canWrite && <p className={styles.empty}>None yet.</p>}
 
       {asset.linkedAssets.length > 0 && (
         <ul className={styles.tiles}>

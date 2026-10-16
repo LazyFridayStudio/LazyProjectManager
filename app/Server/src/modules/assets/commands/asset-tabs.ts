@@ -2,7 +2,8 @@ import {
   addAssetChecklistItemCommand,
   addAssetTabBlockCommand,
   addAssetTabCommand,
-  ASSET_TAB_VIEW_BLOCK_KINDS,
+  ASSET_TAB_BLOCK_KINDS,
+  ASSET_VIEW_BLOCK_KINDS,
   createCommandSuccess,
   deleteAssetTabCommand,
   MAXIMUM_BLOCKS_PER_TAB,
@@ -15,8 +16,8 @@ import {
   updateAssetChecklistItemCommand,
   updateAssetTabBlockCommand,
   updateAssetTabCommand,
-  describeAssetTabBlockKind,
-  type AssetTabBlockKind,
+  describeAssetBlockKind,
+  type AssetBlockKind,
   type CommandSuccess,
 } from '@lpm/shared';
 
@@ -40,7 +41,7 @@ import {
   type AssetAccess,
   type WritableAsset,
 } from '../asset-access.js';
-import { placeAtEndOfSet, placeInSet } from '../tab-positions.js';
+import { placeAtEndOfSet, placeInSet, type OrderedSet } from '../tab-positions.js';
 
 /**
  * The tabs an asset is worked in, the blocks they are built from, and the lines
@@ -114,8 +115,9 @@ interface BlockOnAsset {
   readonly asset: WritableAsset;
   readonly block: {
     readonly id: string;
-    readonly tabId: string;
-    readonly kind: AssetTabBlockKind;
+    /** Null for a block on the Overview. */
+    readonly tabId: string | null;
+    readonly kind: AssetBlockKind;
   };
 }
 
@@ -379,42 +381,75 @@ async function whatLosingTheTabEmpties(
   ];
 }
 
-/** Adds a block to the end of a tab. */
+interface AddBlockInput {
+  commandId: string;
+  assetTabId?: string;
+  assetId?: string;
+  kind: AssetBlockKind;
+  body?: string;
+}
+
+/** Where a new block is going: a tab, or the Overview of an asset. */
+interface BlockPlace {
+  readonly asset: WritableAsset;
+  /** Null for the Overview. */
+  readonly tabId: string | null;
+  readonly set: OrderedSet;
+  /** What to call the place in a refusal: "This tab", "This Overview". */
+  readonly called: string;
+}
+
+async function loadBlockPlace(access: AssetAccess, input: AddBlockInput): Promise<BlockPlace> {
+  if (input.assetTabId !== undefined) {
+    const { asset, tab } = await loadTab(access, input.assetTabId);
+
+    return {
+      asset,
+      tabId: tab.id,
+      set: { table: 'asset_tab_block', by: 'tab_id', id: tab.id },
+      called: 'This tab',
+    };
+  }
+
+  const asset = await loadWritableAsset(access, input.assetId ?? '');
+
+  return {
+    asset,
+    tabId: null,
+    set: { table: 'asset_tab_block', by: 'overview', id: asset.id },
+    called: 'This Overview',
+  };
+}
+
+/** Adds a block to the end of a tab, or of an asset's Overview. */
 export const addAssetTabBlockHandler = defineCommandHandler({
   definition: addAssetTabBlockCommand,
 
-  execute(
-    input: { commandId: string; assetTabId: string; kind: AssetTabBlockKind; body?: string },
-    context,
-  ): Promise<CommandSuccess> {
+  execute(input: AddBlockInput, context): Promise<CommandSuccess> {
     return onAnAsset({
       context,
       commandName: addAssetTabBlockCommand.name,
       commandId: input.commandId,
       run: async (access) => {
-        const { asset, tab } = await loadTab(access, input.assetTabId);
+        const place = await loadBlockPlace(access, input);
         const database = access.transaction.database;
 
-        await assertRoomForBlock(access.transaction, tab.id, input.kind);
+        await assertRoomForBlock(access.transaction, place, input.kind);
 
         const block = await database
           .insertInto('assetTabBlock')
           .values({
-            assetId: asset.id,
-            tabId: tab.id,
+            assetId: place.asset.id,
+            tabId: place.tabId,
             kind: input.kind,
             // Only a notes block has text of its own.
             body: input.kind === 'notes' ? (input.body ?? '') : null,
-            position: await placeAtEndOfSet(database, {
-              table: 'asset_tab_block',
-              by: 'tab_id',
-              id: tab.id,
-            }),
+            position: await placeAtEndOfSet(database, place.set),
           })
           .returning('id')
           .executeTakeFirstOrThrow();
 
-        appendAssetEvent(access.transaction, asset, 'assets.blockAdded');
+        appendAssetEvent(access.transaction, place.asset, 'assets.blockAdded');
 
         return block.id;
       },
@@ -423,33 +458,42 @@ export const addAssetTabBlockHandler = defineCommandHandler({
 });
 
 /**
- * Refuses a block past the most a tab may have, and a second files or work
- * block, which would show the same things as the first.
+ * Refuses a block that does not belong where it is going, one past the most a
+ * place may have, and a second of a block that shows something the asset has,
+ * which would show the same things as the first.
  *
- * Asked before the insert rather than left to the unique index, because the
- * index can only say "duplicate key" and this can say which block it is.
+ * Asked before the insert rather than left to the constraints, because they can
+ * only say "check violation" or "duplicate key" and this can say which block.
  */
 async function assertRoomForBlock(
   transaction: CommandTransaction,
-  tabId: string,
-  kind: AssetTabBlockKind,
+  place: BlockPlace,
+  kind: AssetBlockKind,
 ): Promise<void> {
-  const blocks = await transaction.database
+  const label = describeAssetBlockKind(kind).toLowerCase();
+
+  if (place.tabId !== null && !(ASSET_TAB_BLOCK_KINDS as readonly string[]).includes(kind)) {
+    // The asset's own sections are the Overview's: on a tab they would be the
+    // whole asset again, inside one job of it.
+    throw new InvariantViolatedError(`A ${label} block goes on the Overview, not on a tab.`);
+  }
+
+  const query = transaction.database
     .selectFrom('assetTabBlock')
     .select('kind')
-    .where('tabId', '=', tabId)
-    .execute();
+    .where('assetId', '=', place.asset.id);
+  const blocks = await (
+    place.tabId === null ? query.where('tabId', 'is', null) : query.where('tabId', '=', place.tabId)
+  ).execute();
 
   if (blocks.length >= MAXIMUM_BLOCKS_PER_TAB) {
     throw new InvariantViolatedError(
-      `A tab can have ${String(MAXIMUM_BLOCKS_PER_TAB)} blocks at most. Remove one first.`,
+      `${place.called} can have ${String(MAXIMUM_BLOCKS_PER_TAB)} blocks at most. Remove one first.`,
     );
   }
 
-  if (ASSET_TAB_VIEW_BLOCK_KINDS.includes(kind) && blocks.some((block) => block.kind === kind)) {
-    throw new InvariantViolatedError(
-      `This tab already has a ${describeAssetTabBlockKind(kind).toLowerCase()} block.`,
-    );
+  if (ASSET_VIEW_BLOCK_KINDS.includes(kind) && blocks.some((block) => block.kind === kind)) {
+    throw new InvariantViolatedError(`${place.called} already has a ${label} block.`);
   }
 }
 
@@ -509,7 +553,10 @@ export const moveAssetTabBlockHandler = defineCommandHandler({
 
         const position = await placeInSet({
           transaction: database,
-          set: { table: 'asset_tab_block', by: 'tab_id', id: block.tabId },
+          set:
+            block.tabId === null
+              ? { table: 'asset_tab_block', by: 'overview', id: asset.id }
+              : { table: 'asset_tab_block', by: 'tab_id', id: block.tabId },
           rowId: block.id,
           beforeId: input.beforeBlockId,
           afterId: input.afterBlockId,

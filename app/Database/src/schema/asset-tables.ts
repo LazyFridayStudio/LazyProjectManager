@@ -1,4 +1,4 @@
-import type { AssetPhase, AssetTabBlockKind } from '@lpm/shared';
+import type { AssetBlockKind, AssetPhase } from '@lpm/shared';
 import type { ColumnType, Generated } from 'kysely';
 
 /**
@@ -147,16 +147,18 @@ export interface AssetTabTable {
 }
 
 /**
- * What a tab is built from, top to bottom.
+ * What a tab, or an asset's Overview, is built from, top to bottom.
  *
- * Carries its asset as well as its tab, so a deleted asset takes its blocks to
- * the bin along with it: the bin finds rows by a column naming the thing.
+ * No tab is the Overview. Carries its asset as well as its tab, so a deleted
+ * asset takes its blocks to the bin along with it: the bin finds rows by a
+ * column naming the thing.
  */
 export interface AssetTabBlockTable {
   id: Generated<string>;
   assetId: string;
-  tabId: string;
-  kind: AssetTabBlockKind;
+  /** Null for a block on the asset's Overview. */
+  tabId: string | null;
+  kind: AssetBlockKind;
   /** What a notes block says, and null for every other kind. */
   body: string | null;
   position: Position;
@@ -167,7 +169,8 @@ export interface AssetTabBlockTable {
 export interface AssetTabChecklistItemTable {
   id: Generated<string>;
   assetId: string;
-  tabId: string;
+  /** Null for a line of a checklist on the Overview. */
+  tabId: string | null;
   blockId: string;
   title: string;
   done: Generated<boolean>;

@@ -1,4 +1,4 @@
-import type { DatabaseTransaction } from '@lpm/database';
+import { sql, type DatabaseTransaction } from '@lpm/database';
 
 import type { CommandTransaction } from '../../cqrs/execute-command.js';
 import type { RequestActor } from '../../cqrs/request-context.js';
@@ -102,4 +102,28 @@ export async function assertTabIsOnAsset(
   if (tab === undefined) {
     throw new AssetNotFoundError();
   }
+}
+
+/**
+ * Makes sure an asset's Overview shows a section, adding the block at the end
+ * if it does not.
+ *
+ * For a link made from somewhere other than the asset itself: a card linked to
+ * it from the board, or another asset linked to it from that asset's panel. The
+ * link is about this asset too, and one it did not show would be one nobody
+ * looking at the asset could find.
+ */
+export async function showOnTheOverview(
+  database: DatabaseTransaction,
+  assetId: string,
+  kind: 'cards' | 'assets',
+): Promise<void> {
+  await sql`
+    insert into asset_tab_block (asset_id, tab_id, kind, position)
+    select ${assetId}, null, ${kind}, coalesce(max(shown.position), 0) + 1
+    from asset_tab_block as shown
+    where shown.asset_id = ${assetId} and shown.tab_id is null
+    on conflict (asset_id, kind) where tab_id is null and kind not in ('notes', 'checklist')
+    do nothing
+  `.execute(database);
 }

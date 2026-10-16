@@ -4,7 +4,7 @@ import { defineCommand } from '../../envelope/command-definition.js';
 import { calendarDateSchema } from '../../projects/project-vocabulary.js';
 import {
   assetChecklistItemTitleSchema,
-  assetTabBlockKindSchema,
+  assetBlockKindSchema,
   assetTabNotesSchema,
   assetTabTitleSchema,
   assetTemplateDefinitionSchema,
@@ -82,19 +82,29 @@ export const deleteAssetTabCommand = defineCommand(
 );
 
 /**
- * Adds a block to a tab, on the end of the ones already there.
+ * Adds a block to a tab, or to an asset's Overview, on the end of the ones
+ * already there.
  *
- * A notes block may arrive with what it says; every other kind starts empty. A
- * tab has at most one files block and one work block, because each shows what
- * is tagged to the tab and a second would show it twice.
+ * `assetTabId` for a tab and `assetId` for the Overview, and exactly one. A tab
+ * takes notes, a checklist, files and work; the Overview takes those and the
+ * asset's own sections — its estimate, tab list, tags and links. A notes block
+ * may arrive with what it says; every other kind starts empty. A block that
+ * shows something the asset has is there at most once in each place, because a
+ * second would show it twice.
  */
 export const addAssetTabBlockCommand = defineCommand(
   'assets.addBlock',
-  z.object({
-    assetTabId: z.string().uuid(),
-    kind: assetTabBlockKindSchema,
-    body: assetTabNotesSchema.optional(),
-  }),
+  z
+    .object({
+      assetTabId: z.string().uuid().optional(),
+      assetId: z.string().uuid().optional(),
+      kind: assetBlockKindSchema,
+      body: assetTabNotesSchema.optional(),
+    })
+    .refine(
+      (input) => (input.assetTabId === undefined) !== (input.assetId === undefined),
+      'Say which tab, or which asset’s Overview, the block goes on.',
+    ),
 );
 
 /** Changes what a notes block says. Nothing else has text of its own to change. */
@@ -165,7 +175,7 @@ export const removeAssetChecklistItemCommand = defineCommand(
  *
  * The definition is the whole of it, so a template can be written by hand by an
  * agent as easily as saved from an asset: the panel builds it from the asset's
- * tabs with `templateFromTabs` and sends that.
+ * tabs and Overview with `templateFromAsset` and sends that.
  */
 export const createAssetTemplateCommand = defineCommand(
   'assets.createTemplate',

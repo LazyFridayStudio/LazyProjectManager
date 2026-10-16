@@ -4,6 +4,7 @@ import {
   type AssetFile,
   type AssetReference,
   type AssetTab,
+  type AssetTabBlock,
   type CardAssignee,
   type FileState,
   type LinkedAsset,
@@ -62,7 +63,7 @@ export const assetDetailHandler = defineQueryHandler({
       throw new AssetNotFoundError();
     }
 
-    const [cards, linkedAssets, references, files, tags, tabs, work] = await Promise.all([
+    const [cards, linkedAssets, references, files, tags, worked, work] = await Promise.all([
       selectCards(context.database, row.id),
       selectLinkedAssets(context.database, row.id),
       selectReferences(context.database, row.id),
@@ -82,7 +83,8 @@ export const assetDetailHandler = defineQueryHandler({
       references: references.map(toReference),
       files: files.map(toAssetFile),
       tags: tags.map((row) => row.tag),
-      tabs,
+      tabs: worked.tabs,
+      overview: worked.overview,
       // Kysely types a SQL boolean as one that might arrive as a number, since
       // some drivers hand one back. `pg` does not, and the view says boolean.
       cards: cards.map((card) => ({ ...card, closed: Boolean(card.closed) })),
@@ -264,7 +266,8 @@ function selectTags(database: RequestContext['database'], assetId: string) {
 }
 
 /**
- * The tabs this asset is worked in, each with its blocks and their items.
+ * The tabs this asset is worked in, each with its blocks and their items, and
+ * the blocks of its Overview, which are the ones on no tab.
  *
  * Three statements for the three levels rather than a join across them: a join
  * would repeat each tab once per checklist line under it, and an asset with a
@@ -274,26 +277,9 @@ function selectTags(database: RequestContext['database'], assetId: string) {
 async function selectTabs(
   database: RequestContext['database'],
   assetId: string,
-): Promise<AssetTab[]> {
+): Promise<{ tabs: AssetTab[]; overview: AssetTabBlock[] }> {
   const [tabs, blocks, items] = await Promise.all([
-    database
-      .selectFrom('assetTab')
-      .leftJoin('appUser as assignee', 'assignee.id', 'assetTab.assigneeId')
-      .leftJoin('file as assigneeAvatar', 'assigneeAvatar.id', 'assignee.avatarFileId')
-      .select([
-        'assetTab.id',
-        'assetTab.title',
-        'assetTab.done',
-        'assetTab.dueOn',
-        'assetTab.assigneeId',
-        'assignee.displayName as assigneeName',
-        'assignee.initials as assigneeInitials',
-        'assignee.avatarFileId as assigneeAvatarFileId',
-        'assigneeAvatar.state as assigneeAvatarState',
-      ])
-      .where('assetTab.assetId', '=', assetId)
-      .orderBy('assetTab.position')
-      .execute(),
+    selectTabRows(database, assetId),
     database
       .selectFrom('assetTabBlock')
       .select(['id', 'tabId', 'kind', 'body'])
@@ -308,29 +294,54 @@ async function selectTabs(
       .execute(),
   ]);
 
-  return tabs.map((tab) => ({
-    id: tab.id,
-    title: tab.title,
-    done: tab.done,
-    dueOn: tab.dueOn,
-    assignee: personNamed({
-      userId: tab.assigneeId,
-      displayName: tab.assigneeName,
-      initials: tab.assigneeInitials,
-      avatarFileId: tab.assigneeAvatarFileId,
-      avatarState: tab.assigneeAvatarState,
-    }),
-    blocks: blocks
-      .filter((block) => block.tabId === tab.id)
-      .map((block) => ({
-        id: block.id,
-        kind: block.kind,
-        body: block.body,
-        items: items
-          .filter((item) => item.blockId === block.id)
-          .map((item) => ({ id: item.id, title: item.title, done: item.done })),
-      })),
-  }));
+  const toBlock = (block: (typeof blocks)[number]): AssetTabBlock => ({
+    id: block.id,
+    kind: block.kind,
+    body: block.body,
+    items: items
+      .filter((item) => item.blockId === block.id)
+      .map((item) => ({ id: item.id, title: item.title, done: item.done })),
+  });
+
+  return {
+    overview: blocks.filter((block) => block.tabId === null).map(toBlock),
+    tabs: tabs.map((tab) => ({
+      id: tab.id,
+      title: tab.title,
+      done: tab.done,
+      dueOn: tab.dueOn,
+      assignee: personNamed({
+        userId: tab.assigneeId,
+        displayName: tab.assigneeName,
+        initials: tab.assigneeInitials,
+        avatarFileId: tab.assigneeAvatarFileId,
+        avatarState: tab.assigneeAvatarState,
+      }),
+      blocks: blocks.filter((block) => block.tabId === tab.id).map(toBlock),
+    })),
+  };
+}
+
+/** The tabs themselves, with the person on each. */
+function selectTabRows(database: RequestContext['database'], assetId: string) {
+  return database
+    .selectFrom('assetTab')
+    .leftJoin('appUser as assignee', 'assignee.id', 'assetTab.assigneeId')
+    .leftJoin('file as assigneeAvatar', 'assigneeAvatar.id', 'assignee.avatarFileId')
+    .select([
+      'assetTab.id',
+      'assetTab.title',
+      'assetTab.done',
+      'assetTab.dueOn',
+      'assetTab.assigneeId',
+      'assignee.displayName as assigneeName',
+      'assignee.initials as assigneeInitials',
+      'assignee.avatarFileId as assigneeAvatarFileId',
+      'assigneeAvatar.state as assigneeAvatarState',
+    ])
+    .where('assetTab.assetId', '=', assetId)
+    .orderBy('assetTab.position')
+    .execute();
 }
 
 /**
@@ -446,6 +457,7 @@ function toDetail(
   | 'cards'
   | 'files'
   | 'linkedAssets'
+  | 'overview'
   | 'references'
   | 'tabs'
   | 'tags'

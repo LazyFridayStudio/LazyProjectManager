@@ -1,8 +1,13 @@
-import type { AssetTemplateBlock, AssetTemplateDefinition } from './asset-vocabulary.js';
-import type { AssetTab, AssetTabBlock } from './queries/asset-detail.js';
+import type {
+  AssetTemplateBlock,
+  AssetTemplateDefinition,
+  AssetTemplateOverviewBlock,
+} from './asset-vocabulary.js';
+import type { AssetDetailView, AssetTabBlock } from './queries/asset-detail.js';
 
 /**
- * What a template saved from these tabs would hold.
+ * What a template saved from this asset would hold: its tabs, and what its
+ * Overview shows.
  *
  * Here rather than on the server, because the panel already has the tabs and
  * `assets.createTemplate` takes a definition: an agent writing a template by
@@ -10,29 +15,42 @@ import type { AssetTab, AssetTabBlock } from './queries/asset-detail.js';
  *
  * What the tabs say, and nothing about who did it. Titles, notes and checklist
  * lines are kept; ticks, people and dates are not, because a template is where
- * the next asset starts. A files or work block is kept as a block and comes back
- * empty, since the files and hours belonged to this asset.
+ * the next asset starts. A block that shows something the asset has — its
+ * files, hours, cost, tags, links — is kept as a block and comes back empty,
+ * since what it showed belonged to this asset.
  */
-export function templateFromTabs(tabs: readonly AssetTab[]): AssetTemplateDefinition {
+export function templateFromAsset(
+  asset: Pick<AssetDetailView, 'tabs' | 'overview'>,
+): AssetTemplateDefinition {
   return {
-    tabs: tabs.map((tab) => ({
+    tabs: asset.tabs.map((tab) => ({
       title: tab.title,
-      blocks: tab.blocks.map(templateBlockFrom),
+      // A tab only ever holds a tab's kinds; anything else is left out rather
+      // than written into a template that could not take it.
+      blocks: tab.blocks.map(overviewBlockFrom).filter(isTabBlock),
     })),
+    overview: asset.overview.map(overviewBlockFrom),
   };
 }
 
-function templateBlockFrom(block: AssetTabBlock): AssetTemplateBlock {
+function overviewBlockFrom(block: AssetTabBlock): AssetTemplateOverviewBlock {
   switch (block.kind) {
     case 'notes':
       return { kind: 'notes', body: block.body ?? '' };
     case 'checklist':
       return { kind: 'checklist', items: block.items.map((item) => item.title) };
-    case 'files':
-      return { kind: 'files' };
-    case 'work':
-      return { kind: 'work' };
+    default:
+      return { kind: block.kind };
   }
+}
+
+function isTabBlock(block: AssetTemplateOverviewBlock): block is AssetTemplateBlock {
+  return (
+    block.kind === 'notes' ||
+    block.kind === 'checklist' ||
+    block.kind === 'files' ||
+    block.kind === 'work'
+  );
 }
 
 /**
@@ -41,7 +59,7 @@ function templateBlockFrom(block: AssetTabBlock): AssetTemplateBlock {
  * What a picker says under a template's name, so choosing one is choosing what
  * it does rather than trusting what it is called.
  */
-export function describeTemplateTabs(definition: AssetTemplateDefinition): string {
+export function describeTemplateTabs(definition: Pick<AssetTemplateDefinition, 'tabs'>): string {
   return definition.tabs.length === 0
     ? 'No tabs'
     : definition.tabs.map((tab) => tab.title).join(', ');

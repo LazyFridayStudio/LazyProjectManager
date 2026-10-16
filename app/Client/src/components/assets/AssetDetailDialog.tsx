@@ -1,49 +1,26 @@
-import {
-  ASSET_PHASES,
-  describeAssetPhase,
-  type AssetDetailView,
-  type AssetPhase,
-} from '@lpm/shared';
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { describeAssetPhase, type AssetDetailView } from '@lpm/shared';
+import { useEffect, useRef, useState } from 'react';
 
 import { describeFailure, readFieldProblems } from '../../api/failure-messages.js';
-import { joinClassNames } from '../../lib/join-class-names.js';
-import { appendBlock } from '../../logic/markdown/index.js';
 import {
   Button,
   ButtonIcon,
   CloseIcon,
-  Field,
   Loading,
   PencilIcon,
-  Select,
   TrashIcon,
   useArrivesWith,
+  useHeightFollows,
   useModalDialog,
 } from '../ui/index.js';
-import { MarkdownField, MarkdownText } from '../markdown/index.js';
-import { AssetFiles } from './AssetFiles.js';
-import { AssetLinks } from './AssetLinks.js';
+import { AssetOverview, type AssetFormState } from './AssetOverview.js';
 import { AssetTabPanel } from './AssetTabPanel.js';
-import { AssetTabsSummary } from './AssetTabsSummary.js';
 import { AssetTabStrip, OVERVIEW } from './AssetTabStrip.js';
-import { AssetTags } from './AssetTags.js';
-import {
-  formatMoney,
-  formatTimeAgo,
-  toMinorUnits,
-} from '../../logic/projects/format-project-values.js';
+import { formatTimeAgo, toMinorUnits } from '../../logic/projects/format-project-values.js';
 import { AssetReferenceSheet } from './AssetReferenceSheet.js';
 import { useAsset, useUpdateAsset, type UpdateAssetInput } from '../../logic/assets/use-assets.js';
 import { useAskToDeleteAsset } from '../../logic/assets/use-delete-asset.js';
-import { PersonPicker } from '../projects/index.js';
 import styles from './AssetLibraryScreen.module.css';
-import { WorkLog } from '../work/index.js';
-
-const PHASE_OPTIONS = ASSET_PHASES.map((phase) => ({
-  value: phase,
-  label: describeAssetPhase(phase),
-}));
 
 export interface AssetDetailDialogProps {
   readonly assetId: string;
@@ -102,6 +79,7 @@ export function AssetDetailDialog({
         <AssetForm
           key={asset.data.id}
           ref={contents}
+          panel={dialog.dialogProps.ref}
           asset={asset.data}
           projectSlug={projectSlug}
           onDone={dialog.close}
@@ -111,18 +89,6 @@ export function AssetDetailDialog({
       )}
     </dialog>
   );
-}
-
-interface AssetFormState {
-  name: string;
-  phase: AssetPhase;
-  cost: string;
-  dueOn: string;
-  description: string;
-  /** Empty string is "nobody yet", which a select cannot express as null. */
-  assigneeId: string;
-  /** Empty string is an asset nobody was recorded as asking for. */
-  reporterId: string;
 }
 
 function toForm(asset: AssetDetailView): AssetFormState {
@@ -167,6 +133,8 @@ type Openers = Pick<AssetDetailDialogProps, 'onOpenCard' | 'onOpenAsset'>;
 
 interface AssetFormProps extends Openers {
   readonly ref: React.Ref<HTMLFormElement>;
+  /** The dialog around the form, whose height follows what the form shows. */
+  readonly panel: React.RefObject<HTMLDialogElement | null>;
   readonly asset: AssetDetailView;
   readonly projectSlug: string;
   readonly onDone: () => void;
@@ -174,12 +142,13 @@ interface AssetFormProps extends Openers {
 
 function AssetForm({
   ref,
+  panel,
   asset,
   projectSlug,
   onDone,
   ...openers
 }: AssetFormProps): React.JSX.Element {
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditingNow] = useState(false);
   const [form, setForm] = useState<AssetFormState>(() => toForm(asset));
   const updateAsset = useUpdateAsset(projectSlug, asset.id);
   const problems = readFieldProblems(updateAsset.error);
@@ -190,9 +159,22 @@ function AssetForm({
   const askToDelete = useAskToDeleteAsset(projectSlug, onDone);
   // The Overview until somebody picks a tab, and the Overview again if the tab
   // they were reading goes — deleted here, or by somebody else meanwhile.
-  const [chosenTab, setChosenTab] = useState<string>(OVERVIEW);
+  const [chosenTab, setChosenTabNow] = useState<string>(OVERVIEW);
   const selected = asset.tabs.some((tab) => tab.id === chosenTab) ? chosenTab : OVERVIEW;
   const tab = asset.tabs.find((each) => each.id === selected);
+
+  // Another tab, or the same one opened for editing, is another height. The
+  // panel goes there smoothly rather than jumping, so the bar somebody just
+  // pressed stays where their eye is.
+  const beforeResize = useHeightFollows(panel, `${selected}:${String(isEditing)}`);
+  const setChosenTab = (tabId: string): void => {
+    beforeResize();
+    setChosenTabNow(tabId);
+  };
+  const setIsEditing = (editing: boolean): void => {
+    beforeResize();
+    setIsEditingNow(editing);
+  };
 
   // A refetch after saving, or somebody else's change arriving, is the authority
   // on what the asset is. Keyed off `updatedAt` so typing is not interrupted by
@@ -259,16 +241,12 @@ function AssetForm({
           <Heading asset={asset} />
 
           {tab === undefined ? (
-            <Overview
+            <AssetOverview
               asset={asset}
               projectSlug={projectSlug}
               canWrite={canChange}
+              editing={isEditing ? { form, problems, onChange: setForm } : null}
               onSelect={setChosenTab}
-              editing={
-                isEditing ? (
-                  <Editing form={form} problems={problems} asset={asset} onChange={setForm} />
-                ) : null
-              }
               {...openers}
             />
           ) : (
@@ -393,337 +371,5 @@ function Heading({ asset }: { readonly asset: AssetDetailView }): React.JSX.Elem
         <span className={styles.detailStamp}>· updated {formatTimeAgo(asset.updatedAt)}</span>
       </div>
     </div>
-  );
-}
-
-interface OverviewProps extends Openers {
-  readonly asset: AssetDetailView;
-  readonly projectSlug: string;
-  /** Only in edit mode: reading an asset changes nothing. */
-  readonly canWrite: boolean;
-  readonly onSelect: (tabId: string) => void;
-  /**
-   * The asset's own fields as a form, while it is being edited, in place of
-   * the estimate, the description and the facts they would otherwise be read
-   * as. Null while it is being read.
-   */
-  readonly editing: React.ReactNode;
-}
-
-/**
- * The asset itself: what it costs, what it is, the jobs it is broken into, and
- * everything filed against it whichever job it was for.
- */
-function Overview({
-  asset,
-  projectSlug,
-  canWrite,
-  onSelect,
-  editing,
-  onOpenCard,
-  onOpenAsset,
-}: OverviewProps): React.JSX.Element {
-  // So the asset's own lists can say which tab a file is for.
-  const tabNames = new Map(asset.tabs.map((tab) => [tab.id, tab.title]));
-
-  return (
-    <>
-      {editing ?? <About asset={asset} />}
-
-      <AssetTabsSummary
-        asset={asset}
-        projectSlug={projectSlug}
-        canWrite={canWrite}
-        onOpenTab={onSelect}
-      />
-
-      <AssetTags
-        assetId={asset.id}
-        projectSlug={projectSlug}
-        tags={asset.tags}
-        canWrite={canWrite}
-      />
-
-      {editing === null && <Facts asset={asset} />}
-
-      <AssetFiles
-        assetId={asset.id}
-        projectSlug={projectSlug}
-        files={asset.files}
-        canWrite={canWrite}
-        tabNames={tabNames}
-      />
-
-      <WorkLog
-        what={{ assetId: asset.id }}
-        work={asset.work}
-        // An asset is estimated in money rather than in time, so there is
-        // nothing to hold the hours against. The total still says what it took.
-        estimateMinutes={null}
-        canWrite={canWrite}
-      />
-
-      <LinkedCards asset={asset} onOpenCard={onOpenCard} />
-
-      <AssetLinks
-        asset={asset}
-        projectSlug={projectSlug}
-        canWrite={canWrite && asset.canLink}
-        onOpenAsset={onOpenAsset}
-      />
-    </>
-  );
-}
-
-/** What it costs and what it is, as they read. */
-function About({ asset }: { readonly asset: AssetDetailView }): React.JSX.Element {
-  return (
-    <>
-      <Estimate asset={asset} />
-
-      <section>
-        <h3 className={styles.detailHeading}>Description</h3>
-        {asset.description === null ? (
-          <p className={styles.missing}>No description provided.</p>
-        ) : (
-          <MarkdownText source={asset.description} />
-        )}
-      </section>
-    </>
-  );
-}
-
-/** Label on the left, value on the right: the asset's facts as they read. */
-function Facts({ asset }: { readonly asset: AssetDetailView }): React.JSX.Element {
-  return (
-    <dl className={styles.facts}>
-      <Fact label="Category" value={asset.category.name} />
-      <Fact label="Phase" value={describeAssetPhase(asset.phase)} />
-      <Fact
-        label="Estimated cost"
-        value={
-          asset.estimatedCostMinor === null
-            ? null
-            : formatMoney(asset.estimatedCostMinor, asset.project.currency)
-        }
-      />
-      <Fact label="Target date" value={asset.dueOn} />
-      <Fact label="Assignee" value={asset.assignee?.displayName ?? null} />
-      <Fact label="Reporter" value={asset.reporter?.displayName ?? null} />
-      <Fact label="Reference images" value={String(asset.references.length)} />
-    </dl>
-  );
-}
-
-/**
- * What the asset is estimated to cost, given its own box.
- *
- * The number a producer opens an asset to find. The line under it says what the
- * money is in and when the thing is wanted, because a bare figure with no
- * currency beside it is how two studios on the same project disagree by a
- * factor of one and a half.
- */
-function Estimate({ asset }: { asset: AssetDetailView }): React.JSX.Element {
-  return (
-    <div className={styles.estimate}>
-      <div className={styles.estimateLabel}>Estimated cost</div>
-      <div className={styles.estimateValue}>
-        {asset.estimatedCostMinor === null
-          ? 'Not estimated'
-          : formatMoney(asset.estimatedCostMinor, asset.project.currency)}
-      </div>
-      <div className={styles.estimateNote}>
-        {asset.project.currency}
-        {asset.dueOn === null ? '' : ` · wanted by ${asset.dueOn}`}
-      </div>
-    </div>
-  );
-}
-
-/**
- * The work outstanding on this asset.
- *
- * The half that makes a library worth keeping: not what a thing is, but what is
- * still to be done to it. Open cards come first, because those are the ones
- * somebody opening an asset is asking about.
- */
-function LinkedCards({
-  asset,
-  onOpenCard,
-}: {
-  asset: AssetDetailView;
-  onOpenCard?: (cardId: string) => void;
-}): React.JSX.Element | null {
-  if (asset.cards.length === 0) {
-    return null;
-  }
-
-  return (
-    <section>
-      <h3 className={styles.detailHeading}>Linked work</h3>
-      <ul className={styles.cardList}>
-        {asset.cards.map((card) => (
-          <li key={card.linkId} className={styles.cardRow}>
-            {onOpenCard === undefined ? (
-              <CardSummary card={card} />
-            ) : (
-              <button
-                type="button"
-                className={styles.cardOpen}
-                onClick={() => {
-                  onOpenCard(card.cardId);
-                }}
-              >
-                <CardSummary card={card} />
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function CardSummary({ card }: { card: AssetDetailView['cards'][number] }): React.JSX.Element {
-  return (
-    <>
-      <span className={styles.cardKey}>{card.cardKey}</span>
-      <span className={styles.cardTitle} data-closed={card.closed}>
-        {card.title}
-      </span>
-      <span className={styles.cardState}>{card.closed ? 'Done' : 'Open'}</span>
-    </>
-  );
-}
-
-/** A value, or a dash — an empty row is harder to read than one that says so. */
-function Fact({ label, value }: { label: string; value: string | null }): React.JSX.Element {
-  return (
-    <>
-      <dt className={styles.factLabel}>{label}</dt>
-      <dd className={styles.factValue}>{value ?? '—'}</dd>
-    </>
-  );
-}
-
-interface EditingProps {
-  readonly form: AssetFormState;
-  readonly problems: Readonly<Record<string, string>>;
-  /** The asset as it stands: the currency to price it in, and who is on it. */
-  readonly asset: AssetDetailView;
-  /*
-   * The setter itself, so a change can be made from what the form is at the
-   * time rather than from what it was when this rendered. Two files dropped
-   * into the description arrive one upload apart, and the second would
-   * otherwise be written over the first.
-   */
-  readonly onChange: Dispatch<SetStateAction<AssetFormState>>;
-}
-
-function Editing({ form, problems, asset, onChange }: EditingProps): React.JSX.Element {
-  const set = <TField extends keyof AssetFormState>(
-    field: TField,
-    value: AssetFormState[TField],
-  ): void => {
-    onChange((current) => ({ ...current, [field]: value }));
-  };
-
-  return (
-    <>
-      <Field
-        label="Name"
-        autoFocus
-        value={form.name}
-        onChange={(event) => {
-          set('name', event.target.value);
-        }}
-        problem={problems.name}
-      />
-
-      <div className={styles.dialogPair}>
-        <Select
-          label="Phase"
-          options={PHASE_OPTIONS}
-          value={form.phase}
-          onChange={(event) => {
-            set('phase', event.target.value as AssetPhase);
-          }}
-        />
-      </div>
-
-      <div className={styles.dialogPair}>
-        <Field
-          label={`Estimated cost (${asset.project.currency})`}
-          value={form.cost}
-          onChange={(event) => {
-            set('cost', event.target.value);
-          }}
-          problem={problems.estimatedCostMinor}
-        />
-        <Field
-          label="Target date"
-          type="date"
-          value={form.dueOn}
-          onChange={(event) => {
-            set('dueOn', event.target.value);
-          }}
-          problem={problems.dueOn}
-        />
-      </div>
-
-      {/* Both, and in this order, because the library is read the way the board
-          is: who is making it is the question asked of a row, and who wanted it
-          is the question asked when the brief turns out to be thin. */}
-      <PersonPicker
-        label="Assignee"
-        nobody="Nobody yet"
-        projectId={asset.project.id}
-        value={form.assigneeId}
-        was={asset.assignee}
-        problem={problems.assignee}
-        onChange={(event) => {
-          set('assigneeId', event.target.value);
-        }}
-      />
-
-      <PersonPicker
-        label="Reporter"
-        nobody="Unknown"
-        projectId={asset.project.id}
-        value={form.reporterId}
-        was={asset.reporter}
-        problem={problems.reporter}
-        onChange={(event) => {
-          set('reporterId', event.target.value);
-        }}
-      />
-
-      {/* Not a `label`, because the field has buttons of its own and a label
-          wrapping them would press one every time somebody clicked it. The box
-          names itself instead. */}
-      <div className={styles.detailDescription}>
-        <span className={styles.dialogLabel}>Description</span>
-        <MarkdownField
-          label="Description"
-          className={joinClassNames(styles.dialogTextArea, styles.detailDescriptionBox)}
-          value={form.description}
-          files={{
-            uploadTo: { kind: 'assetFile', assetId: asset.id },
-            onInsert: (markdown: string) => {
-              onChange((current) => ({
-                ...current,
-                description: appendBlock(current.description, markdown),
-              }));
-            },
-          }}
-          onChange={(event) => {
-            set('description', event.target.value);
-          }}
-          onReplace={(next: string) => {
-            set('description', next);
-          }}
-        />
-      </div>
-    </>
   );
 }

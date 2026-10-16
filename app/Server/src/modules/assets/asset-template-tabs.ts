@@ -1,5 +1,11 @@
 import { sql } from '@lpm/database';
-import { assetTemplateDefinitionSchema, type AssetTemplateDefinition } from '@lpm/shared';
+import {
+  assetTemplateDefinitionSchema,
+  ASSET_VIEW_BLOCK_KINDS,
+  MAXIMUM_BLOCKS_PER_TAB,
+  type AssetTemplateDefinition,
+  type AssetTemplateOverviewBlock,
+} from '@lpm/shared';
 
 import type { CommandTransaction } from '../../cqrs/execute-command.js';
 import type { RequestActor } from '../../cqrs/request-context.js';
@@ -53,7 +59,8 @@ export async function loadTemplateOfProject(
 }
 
 /**
- * Gives an asset a template's tabs, after any it already has.
+ * Gives an asset a template's tabs, after any it already has, and the
+ * Overview blocks it does not show yet.
  *
  * Adds and never replaces: an asset halfway through has tabs with hours and
  * files on them. Nothing on the new tabs is ticked, nobody is on them and no
@@ -67,6 +74,8 @@ export async function addTabsFromTemplate(
   const database = transaction.database;
 
   await assertRoomForTabs(transaction, asset.id, definition.tabs.length);
+
+  await addOverviewFromTemplate(transaction, asset, definition.overview);
 
   for (const tabDefinition of definition.tabs) {
     const tab = await database
@@ -111,6 +120,75 @@ export async function addTabsFromTemplate(
           )
           .execute();
       }
+    }
+  }
+}
+
+/**
+ * The Overview's blocks a template names, on the end of what the asset shows.
+ *
+ * A section the asset shows already is left where it is rather than added a
+ * second time; notes and checklists are what somebody wrote, and always come.
+ * More than an Overview may hold is refused before anything is written.
+ */
+async function addOverviewFromTemplate(
+  transaction: CommandTransaction,
+  asset: WritableAsset,
+  wanted: readonly AssetTemplateOverviewBlock[],
+): Promise<void> {
+  const database = transaction.database;
+  const shown = await database
+    .selectFrom('assetTabBlock')
+    .select(['kind', 'position'])
+    .where('assetId', '=', asset.id)
+    .where('tabId', 'is', null)
+    .orderBy('position')
+    .execute();
+
+  const adding = wanted.filter(
+    (block) =>
+      !ASSET_VIEW_BLOCK_KINDS.includes(block.kind) ||
+      !shown.some((already) => already.kind === block.kind),
+  );
+
+  if (adding.length === 0) {
+    return;
+  }
+
+  if (shown.length + adding.length > MAXIMUM_BLOCKS_PER_TAB) {
+    throw new InvariantViolatedError(
+      `That would give the Overview more than ${String(MAXIMUM_BLOCKS_PER_TAB)} blocks.`,
+    );
+  }
+
+  const last = shown.length === 0 ? 0 : Number(shown[shown.length - 1]?.position ?? 0);
+
+  for (const [index, blockDefinition] of adding.entries()) {
+    const block = await database
+      .insertInto('assetTabBlock')
+      .values({
+        assetId: asset.id,
+        tabId: null,
+        kind: blockDefinition.kind,
+        body: blockDefinition.kind === 'notes' ? blockDefinition.body : null,
+        position: Math.floor(last) + index + 1,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+
+    if (blockDefinition.kind === 'checklist' && blockDefinition.items.length > 0) {
+      await database
+        .insertInto('assetTabChecklistItem')
+        .values(
+          blockDefinition.items.map((title, itemIndex) => ({
+            assetId: asset.id,
+            tabId: null,
+            blockId: block.id,
+            title,
+            position: itemIndex + 1,
+          })),
+        )
+        .execute();
     }
   }
 }

@@ -10,6 +10,7 @@ import { executeCommand, type CommandTransaction } from '../../../cqrs/execute-c
 import { requireActor, type RequestActor } from '../../../cqrs/request-context.js';
 import { AssetNotFoundError, CardNotFoundError } from '../../../domain/index.js';
 import { assertProjectPermission, loadMembershipRole } from '../../projects/project-access.js';
+import { showOnTheOverview } from '../asset-access.js';
 
 /** Named in `0011-card-asset-links`, and the only clash this insert expects. */
 const LINK_UNIQUE_CONSTRAINT = 'card_asset_link_unique';
@@ -83,6 +84,8 @@ async function link({ transaction, input, actor }: LinkRequest): Promise<string>
   // `do nothing` rather than catching the unique violation: a failed statement
   // aborts the transaction in Postgres, so there would be nothing left to ask
   // about the link that already exists.
+  await showOnTheOverview(transaction.database, asset.id, 'cards');
+
   const created = await transaction.database
     .insertInto('cardAssetLink')
     .values({ accountId: actor.accountId, cardId: card.id, assetId: asset.id })

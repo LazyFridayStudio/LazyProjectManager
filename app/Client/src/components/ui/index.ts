@@ -20,6 +20,7 @@ export {
   prefersLessMotion,
   resize,
   useArrivesWith,
+  useHeightFollows,
   usePresence,
   useWidthFollows,
   type Movement,

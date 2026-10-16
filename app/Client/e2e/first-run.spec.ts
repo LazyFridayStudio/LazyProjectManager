@@ -804,11 +804,8 @@ test.describe.serial('a studio setting up for the first time', () => {
     await page.getByRole('button', { name: 'Dismiss' }).click();
     await expect(problem).toBeHidden();
 
-    // Back to reading it. Said once, on the other side of the panel: the sheet
-    // used to count itself as well, which was two places for one number to be
-    // wrong in.
+    // Back to reading it.
     await panel.getByRole('button', { name: 'Cancel' }).click();
-    await expect(panel.getByText('Reference images')).toBeVisible();
 
     await panel.getByRole('button', { name: 'Close' }).click();
 
@@ -827,7 +824,11 @@ test.describe.serial('a studio setting up for the first time', () => {
     const panel = page.getByRole('dialog', { name: 'Asset' });
     const files = panel.getByRole('region', { name: 'Files' });
 
+    // The Overview shows what somebody chose to show of it, and a new asset
+    // has not been given a Files section yet.
+    await expect(files).toHaveCount(0);
     await panel.getByRole('button', { name: 'Edit' }).click();
+    await panel.getByRole('button', { name: 'Add files' }).click();
     await expect(files.getByText(/Nothing yet/)).toBeVisible();
 
     await files.getByLabel('Upload files').setInputFiles({
@@ -874,6 +875,7 @@ test.describe.serial('a studio setting up for the first time', () => {
     const tags = panel.getByRole('region', { name: 'Tags' });
 
     await panel.getByRole('button', { name: 'Edit' }).click();
+    await panel.getByRole('button', { name: 'Add tags' }).click();
     await tags.getByRole('button', { name: 'Add tag' }).click();
 
     // Typed as somebody would, stored as one tag: `Act 1` and `act-1` are the
@@ -933,7 +935,7 @@ test.describe.serial('a studio setting up for the first time', () => {
 
     await mesh.getByRole('button', { name: 'Add checklist' }).click();
 
-    const checklist = mesh.getByRole('region', { name: 'Checklist' });
+    const checklist = mesh.getByRole('region', { name: 'Checklist block' });
     await checklist.getByRole('button', { name: 'Add item' }).click();
 
     // The field stays open between lines, and each is waited for before the
@@ -959,9 +961,10 @@ test.describe.serial('a studio setting up for the first time', () => {
     await strip.getByLabel('New tab').press('Enter');
     await expect(panel.getByRole('tabpanel', { name: 'Rig' })).toBeVisible();
 
-    // The Overview lists the jobs and how many are done, and ticks them off
-    // without opening any of them.
+    // The Overview lists the jobs and how many are done, once it is asked to,
+    // and ticks them off without opening any of them.
     await strip.getByRole('tab', { name: 'Overview' }).click();
+    await panel.getByRole('button', { name: 'Add tab list' }).click();
 
     const summary = panel.getByRole('region', { name: 'Tabs' });
     await expect(summary.getByText('0/2')).toBeVisible();
@@ -974,10 +977,12 @@ test.describe.serial('a studio setting up for the first time', () => {
 
     // Kept for the next asset like it: the tabs and what they say, not the
     // ticks.
-    await summary.getByRole('button', { name: 'Save tabs as a template' }).click();
-    await summary.getByLabel('Template name').fill('Prop');
-    await summary.getByRole('button', { name: 'Save template' }).click();
-    await expect(summary.getByLabel('Template name')).toBeHidden();
+    const templates = panel.getByRole('region', { name: 'Templates' });
+
+    await templates.getByRole('button', { name: 'Save as a template' }).click();
+    await templates.getByLabel('Template name').fill('Prop');
+    await templates.getByRole('button', { name: 'Save template' }).click();
+    await expect(templates.getByLabel('Template name')).toBeHidden();
 
     await panel.getByRole('button', { name: 'Close' }).click();
 
@@ -1084,6 +1089,7 @@ test.describe.serial('a studio setting up for the first time', () => {
     const links = panel.getByRole('region', { name: 'Linked assets' });
 
     await panel.getByRole('button', { name: 'Edit' }).click();
+    await panel.getByRole('button', { name: 'Add linked assets' }).click();
     await links.getByRole('button', { name: '+ Link' }).click();
     await links.getByLabel('Search assets').fill('bell');
     await links.getByRole('button', { name: new RegExp(LINKED_ASSET) }).click();

@@ -18,6 +18,7 @@ import {
   DEMO_DOCUMENTS,
   DEMO_MILESTONES,
   DEMO_RELEASES,
+  type DemoAsset,
   type DemoCategory,
 } from './demo-library.js';
 import { allocateAssetKey } from '../modules/assets/asset-keys.js';
@@ -621,10 +622,37 @@ async function createAssets(input: AssetRequest): Promise<number> {
         .execute();
     }
 
+    await showOnTheOverview(request, created.id, asset);
+
     made += 1;
   }
 
   return made;
+}
+
+/**
+ * What a demo asset's Overview shows beyond the description and the people.
+ *
+ * A demo asset with a cost and tags that hid both would demonstrate neither.
+ */
+async function showOnTheOverview(
+  request: SeedRequest,
+  assetId: string,
+  asset: DemoAsset,
+): Promise<void> {
+  const kinds = [
+    ...(asset.estimatedCostMinor === null && asset.dueInDays === null ? [] : ['estimate' as const]),
+    ...(asset.tags.length === 0 ? [] : ['tags' as const]),
+  ];
+
+  if (kinds.length === 0) {
+    return;
+  }
+
+  await request.transaction
+    .insertInto('assetTabBlock')
+    .values(kinds.map((kind, index) => ({ assetId, tabId: null, kind, position: index + 1 })))
+    .execute();
 }
 
 /**

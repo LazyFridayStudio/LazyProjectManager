@@ -14,7 +14,9 @@ import { readPosition } from './asset-access.js';
  */
 export type OrderedSet =
   | { readonly table: 'asset_tab'; readonly by: 'asset_id'; readonly id: string }
-  | { readonly table: 'asset_tab_block'; readonly by: 'tab_id'; readonly id: string };
+  | { readonly table: 'asset_tab_block'; readonly by: 'tab_id'; readonly id: string }
+  /** An asset's Overview: its blocks that are on no tab. */
+  | { readonly table: 'asset_tab_block'; readonly by: 'overview'; readonly id: string };
 
 interface Placing {
   readonly transaction: DatabaseTransaction;
@@ -25,7 +27,10 @@ interface Placing {
 
 function rowsOf({ transaction, set, rowId }: Placing): OrderedRows {
   const table = sql.table(set.table);
-  const inTheSet = sql`${sql.ref(set.by)} = ${set.id}`;
+  const inTheSet =
+    set.by === 'overview'
+      ? sql`asset_id = ${set.id} and tab_id is null`
+      : sql`${sql.ref(set.by)} = ${set.id}`;
   const notItself = rowId === null ? sql`` : sql`and id <> ${rowId}`;
 
   const one = async (query: RawBuilder<{ found: string | null }>) => {

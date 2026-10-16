@@ -180,14 +180,15 @@
 }
 
 /*
- * One block, framed, with its controls in the corner.
+ * One block, framed.
  *
- * In the corner rather than in a bar of their own, because a files block and a
- * work block already draw a heading, and a second line naming the same thing
- * would be a heading about a heading.
+ * Its controls get a row of their own above what it shows, rather than sitting
+ * in the corner over it: a files block and a linked-assets block draw a heading
+ * with its own action at the right, and a control laid on top of another is one
+ * neither of them can be pressed through. Only while editing, when the row is
+ * what somebody is there to use.
  */
 .block {
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -197,11 +198,10 @@
 }
 
 .blockControls {
-  position: absolute;
-  top: 8px;
-  right: 8px;
   display: flex;
+  justify-content: flex-end;
   gap: 2px;
+  margin: -6px -6px 0 0;
 }
 
 .blockHeading {
@@ -209,8 +209,6 @@
   align-items: baseline;
   gap: 8px;
   margin: 0;
-  /* Clear of the controls in the corner. */
-  padding-right: 80px;
   font-size: var(--font-size-micro);
   letter-spacing: 0.1em;
   text-transform: uppercase;

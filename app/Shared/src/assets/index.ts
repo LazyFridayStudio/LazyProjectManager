@@ -7,19 +7,23 @@ export {
   assetNameSchema,
   assetChecklistItemTitleSchema,
   assetPhaseSchema,
+  assetBlockKindSchema,
   assetTabBlockKindSchema,
   assetTabNotesSchema,
   assetTabTitleSchema,
   assetTagSchema,
   assetTemplateBlockSchema,
+  assetTemplateOverviewBlockSchema,
   assetTemplateDefinitionSchema,
   assetTemplateNameSchema,
   describeAssetPhase,
-  describeAssetTabBlockKind,
+  describeAssetBlockKind,
   ASSET_KEY_PREFIX,
   ASSET_PHASES,
+  ASSET_BLOCK_KINDS,
+  ASSET_OVERVIEW_BLOCK_KINDS,
   ASSET_TAB_BLOCK_KINDS,
-  ASSET_TAB_VIEW_BLOCK_KINDS,
+  ASSET_VIEW_BLOCK_KINDS,
   DEFAULT_ASSET_CATEGORY,
   MAXIMUM_ASSET_CATEGORY_NAME_LENGTH,
   MAXIMUM_BLOCKS_PER_TAB,
@@ -27,12 +31,14 @@ export {
   MAXIMUM_TABS_PER_ASSET,
   MAXIMUM_TAGS_PER_ASSET,
   type AssetPhase,
+  type AssetBlockKind,
   type AssetTabBlockKind,
   type AssetTemplateBlock,
+  type AssetTemplateOverviewBlock,
   type AssetTemplateDefinition,
 } from './asset-vocabulary.js';
 
-export { describeTemplateTabs, templateFromTabs } from './asset-templates.js';
+export { describeTemplateTabs, templateFromAsset } from './asset-templates.js';
 
 export {
   createAssetCategoryCommand,

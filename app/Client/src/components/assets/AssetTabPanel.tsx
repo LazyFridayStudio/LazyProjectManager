@@ -1,39 +1,22 @@
 import {
   ASSET_TAB_BLOCK_KINDS,
-  ASSET_TAB_VIEW_BLOCK_KINDS,
-  describeAssetTabBlockKind,
   type AssetDetailView,
   type AssetTab,
   type AssetTabBlock,
-  type AssetTabBlockKind,
 } from '@lpm/shared';
 import { useState } from 'react';
 
 import { describeFailure } from '../../api/failure-messages.js';
 import { joinClassNames } from '../../lib/join-class-names.js';
-import { appendBlock } from '../../logic/markdown/index.js';
 import {
-  useAddAssetTabBlock,
   useDeleteAssetTab,
   useMoveAssetTab,
-  useMoveAssetTabBlock,
-  useRemoveAssetTabBlock,
   useUpdateAssetTab,
-  useUpdateAssetTabBlock,
 } from '../../logic/assets/use-asset-tabs.js';
-import { MarkdownField, MarkdownText } from '../markdown/index.js';
 import { PersonPicker } from '../projects/index.js';
-import {
-  Button,
-  ButtonIcon,
-  Field,
-  PencilIcon,
-  PlusIcon,
-  TrashIcon,
-  useDisplay,
-} from '../ui/index.js';
+import { Field, PencilIcon, TrashIcon, useDisplay } from '../ui/index.js';
 import { WorkLog } from '../work/index.js';
-import { AssetChecklist } from './AssetChecklist.js';
+import { AssetBlockAdder, AssetBlockList, type BlockPlace } from './AssetBlocks.js';
 import { AssetFiles } from './AssetFiles.js';
 import styles from './AssetTabs.module.css';
 
@@ -61,6 +44,8 @@ export function AssetTabPanel({
   canWrite,
   onGone,
 }: AssetTabPanelProps): React.JSX.Element {
+  const place: BlockPlace = { asset, tabId: tab.id, name: tab.title };
+
   return (
     <div className={styles.panel} role="tabpanel" aria-label={tab.title}>
       <TabHead
@@ -81,22 +66,30 @@ export function AssetTabPanel({
         </p>
       )}
 
-      <div className={styles.blocks}>
-        {tab.blocks.map((block, index) => (
-          <BlockFrame
-            key={block.id}
+      <AssetBlockList
+        place={place}
+        blocks={tab.blocks}
+        projectSlug={projectSlug}
+        canWrite={canWrite}
+        drawSection={(block) => (
+          <TabSection
             asset={asset}
             tab={tab}
             block={block}
-            above={tab.blocks[index - 1]}
-            below={tab.blocks[index + 1]}
             projectSlug={projectSlug}
             canWrite={canWrite}
           />
-        ))}
-      </div>
+        )}
+      />
 
-      {canWrite && <BlockAdder asset={asset} tab={tab} projectSlug={projectSlug} />}
+      {canWrite && (
+        <AssetBlockAdder
+          place={place}
+          blocks={tab.blocks}
+          offered={ASSET_TAB_BLOCK_KINDS}
+          projectSlug={projectSlug}
+        />
+      )}
     </div>
   );
 }
@@ -387,348 +380,47 @@ function TabFactsEditing({ asset, tab, projectSlug, canWrite }: TabPartProps): R
   );
 }
 
-interface BlockFrameProps extends TabPartProps {
-  readonly block: AssetTabBlock;
-  /** The block above this one, which moving up puts it in front of. */
-  readonly above: AssetTabBlock | undefined;
-  readonly below: AssetTabBlock | undefined;
-}
-
-/** One block, with the controls that move it and take it off in its corner. */
-function BlockFrame({
+/**
+ * A tab's files and hours: the asset's, narrowed to the ones that say they were
+ * for this tab, and what is added here says so too.
+ */
+function TabSection({
   asset,
   tab,
   block,
-  above,
-  below,
   projectSlug,
   canWrite,
-}: BlockFrameProps): React.JSX.Element {
-  const display = useDisplay();
-  const move = useMoveAssetTabBlock(projectSlug, asset.id);
-  const remove = useRemoveAssetTabBlock(projectSlug, asset.id);
-  const kind = describeAssetTabBlockKind(block.kind);
-
-  const report = {
-    onError: (error: Error) => {
-      display.showError(describeFailure(error));
-    },
-  };
-
-  return (
-    <section className={styles.block} aria-label={kind}>
-      {canWrite && (
-        <div className={styles.blockControls}>
-          <button
-            type="button"
-            className={styles.quiet}
-            aria-label={`Move ${kind.toLowerCase()} up`}
-            title="Move up"
-            disabled={above === undefined || move.isPending}
-            onClick={() => {
-              move.mutate({ blockId: block.id, beforeBlockId: above?.id }, report);
-            }}
-          >
-            ↑
-          </button>
-          <button
-            type="button"
-            className={styles.quiet}
-            aria-label={`Move ${kind.toLowerCase()} down`}
-            title="Move down"
-            disabled={below === undefined || move.isPending}
-            onClick={() => {
-              move.mutate({ blockId: block.id, afterBlockId: below?.id }, report);
-            }}
-          >
-            ↓
-          </button>
-          <button
-            type="button"
-            className={joinClassNames(styles.quiet, styles.quietStop)}
-            aria-label={`Remove ${kind.toLowerCase()}`}
-            title={`Remove ${kind.toLowerCase()}`}
-            disabled={remove.isPending}
-            onClick={() => {
-              void (async () => {
-                const said = await display.askToConfirm({
-                  question: `Remove ${kind.toLowerCase()} from ${tab.title}?`,
-                  consequence: whatRemovingLoses(block.kind),
-                  confirmLabel: 'Remove',
-                });
-
-                if (said) remove.mutate({ blockId: block.id }, report);
-              })();
-            }}
-          >
-            <TrashIcon size={13} />
-          </button>
-        </div>
-      )}
-
-      <BlockBody
-        asset={asset}
-        tab={tab}
-        block={block}
+}: TabPartProps & { readonly block: AssetTabBlock }): React.JSX.Element | null {
+  if (block.kind === 'files') {
+    return (
+      <AssetFiles
+        assetId={asset.id}
         projectSlug={projectSlug}
+        files={asset.files.filter((file) => file.tabId === tab.id)}
+        canWrite={canWrite}
+        tabId={tab.id}
+      />
+    );
+  }
+
+  if (block.kind === 'work') {
+    const entries = asset.work.entries.filter((entry) => entry.assetTabId === tab.id);
+
+    return (
+      <WorkLog
+        what={{ assetId: asset.id, assetTabId: tab.id }}
+        work={{
+          entries,
+          loggedMinutes: entries.reduce((total, entry) => total + entry.minutes, 0),
+        }}
+        // An asset is estimated in money rather than in time, and a tab is not
+        // estimated at all, so there is nothing to hold the hours against.
+        estimateMinutes={null}
         canWrite={canWrite}
       />
-    </section>
-  );
-}
-
-/**
- * What taking a block off costs, said before it happens.
- *
- * Two different answers: notes and a checklist are what somebody wrote, and go;
- * files and hours are the asset's, and only stop being shown here.
- */
-function whatRemovingLoses(kind: AssetTabBlockKind): string {
-  switch (kind) {
-    case 'notes':
-      return 'What the notes say goes with them.';
-    case 'checklist':
-      return 'Every line on the checklist goes with it.';
-    case 'files':
-      return 'The files stay on the asset. They are only no longer shown on this tab.';
-    case 'work':
-      return 'The hours stay on the asset. They are only no longer shown on this tab.';
-  }
-}
-
-function BlockBody({
-  asset,
-  tab,
-  block,
-  projectSlug,
-  canWrite,
-}: TabPartProps & { readonly block: AssetTabBlock }): React.JSX.Element {
-  switch (block.kind) {
-    case 'notes':
-      return (
-        <NotesBlock
-          asset={asset}
-          tab={tab}
-          block={block}
-          projectSlug={projectSlug}
-          canWrite={canWrite}
-        />
-      );
-
-    case 'checklist': {
-      const done = block.items.filter((item) => item.done).length;
-
-      return (
-        <>
-          <h4 className={styles.blockHeading}>
-            Checklist
-            {block.items.length > 0 && (
-              <span className={styles.progress}>
-                {done}/{block.items.length}
-              </span>
-            )}
-          </h4>
-          <AssetChecklist
-            blockId={block.id}
-            assetId={asset.id}
-            projectSlug={projectSlug}
-            items={block.items}
-            canWrite={canWrite}
-          />
-        </>
-      );
-    }
-
-    case 'files':
-      return (
-        <AssetFiles
-          assetId={asset.id}
-          projectSlug={projectSlug}
-          files={asset.files.filter((file) => file.tabId === tab.id)}
-          canWrite={canWrite}
-          tabId={tab.id}
-        />
-      );
-
-    case 'work': {
-      const entries = asset.work.entries.filter((entry) => entry.assetTabId === tab.id);
-
-      return (
-        <WorkLog
-          what={{ assetId: asset.id, assetTabId: tab.id }}
-          work={{
-            entries,
-            loggedMinutes: entries.reduce((total, entry) => total + entry.minutes, 0),
-          }}
-          // An asset is estimated in money rather than in time, and a tab is
-          // not estimated at all, so there is nothing to hold the hours against.
-          estimateMinutes={null}
-          canWrite={canWrite}
-        />
-      );
-    }
-  }
-}
-
-/**
- * Notes on a tab: read as they render, and written in the same box a
- * description is.
- *
- * Opened for writing with its own pencil rather than the panel's Edit, because
- * the panel's Edit is for the asset and these belong to the tab.
- */
-function NotesBlock({
-  asset,
-  tab,
-  block,
-  projectSlug,
-  canWrite,
-}: TabPartProps & { readonly block: AssetTabBlock }): React.JSX.Element {
-  const [writing, setWriting] = useState<string | null>(null);
-  const display = useDisplay();
-  const update = useUpdateAssetTabBlock(projectSlug, asset.id);
-  const body = block.body ?? '';
-
-  const save = (): void => {
-    update.mutate(
-      { blockId: block.id, body: writing ?? body },
-      {
-        onSuccess: () => {
-          setWriting(null);
-        },
-        onError: (error) => {
-          display.showError(describeFailure(error));
-        },
-      },
-    );
-  };
-
-  if (writing === null) {
-    return (
-      <>
-        <h4 className={styles.blockHeading}>Notes</h4>
-        {body.trim() === '' ? (
-          <p className={styles.empty}>Nothing written yet.</p>
-        ) : (
-          <MarkdownText source={body} />
-        )}
-        {canWrite && (
-          <div className={styles.actions}>
-            <Button
-              size="compact"
-              aria-label="Edit notes"
-              title="Edit notes"
-              onClick={() => {
-                setWriting(body);
-              }}
-            >
-              <ButtonIcon>
-                <PencilIcon size={12} />
-              </ButtonIcon>
-            </Button>
-          </div>
-        )}
-      </>
     );
   }
 
-  return (
-    <>
-      <h4 className={styles.blockHeading}>Notes</h4>
-      <MarkdownField
-        label="Notes"
-        className={joinClassNames(styles.notesBox)}
-        value={writing}
-        files={{
-          // A file dropped into the notes is a working file of the asset, and
-          // it is for this tab.
-          uploadTo: { kind: 'assetFile', assetId: asset.id, assetTabId: tab.id },
-          onInsert: (markdown: string) => {
-            setWriting((current) => appendBlock(current ?? '', markdown));
-          },
-        }}
-        onChange={(event) => {
-          setWriting(event.target.value);
-        }}
-        onReplace={setWriting}
-      />
-      <div className={styles.actions}>
-        <Button tone="go" busy={update.isPending} busyLabel="Saving…" onClick={save}>
-          Save notes
-        </Button>
-        <Button
-          tone="stop"
-          onClick={() => {
-            setWriting(null);
-          }}
-        >
-          Cancel
-        </Button>
-      </div>
-    </>
-  );
-}
-
-/**
- * What a tab can be built from, one button each.
- *
- * A files block and a work block show what is tagged to the tab, so once a tab
- * has one there is nothing a second would add, and it is not offered.
- */
-function BlockAdder({
-  asset,
-  tab,
-  projectSlug,
-}: {
-  readonly asset: AssetDetailView;
-  readonly tab: AssetTab;
-  readonly projectSlug: string;
-}): React.JSX.Element {
-  const display = useDisplay();
-  const add = useAddAssetTabBlock(projectSlug, asset.id);
-  const offered = ASSET_TAB_BLOCK_KINDS.filter(
-    (kind) =>
-      !ASSET_TAB_VIEW_BLOCK_KINDS.includes(kind) ||
-      !tab.blocks.some((block) => block.kind === kind),
-  );
-
-  return (
-    <div className={styles.actions}>
-      {offered.map((kind) => {
-        // The kind is the word on the button, so the plus and the word are
-        // drawn together here.
-        const addition = (
-          <span className={styles.addLabel}>
-            <ButtonIcon>
-              <PlusIcon size={12} />
-            </ButtonIcon>
-            {describeAssetTabBlockKind(kind)}
-          </span>
-        );
-
-        return (
-          <Button
-            key={kind}
-            tone="go"
-            size="compact"
-            aria-label={`Add ${describeAssetTabBlockKind(kind).toLowerCase()}`}
-            title={`Add ${describeAssetTabBlockKind(kind).toLowerCase()}`}
-            disabled={add.isPending}
-            onClick={() => {
-              add.mutate(
-                { assetTabId: tab.id, kind },
-                {
-                  onError: (error) => {
-                    display.showError(describeFailure(error));
-                  },
-                },
-              );
-            }}
-          >
-            {addition}
-          </Button>
-        );
-      })}
-    </div>
-  );
+  // Nothing else goes on a tab; the server refuses it.
+  return null;
 }

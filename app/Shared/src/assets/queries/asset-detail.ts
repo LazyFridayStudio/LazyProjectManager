@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { defineQuery } from '../../envelope/query-definition.js';
 import { cardAssigneeSchema } from '../../board/queries/board-view.js';
 import { subtaskSchema } from '../../board/queries/card-detail.js';
-import { assetPhaseSchema, assetTabBlockKindSchema } from '../asset-vocabulary.js';
+import { assetBlockKindSchema, assetPhaseSchema } from '../asset-vocabulary.js';
 import { workDoneSchema } from '../../work/work-view.js';
 
 /**
@@ -94,7 +94,7 @@ export const assetFileSchema = z.object({
 export type AssetFile = z.infer<typeof assetFileSchema>;
 
 /**
- * One block of a tab, as the tab draws it.
+ * One block of a tab or of the Overview, as it is drawn.
  *
  * One shape for every kind rather than a union, because the panel walks them in
  * order and switches on `kind`: a notes block has a body and no items, a
@@ -103,7 +103,7 @@ export type AssetFile = z.infer<typeof assetFileSchema>;
  */
 export const assetTabBlockSchema = z.object({
   id: z.string().uuid(),
-  kind: assetTabBlockKindSchema,
+  kind: assetBlockKindSchema,
   body: z.string().nullable(),
   /** A checklist's items, in order. The same shape a card's steps have. */
   items: z.array(subtaskSchema),
@@ -173,6 +173,12 @@ export const assetDetailViewSchema = z.object({
    * has it whether or not anybody has broken the work up.
    */
   tabs: z.array(assetTabSchema),
+  /**
+   * What the Overview shows beyond the description, assignee and reporter every
+   * asset has, top to bottom. A new asset shows nothing else until somebody
+   * adds it.
+   */
+  overview: z.array(assetTabBlockSchema),
   /** What it is made of, uploaded or linked, in the order they were added. */
   files: z.array(assetFileSchema),
   /** The cards about it, open ones first. */

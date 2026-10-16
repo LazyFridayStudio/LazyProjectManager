@@ -214,6 +214,7 @@ describe('GIVEN the migration set', () => {
         '0061-a-name-can-wait-for-the-end-of-a-command',
         '0062-an-asset-can-be-linked-to-another',
         '0063-an-asset-is-worked-in-tabs',
+        '0064-the-overview-is-built-from-blocks',
       ]);
       expect(provided).toEqual(names);
     });
@@ -288,6 +289,7 @@ describe('GIVEN the migration set', () => {
         '0061-a-name-can-wait-for-the-end-of-a-command',
         '0062-an-asset-can-be-linked-to-another',
         '0063-an-asset-is-worked-in-tabs',
+        '0064-the-overview-is-built-from-blocks',
       ]);
     });
   });
@@ -376,6 +378,15 @@ describe('GIVEN the migration set', () => {
   });
 
   describe('WHEN migrations are rolled back one at a time', () => {
+    it('THEN the Overview draws everything again, and keeps no blocks of its own', async () => {
+      const { error } = await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
+
+      expect(error).toBeUndefined();
+      expect(await checkConstraint('asset_tab_block_kind_fits_a_tab')).toBe('');
+      // The tabs are untouched: only the Overview's blocks went.
+      expect(await tableNames()).toEqual(expect.arrayContaining(['asset_tab', 'asset_tab_block']));
+    });
+
     it('THEN an asset has a status and stages again, and no tabs or templates', async () => {
       const { error } = await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
       const remaining = await tableNames();
@@ -1031,9 +1042,10 @@ describe('GIVEN the migration set', () => {
    */
   describe('WHEN a library filed with subcategories is migrated', () => {
     it('THEN every subcategory becomes a category, and the assets move into it', async () => {
-      // Back past the steps that came after the tree as well: tabs, linking
-      // assets, and letting a name wait, which depends on the index the tree
-      // made.
+      // Back past the steps that came after the tree as well: the Overview's
+      // blocks, tabs, linking assets, and letting a name wait, which depends on
+      // the index the tree made.
+      await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
       await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
       await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
       await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
@@ -1107,7 +1119,8 @@ describe('GIVEN the migration set', () => {
    */
   describe('WHEN groups written before assets could be linked are migrated', () => {
     it('THEN each says about linking assets what it said about changing them', async () => {
-      // Back past tabs as well, which came after.
+      // Back past tabs and the Overview's blocks as well, which came after.
+      await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
       await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
       await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
 
@@ -1174,6 +1187,8 @@ describe('GIVEN the migration set', () => {
     const VIEWERS = '00000000-0000-4000-8000-00000000a905';
 
     beforeAll(async () => {
+      // Past the Overview's blocks too, which came after tabs.
+      await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
       await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
 
       await withTestDatabase(async (database) => {
@@ -1267,6 +1282,88 @@ describe('GIVEN the migration set', () => {
         const refused = await sql`
           insert into work_log (card_id, asset_id, asset_tab_id, minutes, worked_on)
           values (null, null, ${MESH}, 60, '2026-10-01')
+        `
+          .execute(database)
+          .then(
+            () => null,
+            (error: unknown) => error,
+          );
+
+        expect(refused).not.toBeNull();
+      });
+    });
+  });
+
+  /*
+   * Run last, on the library the step above left: three assets, one with tabs.
+   * Every asset that has something gets the block that shows it.
+   */
+  describe('WHEN a library is migrated to an Overview built from blocks', () => {
+    const PRICED = '00000000-0000-4000-8000-0000000000d1';
+    const TAGGED = '00000000-0000-4000-8000-0000000000d2';
+    const EMPTY = '00000000-0000-4000-8000-0000000000d3';
+
+    async function kindsOn(assetId: string): Promise<string[]> {
+      let kinds: string[] = [];
+
+      await withTestDatabase(async (database) => {
+        const blocks = await sql<{ kind: string }>`
+          select kind from asset_tab_block
+          where asset_id = ${assetId} and tab_id is null order by position
+        `.execute(database);
+
+        kinds = blocks.rows.map((row) => row.kind);
+      });
+
+      return kinds;
+    }
+
+    beforeAll(async () => {
+      await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
+
+      await withTestDatabase(async (database) => {
+        for (const [id, name, cost] of [
+          [PRICED, 'Anchor', 120_000],
+          [TAGGED, 'Buoy', null],
+          [EMPTY, 'Chain', null],
+        ] as const) {
+          await sql`
+            insert into asset
+              (id, account_id, project_id, category_id, asset_key, name, estimated_cost_minor, position)
+            values
+              (${id}, ${ACCOUNT}, ${PROJECT}, ${CATEGORY}, ${'SLTM-AST-' + id.slice(-2)},
+               ${name}, ${cost}, 1)
+          `.execute(database);
+        }
+
+        await sql`insert into asset_tag (account_id, asset_id, tag) values (${ACCOUNT}, ${TAGGED}, 'harbour')`.execute(
+          database,
+        );
+        await sql`
+          insert into asset_tab (account_id, asset_id, title, position)
+          values (${ACCOUNT}, ${TAGGED}, 'Mesh', 1)
+        `.execute(database);
+      });
+
+      const { error } = await runMigrations(urlForDatabase(TEST_DATABASE_NAME));
+
+      expect(error).toBeUndefined();
+    });
+
+    it('THEN each asset shows the sections it has something in, in the order they were drawn', async () => {
+      expect(await kindsOn(PRICED)).toEqual(['estimate']);
+      expect(await kindsOn(TAGGED)).toEqual(['tabs', 'tags']);
+    });
+
+    it('THEN an asset with nothing shows nothing beyond what every asset has', async () => {
+      expect(await kindsOn(EMPTY)).toEqual([]);
+    });
+
+    it('THEN a tab cannot hold a section that is the whole asset’s', async () => {
+      await withTestDatabase(async (database) => {
+        const refused = await sql`
+          insert into asset_tab_block (asset_id, tab_id, kind, position)
+          select asset_id, id, 'estimate', 9 from asset_tab where asset_id = ${TAGGED}
         `
           .execute(database)
           .then(
