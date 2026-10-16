@@ -828,7 +828,8 @@ test.describe.serial('a studio setting up for the first time', () => {
     // has not been given a Files section yet.
     await expect(files).toHaveCount(0);
     await panel.getByRole('button', { name: 'Edit' }).click();
-    await panel.getByRole('button', { name: 'Add files' }).click();
+    await panel.getByRole('button', { name: 'Add block' }).click();
+    await page.getByRole('menuitem', { name: 'Files' }).click();
     await expect(files.getByText(/Nothing yet/)).toBeVisible();
 
     await files.getByLabel('Upload files').setInputFiles({
@@ -875,7 +876,8 @@ test.describe.serial('a studio setting up for the first time', () => {
     const tags = panel.getByRole('region', { name: 'Tags' });
 
     await panel.getByRole('button', { name: 'Edit' }).click();
-    await panel.getByRole('button', { name: 'Add tags' }).click();
+    await panel.getByRole('button', { name: 'Add block' }).click();
+    await page.getByRole('menuitem', { name: 'Tags' }).click();
     await tags.getByRole('button', { name: 'Add tag' }).click();
 
     // Typed as somebody would, stored as one tag: `Act 1` and `act-1` are the
@@ -926,14 +928,19 @@ test.describe.serial('a studio setting up for the first time', () => {
 
     // A new tab opens as soon as it exists: the next thing anybody does with a
     // tab called Mesh is put something on it.
+    // The + beside the tabs asks for a name, or a template to start from.
     await strip.getByRole('button', { name: 'Add tab' }).click();
-    await strip.getByLabel('New tab').fill('Mesh');
-    await strip.getByLabel('New tab').press('Enter');
+
+    const adding = page.getByRole('dialog', { name: 'Add a tab' });
+    await adding.getByLabel('Name').fill('Mesh');
+    await adding.getByLabel('Name').press('Enter');
+    await expect(adding).toBeHidden();
 
     const mesh = panel.getByRole('tabpanel', { name: 'Mesh' });
     await expect(mesh).toBeVisible();
 
-    await mesh.getByRole('button', { name: 'Add checklist' }).click();
+    await mesh.getByRole('button', { name: 'Add block' }).click();
+    await page.getByRole('menuitem', { name: 'Checklist' }).click();
 
     const checklist = mesh.getByRole('region', { name: 'Checklist block' });
     await checklist.getByRole('button', { name: 'Add item' }).click();
@@ -957,14 +964,16 @@ test.describe.serial('a studio setting up for the first time', () => {
     await expect(checklist.getByText('1/2')).toBeVisible();
 
     await strip.getByRole('button', { name: 'Add tab' }).click();
-    await strip.getByLabel('New tab').fill('Rig');
-    await strip.getByLabel('New tab').press('Enter');
+    await adding.getByLabel('Name').fill('Rig');
+    await adding.getByRole('button', { name: 'Add tab' }).click();
+    await expect(adding).toBeHidden();
     await expect(panel.getByRole('tabpanel', { name: 'Rig' })).toBeVisible();
 
     // The Overview lists the jobs and how many are done, once it is asked to,
     // and ticks them off without opening any of them.
     await strip.getByRole('tab', { name: 'Overview' }).click();
-    await panel.getByRole('button', { name: 'Add tab list' }).click();
+    await panel.getByRole('button', { name: 'Add block' }).click();
+    await page.getByRole('menuitem', { name: 'Tab list' }).click();
 
     const summary = panel.getByRole('region', { name: 'Tabs' });
     await expect(summary.getByText('0/2')).toBeVisible();
@@ -977,12 +986,13 @@ test.describe.serial('a studio setting up for the first time', () => {
 
     // Kept for the next asset like it: the tabs and what they say, not the
     // ticks.
-    const templates = panel.getByRole('region', { name: 'Templates' });
+    // The save mark beside the + keeps it.
+    await strip.getByRole('button', { name: 'Save as a template' }).click();
 
-    await templates.getByRole('button', { name: 'Save as a template' }).click();
-    await templates.getByLabel('Template name').fill('Prop');
-    await templates.getByRole('button', { name: 'Save template' }).click();
-    await expect(templates.getByLabel('Template name')).toBeHidden();
+    const saving = page.getByRole('dialog', { name: 'Save as a template' });
+    await saving.getByLabel('Template name').fill('Prop');
+    await saving.getByRole('button', { name: 'Save template' }).click();
+    await expect(saving).toBeHidden();
 
     await panel.getByRole('button', { name: 'Close' }).click();
 
@@ -1089,7 +1099,8 @@ test.describe.serial('a studio setting up for the first time', () => {
     const links = panel.getByRole('region', { name: 'Linked assets' });
 
     await panel.getByRole('button', { name: 'Edit' }).click();
-    await panel.getByRole('button', { name: 'Add linked assets' }).click();
+    await panel.getByRole('button', { name: 'Add block' }).click();
+    await page.getByRole('menuitem', { name: 'Linked assets' }).click();
     await links.getByRole('button', { name: '+ Link' }).click();
     await links.getByLabel('Search assets').fill('bell');
     await links.getByRole('button', { name: new RegExp(LINKED_ASSET) }).click();

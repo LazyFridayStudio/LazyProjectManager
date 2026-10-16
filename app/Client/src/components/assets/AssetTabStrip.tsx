@@ -1,18 +1,16 @@
-import type { AssetTab } from '@lpm/shared';
+import type { AssetDetailView } from '@lpm/shared';
 import { useState } from 'react';
 
-import { describeFailure } from '../../api/failure-messages.js';
-import { Button, ButtonIcon, PlusIcon, useDisplay } from '../ui/index.js';
-import { useAddAssetTab } from '../../logic/assets/use-asset-tabs.js';
+import { Button, ButtonIcon, PlusIcon, SaveIcon } from '../ui/index.js';
+import { AddTabDialog, SaveTemplateDialog } from './AssetTabDialogs.js';
 import styles from './AssetTabs.module.css';
 
 /** The Overview, which is the asset itself rather than one of its tabs. */
 export const OVERVIEW = 'overview';
 
 export interface AssetTabStripProps {
-  readonly assetId: string;
+  readonly asset: AssetDetailView;
   readonly projectSlug: string;
-  readonly tabs: readonly AssetTab[];
   /** The tab being read, or `OVERVIEW`. */
   readonly selected: string;
   readonly canWrite: boolean;
@@ -28,9 +26,8 @@ export interface AssetTabStripProps {
  * another.
  */
 export function AssetTabStrip({
-  assetId,
+  asset,
   projectSlug,
-  tabs,
   selected,
   canWrite,
   onSelect,
@@ -45,7 +42,7 @@ export function AssetTabStrip({
         onSelect={onSelect}
       />
 
-      {tabs.map((tab) => (
+      {asset.tabs.map((tab) => (
         <TabButton
           key={tab.id}
           id={tab.id}
@@ -56,7 +53,7 @@ export function AssetTabStrip({
         />
       ))}
 
-      {canWrite && <TabAdder assetId={assetId} projectSlug={projectSlug} onAdded={onSelect} />}
+      {canWrite && <RowActions asset={asset} projectSlug={projectSlug} onAdded={onSelect} />}
     </div>
   );
 }
@@ -98,95 +95,63 @@ function TabButton({
 }
 
 /**
- * The button that opens a field for a new tab, and the field it opens.
+ * The two things done to the row itself, at its end: adding a tab — named, or
+ * from a template — and keeping this asset's tabs as a template.
  *
- * The new tab is opened as soon as it exists, because the next thing anybody
- * does with a tab called Rig is put something on it.
+ * Marks rather than words, because they sit among tabs and a word there reads
+ * as one more tab.
  */
-function TabAdder({
-  assetId,
+function RowActions({
+  asset,
   projectSlug,
   onAdded,
 }: {
-  readonly assetId: string;
+  readonly asset: AssetDetailView;
   readonly projectSlug: string;
   readonly onAdded: (tabId: string) => void;
 }): React.JSX.Element {
-  const [typed, setTyped] = useState<string | null>(null);
-  const display = useDisplay();
-  const add = useAddAssetTab(projectSlug, assetId);
+  const [open, setOpen] = useState<'add' | 'save' | null>(null);
+  const close = (): void => {
+    setOpen(null);
+  };
+  const canSave = asset.canManageTemplates && (asset.tabs.length > 0 || asset.overview.length > 0);
 
-  if (typed === null) {
-    return (
+  return (
+    <span className={styles.rowActions}>
       <Button
         tone="go"
         size="compact"
         aria-label="Add tab"
-        title="Add tab"
+        title="Add a tab, or start from a template"
         onClick={() => {
-          setTyped('');
+          setOpen('add');
         }}
       >
-        <span className={styles.addLabel}>
-          <ButtonIcon>
-            <PlusIcon size={12} />
-          </ButtonIcon>
-          Add tab
-        </span>
+        <ButtonIcon>
+          <PlusIcon size={13} />
+        </ButtonIcon>
       </Button>
-    );
-  }
 
-  const submit = (): void => {
-    const title = typed.trim();
+      {canSave && (
+        <Button
+          tone="go"
+          size="compact"
+          aria-label="Save as a template"
+          title="Save as a template"
+          onClick={() => {
+            setOpen('save');
+          }}
+        >
+          <ButtonIcon>
+            <SaveIcon size={13} />
+          </ButtonIcon>
+        </Button>
+      )}
 
-    if (title === '') {
-      setTyped(null);
-
-      return;
-    }
-
-    add.mutate(
-      { assetId, title },
-      {
-        onSuccess: (made) => {
-          setTyped(null);
-
-          if (made.id !== undefined) onAdded(made.id);
-        },
-        onError: (error) => {
-          display.showError(describeFailure(error));
-        },
-      },
-    );
-  };
-
-  return (
-    <input
-      className={styles.tabInput}
-      aria-label="New tab"
-      placeholder="Rig"
-      autoFocus
-      value={typed}
-      disabled={add.isPending}
-      onChange={(event) => {
-        setTyped(event.target.value);
-      }}
-      onKeyDown={(event) => {
-        // The panel is a form, so without this Enter would submit it.
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          submit();
-        }
-
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          setTyped(null);
-        }
-      }}
-      onBlur={() => {
-        if (!add.isPending) setTyped(null);
-      }}
-    />
+      {open === 'add' && (
+        <AddTabDialog asset={asset} projectSlug={projectSlug} onAdded={onAdded} onDone={close} />
+      )}
+      {open === 'save' && <SaveTemplateDialog asset={asset} onDone={close} />}
+    </span>
   );
 }

@@ -4,7 +4,7 @@ import {
   type AssetDetailView,
   type AssetTabBlock,
 } from '@lpm/shared';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { describeFailure } from '../../api/failure-messages.js';
 import { joinClassNames } from '../../lib/join-class-names.js';
@@ -24,6 +24,7 @@ import {
   PlusIcon,
   TrashIcon,
   useDisplay,
+  usePresence,
 } from '../ui/index.js';
 import { AssetChecklist } from './AssetChecklist.js';
 import styles from './AssetTabs.module.css';
@@ -408,9 +409,12 @@ function NotesBlock({
 }
 
 /**
- * What a place can be built from, one button each.
+ * What a place can be built from: one button, and a list of what is left to add.
  *
- * A place has one block of each kind, so a kind it has already is not offered.
+ * One button rather than one per kind, because a row of nine green pluses is
+ * louder than everything it would add. A place has one block of each kind, so
+ * a kind it has already is not offered, and once it has every kind there is no
+ * button at all.
  */
 export function AssetBlockAdder({
   place,
@@ -423,50 +427,96 @@ export function AssetBlockAdder({
   /** The kinds this place takes, in the order to offer them. */
   readonly offered: readonly AssetBlockKind[];
   readonly projectSlug: string;
-}): React.JSX.Element {
+}): React.JSX.Element | null {
+  const [isOpen, setIsOpen] = useState(false);
+  const menu = usePresence<HTMLDivElement>(isOpen, 'menu');
+  const holder = useRef<HTMLDivElement>(null);
   const display = useDisplay();
   const add = useAddAssetTabBlock(projectSlug, place.asset.id);
   const kinds = offered.filter((kind) => !blocks.some((block) => block.kind === kind));
 
-  return (
-    <div className={styles.actions}>
-      {kinds.map((kind) => {
-        // The kind is the word on the button, so the plus and the word are
-        // drawn together here.
-        const addition = (
-          <span className={styles.addLabel}>
-            <ButtonIcon>
-              <PlusIcon size={12} />
-            </ButtonIcon>
-            {describeAssetBlockKind(kind)}
-          </span>
-        );
+  // A press anywhere else closes it, as a menu does.
+  useEffect(() => {
+    if (!isOpen) return undefined;
 
-        return (
-          <Button
-            key={kind}
-            tone="go"
-            size="compact"
-            aria-label={`Add ${describeAssetBlockKind(kind).toLowerCase()}`}
-            title={`Add ${describeAssetBlockKind(kind).toLowerCase()}`}
-            disabled={add.isPending}
-            onClick={() => {
-              add.mutate(
-                place.tabId === null
-                  ? { assetId: place.asset.id, kind }
-                  : { assetTabId: place.tabId, kind },
-                {
-                  onError: (error) => {
-                    display.showError(describeFailure(error));
+    const closeFromOutside = (event: PointerEvent): void => {
+      if (!(event.target instanceof Node) || holder.current?.contains(event.target) !== true) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', closeFromOutside);
+
+    return () => {
+      document.removeEventListener('pointerdown', closeFromOutside);
+    };
+  }, [isOpen]);
+
+  if (kinds.length === 0) {
+    return null;
+  }
+
+  return (
+    <div ref={holder} className={styles.adder}>
+      <Button
+        tone="go"
+        size="compact"
+        aria-label="Add block"
+        title="Add block"
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        disabled={add.isPending}
+        onClick={() => {
+          setIsOpen((open) => !open);
+        }}
+      >
+        <span className={styles.addLabel}>
+          <ButtonIcon>
+            <PlusIcon size={12} />
+          </ButtonIcon>
+          Add block
+        </span>
+      </Button>
+
+      {menu.isPresent && (
+        <div
+          ref={menu.ref}
+          className={styles.menu}
+          role="menu"
+          aria-label="Blocks"
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              // The menu, not the panel it is in.
+              event.stopPropagation();
+              setIsOpen(false);
+            }
+          }}
+        >
+          {kinds.map((kind) => (
+            <button
+              key={kind}
+              type="button"
+              role="menuitem"
+              className={styles.menuItem}
+              onClick={() => {
+                setIsOpen(false);
+                add.mutate(
+                  place.tabId === null
+                    ? { assetId: place.asset.id, kind }
+                    : { assetTabId: place.tabId, kind },
+                  {
+                    onError: (error) => {
+                      display.showError(describeFailure(error));
+                    },
                   },
-                },
-              );
-            }}
-          >
-            {addition}
-          </Button>
-        );
-      })}
+                );
+              }}
+            >
+              {describeAssetBlockKind(kind)}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

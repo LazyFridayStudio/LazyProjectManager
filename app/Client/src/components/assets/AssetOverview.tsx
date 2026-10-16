@@ -25,7 +25,7 @@ import {
 import tabStyles from './AssetTabs.module.css';
 import { AssetFiles } from './AssetFiles.js';
 import { AssetLinks } from './AssetLinks.js';
-import { AssetTabsSummary, AssetTemplateActions } from './AssetTabsSummary.js';
+import { AssetTabsSummary } from './AssetTabsSummary.js';
 import { AssetTags } from './AssetTags.js';
 import styles from './AssetLibraryScreen.module.css';
 
@@ -115,15 +115,12 @@ export function AssetOverview({
       />
 
       {canWrite && (
-        <>
-          <AssetBlockAdder
-            place={place}
-            blocks={asset.overview}
-            offered={ASSET_OVERVIEW_BLOCK_KINDS}
-            projectSlug={projectSlug}
-          />
-          <AssetTemplateActions asset={asset} projectSlug={projectSlug} />
-        </>
+        <AssetBlockAdder
+          place={place}
+          blocks={asset.overview}
+          offered={ASSET_OVERVIEW_BLOCK_KINDS}
+          projectSlug={projectSlug}
+        />
       )}
     </>
   );

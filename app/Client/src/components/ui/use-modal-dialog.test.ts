@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isAPressOnTheBackdrop } from './use-modal-dialog.js';
+import { isAPressOnTheBackdrop, isItsOwn } from './use-modal-dialog.js';
 
 /**
  * Stand-ins for the things a press can land on.
@@ -44,6 +44,22 @@ describe('GIVEN a modal dialog somebody is clicking around', () => {
   describe('WHEN the dialog is not on the screen any more', () => {
     it('THEN there is nothing to close', () => {
       expect(isAPressOnTheBackdrop(null, null, null)).toBe(false);
+    });
+  });
+});
+
+describe('GIVEN a dialog opened inside another', () => {
+  const inner = {} as EventTarget;
+
+  describe('WHEN the inner one closes, or somebody presses Escape in it', () => {
+    it('THEN the outer one hears it and does nothing, because it was not its own', () => {
+      expect(isItsOwn({ target: inner, currentTarget: dialog })).toBe(false);
+    });
+  });
+
+  describe('WHEN the outer one closes itself', () => {
+    it('THEN it is its own, and it closes', () => {
+      expect(isItsOwn({ target: dialog, currentTarget: dialog })).toBe(true);
     });
   });
 });

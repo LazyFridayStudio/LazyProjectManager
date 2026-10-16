@@ -318,9 +318,8 @@ function PanelHead({
     <div className={styles.detailHead}>
       <div className={styles.detailTabs}>
         <AssetTabStrip
-          assetId={asset.id}
+          asset={asset}
           projectSlug={projectSlug}
-          tabs={asset.tabs}
           selected={selected}
           canWrite={canWrite && isEditing}
           onSelect={onSelect}

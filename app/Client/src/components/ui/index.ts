@@ -11,7 +11,15 @@ export {
   type TextRequest,
 } from './display/index.js';
 export { Field } from './Field.js';
-export { ChevronIcon, CloseIcon, DownloadIcon, PencilIcon, PlusIcon, TrashIcon } from './icons.js';
+export {
+  ChevronIcon,
+  CloseIcon,
+  DownloadIcon,
+  PencilIcon,
+  PlusIcon,
+  SaveIcon,
+  TrashIcon,
+} from './icons.js';
 export { Loading } from './Loading.js';
 export {
   arrive,

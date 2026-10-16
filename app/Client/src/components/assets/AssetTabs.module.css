@@ -18,10 +18,17 @@
   scrollbar-width: thin;
 }
 
-/* Anything on the row that is not a tab — adding one — sits in its middle. */
+/* What is done to the row — adding a tab, keeping it as a template — sits in
+   its middle, after the last tab. */
 .strip > :not(.tab) {
   align-self: center;
   margin: -8px 0 0 8px;
+}
+
+.rowActions {
+  display: inline-flex;
+  flex: none;
+  gap: 6px;
 }
 
 /*
@@ -81,6 +88,7 @@
   color: var(--color-ok);
 }
 
+/* A tab's name, being typed over on the tab itself. */
 .tabInput {
   width: 14ch;
   padding: 3px 8px;
@@ -443,4 +451,48 @@
   border-radius: 50%;
   font-family: var(--font-heading);
   font-size: var(--font-size-micro);
+}
+
+/* --- Adding a block -------------------------------------------------------- */
+
+/* The button, and the list that falls open under it. */
+.adder {
+  position: relative;
+  align-self: flex-start;
+}
+
+.menu {
+  position: absolute;
+  z-index: 1;
+  top: calc(100% + 4px);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  padding: 4px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.menuItem {
+  padding: 7px 10px;
+  border: 0;
+  border-radius: var(--radius-tag);
+  background: none;
+  font: inherit;
+  font-size: var(--font-size-small);
+  text-align: left;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.menuItem:hover {
+  background: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));
+}
+
+.menuItem:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: calc(-1 * var(--focus-ring-offset));
 }
