@@ -25,6 +25,7 @@ function category(id: string, categories: AssetCategory[] = []): AssetCategory {
     name: id,
     color: '#adadad',
     budgetMinor: null,
+    defaultTemplateId: null,
     count: 0,
     estimatedMinor: 0,
     categories,

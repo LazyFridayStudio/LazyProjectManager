@@ -3,8 +3,12 @@ import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/r
 
 import { useApiClient } from '../../components/ApiClientProvider.js';
 
-/** What an entry is about. Exactly one, as the command insists. */
-export type WorkedOnWhat = { readonly cardId: string } | { readonly assetId: string };
+/**
+ * What an entry is about. Exactly one, as the command insists — and on an
+ * asset, optionally which of its tabs the hours went on.
+ */
+export type WorkedOnWhat =
+  { readonly cardId: string } | { readonly assetId: string; readonly assetTabId?: string };
 
 export interface LoggedWork {
   readonly minutes: number;

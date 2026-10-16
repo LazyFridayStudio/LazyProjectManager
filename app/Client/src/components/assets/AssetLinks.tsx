@@ -1,4 +1,4 @@
-import { describeAssetStatus, type AssetDetailView } from '@lpm/shared';
+import { describeAssetPhase, type AssetDetailView } from '@lpm/shared';
 import { useState } from 'react';
 
 import { describeFailure } from '../../api/failure-messages.js';
@@ -134,7 +134,7 @@ function LinkedAssetSummary({
       <span className={styles.rowTitle} title={linked.name}>
         {linked.name}
       </span>
-      <span className={styles.state}>{describeAssetStatus(linked.status)}</span>
+      <span className={styles.state}>{describeAssetPhase(linked.phase)}</span>
     </>
   );
 }

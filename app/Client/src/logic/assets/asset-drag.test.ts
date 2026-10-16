@@ -28,14 +28,14 @@ function tile(id: string): AssetLibraryView['categories'][number]['assets'][numb
   return {
     id,
     name: id,
-    status: 'concept',
+    phase: 'pre_dev',
     estimatedCostMinor: null,
     dueOn: null,
     primaryReferenceUrl: null,
     referenceCount: 0,
     linkedCardCount: 0,
-    subtaskCount: 0,
-    subtasksDone: 0,
+    tabCount: 0,
+    tabsDone: 0,
     tags: [],
   };
 }
@@ -55,6 +55,7 @@ function library(props: readonly string[], characters: readonly string[]): Asset
         name: 'Props',
         color: '#adadad',
         budgetMinor: null,
+        defaultTemplateId: null,
         count: props.length,
         estimatedMinor: 0,
         categories: [],
@@ -65,6 +66,7 @@ function library(props: readonly string[], characters: readonly string[]): Asset
         name: 'Characters',
         color: '#adadad',
         budgetMinor: null,
+        defaultTemplateId: null,
         count: characters.length,
         estimatedMinor: 0,
         categories: [],
@@ -481,6 +483,7 @@ describe('GIVEN an asset in a library with categories inside categories', () => 
       name: id,
       color: '#adadad',
       budgetMinor: null,
+      defaultTemplateId: null,
       // What a heading says is everything under it, which is what a drag has to
       // keep true as a tile crosses from one branch to another.
       count:

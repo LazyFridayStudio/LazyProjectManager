@@ -100,6 +100,7 @@ interface LibraryRow {
   categoryName: string | null;
   categoryColor: string | null;
   budgetMinor: string | null;
+  defaultTemplateId: string | null;
   assetCount: number;
   estimatedMinor: string | null;
   assets: TileRow[];
@@ -130,6 +131,7 @@ interface CategoryRow {
   name: string;
   color: string;
   budgetMinor: number | null;
+  defaultTemplateId: string | null;
   count: number;
   estimatedMinor: number;
   categories: CategoryRow[];
@@ -154,6 +156,7 @@ function toCategory(row: LibraryRowWithCategory): CategoryRow {
     color: row.categoryColor,
     // `bigint` arrives as a string, as everywhere.
     budgetMinor: row.budgetMinor === null ? null : Number(row.budgetMinor),
+    defaultTemplateId: row.defaultTemplateId,
     count: row.assetCount,
     estimatedMinor: Number(row.estimatedMinor ?? 0),
     categories: [],
@@ -261,7 +264,7 @@ interface LibraryParams {
   readonly slug: string;
   readonly search?: string;
   readonly tags?: readonly string[];
-  readonly statuses?: readonly string[];
+  readonly phases?: readonly string[];
 }
 
 /**
@@ -273,19 +276,19 @@ interface LibraryParams {
 interface LibraryFilter {
   readonly search: string;
   readonly tags: readonly string[];
-  readonly statuses: readonly string[];
+  readonly phases: readonly string[];
 }
 
 function readFilter(params: LibraryParams): LibraryFilter {
   return {
     search: params.search?.trim() ?? '',
     tags: params.tags ?? [],
-    statuses: params.statuses ?? [],
+    phases: params.phases ?? [],
   };
 }
 
 function isFiltering(filter: LibraryFilter): boolean {
-  return filter.search !== '' || filter.tags.length > 0 || filter.statuses.length > 0;
+  return filter.search !== '' || filter.tags.length > 0 || filter.phases.length > 0;
 }
 
 /**
@@ -299,7 +302,7 @@ function isFiltering(filter: LibraryFilter): boolean {
  * keeps this one expression rather than several assembled ones.
  */
 function buildMatches(filter: LibraryFilter) {
-  const statuses = sql.val<readonly string[]>(filter.statuses);
+  const phases = sql.val<readonly string[]>(filter.phases);
   const tags = sql.val<readonly string[]>(filter.tags);
 
   return sql`
@@ -311,8 +314,8 @@ function buildMatches(filter: LibraryFilter) {
       or asset.name ilike ${`%${filter.search}%`}
     )
     and (
-      cardinality(${statuses}::text[]) = 0
-      or asset.status = any(${statuses}::text[])
+      cardinality(${phases}::text[]) = 0
+      or asset.phase = any(${phases}::text[])
     )
     and (
       cardinality(${tags}::text[]) = 0
@@ -364,6 +367,7 @@ async function selectLibrary(query: LibraryQuery): Promise<LibraryRow[]> {
       asset_category.name                 as category_name,
       asset_category.color                as category_color,
       asset_category.budget_minor         as budget_minor,
+      asset_category.default_template_id  as default_template_id,
       coalesce(totals.total, 0)           as asset_count,
       coalesce(totals.estimated, 0)       as estimated_minor,
       coalesce(tiles.assets, '[]'::json)  as assets
@@ -405,14 +409,14 @@ async function selectLibrary(query: LibraryQuery): Promise<LibraryRow[]> {
             json_build_object(
               'id',                  asset.id,
               'name',                asset.name,
-              'status',              asset.status,
+              'phase',               asset.phase,
               'estimatedCostMinor',  asset.estimated_cost_minor,
               'dueOn',               asset.due_on,
               'primaryReferenceFileId', primary_reference.file_id,
               'referenceCount',      sheet.total,
               'linkedCardCount',     linked.total,
-              'subtaskCount',        stages.total,
-              'subtasksDone',        stages.done,
+              'tabCount',            tabs.total,
+              'tabsDone',            tabs.done,
               'tags',                coalesce(tags.list, '[]'::json)
             )           as tile,
             asset.position as tile_position
@@ -445,11 +449,11 @@ async function selectLibrary(query: LibraryQuery): Promise<LibraryRow[]> {
               -- twice would be two scans of the same rows for two halves of
               -- one fact.
               select
-                count(*)::int                                   as total,
-                count(*) filter (where asset_subtask.done)::int as done
-              from asset_subtask
-              where asset_subtask.asset_id = asset.id
-            ) stages on true
+                count(*)::int                               as total,
+                count(*) filter (where asset_tab.done)::int as done
+              from asset_tab
+              where asset_tab.asset_id = asset.id
+            ) tabs on true
             left join lateral (
               -- Alphabetical, because a row of chips is scanned rather than
               -- read in the order somebody happened to type them.

@@ -5,19 +5,36 @@ export {
   assetFileLabelSchema,
   assetFileUrlSchema,
   assetNameSchema,
-  assetStatusSchema,
+  assetChecklistItemTitleSchema,
+  assetPhaseSchema,
+  assetTabBlockKindSchema,
+  assetTabNotesSchema,
+  assetTabTitleSchema,
   assetTagSchema,
-  describeAssetStatus,
+  assetTemplateBlockSchema,
+  assetTemplateDefinitionSchema,
+  assetTemplateNameSchema,
+  describeAssetPhase,
+  describeAssetTabBlockKind,
   ASSET_KEY_PREFIX,
-  ASSET_STATUSES,
+  ASSET_PHASES,
+  ASSET_TAB_BLOCK_KINDS,
+  ASSET_TAB_VIEW_BLOCK_KINDS,
   DEFAULT_ASSET_CATEGORY,
   MAXIMUM_ASSET_CATEGORY_NAME_LENGTH,
+  MAXIMUM_BLOCKS_PER_TAB,
+  MAXIMUM_ITEMS_PER_CHECKLIST,
+  MAXIMUM_TABS_PER_ASSET,
   MAXIMUM_TAGS_PER_ASSET,
-  type AssetStatus,
+  type AssetPhase,
+  type AssetTabBlockKind,
+  type AssetTemplateBlock,
+  type AssetTemplateDefinition,
 } from './asset-vocabulary.js';
 
+export { describeTemplateTabs, templateFromTabs } from './asset-templates.js';
+
 export {
-  addAssetSubtaskCommand,
   createAssetCategoryCommand,
   createAssetCommand,
   deleteAssetCategoryCommand,
@@ -31,15 +48,31 @@ export {
   promoteAssetReferenceCommand,
   removeAssetFileCommand,
   removeAssetReferenceCommand,
-  removeAssetSubtaskCommand,
   tagAssetCommand,
   unlinkAssetCommand,
   unlinkAssetsCommand,
   untagAssetCommand,
   updateAssetCategoryCommand,
   updateAssetCommand,
-  updateAssetSubtaskCommand,
 } from './commands/asset-commands.js';
+
+export {
+  addAssetChecklistItemCommand,
+  addAssetTabBlockCommand,
+  addAssetTabCommand,
+  applyAssetTemplateCommand,
+  createAssetTemplateCommand,
+  deleteAssetTabCommand,
+  deleteAssetTemplateCommand,
+  moveAssetTabBlockCommand,
+  moveAssetTabCommand,
+  removeAssetChecklistItemCommand,
+  removeAssetTabBlockCommand,
+  updateAssetChecklistItemCommand,
+  updateAssetTabBlockCommand,
+  updateAssetTabCommand,
+  updateAssetTemplateCommand,
+} from './commands/asset-tab-commands.js';
 
 export {
   assetCardLinkSchema,
@@ -47,13 +80,25 @@ export {
   assetDetailViewSchema,
   assetFileSchema,
   assetReferenceSchema,
+  assetTabBlockSchema,
+  assetTabSchema,
   linkedAssetSchema,
   type AssetCardLink,
   type AssetDetailView,
   type AssetFile,
   type AssetReference,
+  type AssetTab,
+  type AssetTabBlock,
   type LinkedAsset,
 } from './queries/asset-detail.js';
+
+export {
+  assetTemplateSchema,
+  assetTemplatesQuery,
+  assetTemplatesViewSchema,
+  type AssetTemplate,
+  type AssetTemplatesView,
+} from './queries/asset-templates.js';
 
 export {
   assetCategorySchema,

@@ -18,7 +18,10 @@ import type {
   AssetReferenceTable,
   AssetSequenceTable,
   AssetTable,
-  AssetSubtaskTable,
+  AssetTabBlockTable,
+  AssetTabChecklistItemTable,
+  AssetTabTable,
+  AssetTemplateTable,
   AssetTagTable,
   CardAssetLinkTable,
 } from './asset-tables.js';
@@ -96,7 +99,10 @@ export interface DatabaseSchema {
   asset: AssetTable;
   assetReference: AssetReferenceTable;
   assetFile: AssetFileTable;
-  assetSubtask: AssetSubtaskTable;
+  assetTab: AssetTabTable;
+  assetTabBlock: AssetTabBlockTable;
+  assetTabChecklistItem: AssetTabChecklistItemTable;
+  assetTemplate: AssetTemplateTable;
   assetTag: AssetTagTable;
   assetSequence: AssetSequenceTable;
   cardAssetLink: CardAssetLinkTable;

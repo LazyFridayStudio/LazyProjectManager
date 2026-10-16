@@ -1,4 +1,4 @@
-import { describeAssetStatus, type AssetCategory, type AssetTile } from '@lpm/shared';
+import { describeAssetPhase, type AssetCategory, type AssetTile } from '@lpm/shared';
 import { useState } from 'react';
 
 import { useAssetLibrary } from '../../logic/assets/use-assets.js';
@@ -81,7 +81,7 @@ export function AssetPicker({
               <span className={styles.rowTitle} title={asset.name}>
                 {asset.name}
               </span>
-              <span className={styles.state}>{describeAssetStatus(asset.status)}</span>
+              <span className={styles.state}>{describeAssetPhase(asset.phase)}</span>
             </button>
           </li>
         ))}

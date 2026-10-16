@@ -221,7 +221,7 @@ async function loadAssetLinks(
       'cardAssetLink.id as linkId',
       'asset.id as assetId',
       'asset.name',
-      'asset.status',
+      'asset.phase',
       'assetCategory.name as categoryName',
     ])
     .where('cardAssetLink.cardId', '=', cardId)

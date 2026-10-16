@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { defineQuery } from '../../envelope/query-definition.js';
 import { cardAssigneeSchema } from '../../board/queries/board-view.js';
 import { subtaskSchema } from '../../board/queries/card-detail.js';
-import { assetStatusSchema } from '../asset-vocabulary.js';
+import { assetPhaseSchema, assetTabBlockKindSchema } from '../asset-vocabulary.js';
 import { workDoneSchema } from '../../work/work-view.js';
 
 /**
@@ -41,7 +41,7 @@ export const linkedAssetSchema = z.object({
   assetId: z.string().uuid(),
   assetKey: z.string(),
   name: z.string(),
-  status: assetStatusSchema,
+  phase: assetPhaseSchema,
   category: z.object({
     id: z.string().uuid(),
     name: z.string(),
@@ -87,16 +87,54 @@ export const assetFileSchema = z.object({
   stored: z.boolean(),
   /** Null for a linked file, and for one whose upload never finished. */
   bytes: z.number().int().nullable(),
+  /** The tab it is for, or null for one that is the asset's as a whole. */
+  tabId: z.string().uuid().nullable(),
 });
 
 export type AssetFile = z.infer<typeof assetFileSchema>;
+
+/**
+ * One block of a tab, as the tab draws it.
+ *
+ * One shape for every kind rather than a union, because the panel walks them in
+ * order and switches on `kind`: a notes block has a body and no items, a
+ * checklist has items and no body, and a files or work block has neither — it
+ * shows the asset's files and hours that name its tab.
+ */
+export const assetTabBlockSchema = z.object({
+  id: z.string().uuid(),
+  kind: assetTabBlockKindSchema,
+  body: z.string().nullable(),
+  /** A checklist's items, in order. The same shape a card's steps have. */
+  items: z.array(subtaskSchema),
+});
+
+export type AssetTabBlock = z.infer<typeof assetTabBlockSchema>;
+
+/**
+ * One job inside the asset: Mesh, UVs, Rig.
+ *
+ * Who is doing it and by when are the tab's own, because the rigger is not the
+ * modeller and the rig is not due when the mesh is.
+ */
+export const assetTabSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  done: z.boolean(),
+  assignee: cardAssigneeSchema.nullable(),
+  dueOn: z.string().nullable(),
+  /** What it is built from, top to bottom. */
+  blocks: z.array(assetTabBlockSchema),
+});
+
+export type AssetTab = z.infer<typeof assetTabSchema>;
 
 export const assetDetailViewSchema = z.object({
   id: z.string().uuid(),
   /** What it is called out loud: `EXMP-AST-6`. */
   assetKey: z.string(),
   name: z.string(),
-  status: assetStatusSchema,
+  phase: assetPhaseSchema,
   description: z.string().nullable(),
   estimatedCostMinor: z.number().int().nullable(),
   /** The hours put into this, and what they add up to. */
@@ -129,13 +167,12 @@ export const assetDetailViewSchema = z.object({
   /** The words it is filed under, alphabetical. */
   tags: z.array(z.string()),
   /**
-   * The stages it is made in, in the order somebody put them.
+   * The jobs it is made in, in the order somebody put them.
    *
-   * The same shape a card's steps have, deliberately: a checklist on a thing is
-   * one idea, and two schemas that agreed today would drift the first time one
-   * of them grew a field.
+   * The Overview is not one of these: it is the asset itself, and every asset
+   * has it whether or not anybody has broken the work up.
    */
-  subtasks: z.array(subtaskSchema),
+  tabs: z.array(assetTabSchema),
   /** What it is made of, uploaded or linked, in the order they were added. */
   files: z.array(assetFileSchema),
   /** The cards about it, open ones first. */
@@ -151,6 +188,8 @@ export const assetDetailViewSchema = z.object({
   canDelete: z.boolean(),
   /** Whether they may link it to another asset, or unlink one. Asked the same way. */
   canLink: z.boolean(),
+  /** Whether they may save its tabs as one of the project's templates. */
+  canManageTemplates: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

@@ -595,7 +595,7 @@ async function createAssets(input: AssetRequest): Promise<number> {
         categoryId,
         assetKey,
         name: asset.name,
-        status: asset.status,
+        phase: asset.phase,
         estimatedCostMinor: asset.estimatedCostMinor,
         assigneeId: asset.assignee === null ? null : (people.get(asset.assignee) ?? null),
         // Whoever set the install up, as the demo cards are raised by. A

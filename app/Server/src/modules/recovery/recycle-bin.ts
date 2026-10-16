@@ -160,7 +160,15 @@ const RECIPES = {
   },
   assetCategory: {
     what: 'Asset category',
-    parts: [{ table: 'asset_category', by: 'id' }],
+    parts: [
+      {
+        table: 'asset_category',
+        by: 'id',
+        // The template it offered is a starting point, not part of what the
+        // category is: one deleted since leaves it offering nothing.
+        forgets: [{ column: 'default_template_id', table: 'asset_template' }],
+      },
+    ],
   },
   asset: {
     what: 'Asset',
@@ -184,11 +192,19 @@ const RECIPES = {
         ],
       },
       { table: 'asset_reference', by: 'asset_id', needs: [{ column: 'file_id', table: 'file' }] },
+      // The tabs before anything that names one: a file and an hour can say
+      // which tab they were for.
+      {
+        table: 'asset_tab',
+        by: 'asset_id',
+        forgets: [{ column: 'assignee_id', table: 'app_user' }],
+      },
+      { table: 'asset_tab_block', by: 'asset_id' },
+      { table: 'asset_tab_checklist_item', by: 'asset_id' },
       // Linked files as well as stored ones: a link points at no stored file,
       // and `needs` lets it through.
       { table: 'asset_file', by: 'asset_id', needs: [{ column: 'file_id', table: 'file' }] },
       { table: 'asset_tag', by: 'asset_id' },
-      { table: 'asset_subtask', by: 'asset_id' },
       // The hours logged against it, which are the one part of an asset nobody
       // could type back in from memory.
       { table: 'work_log', by: 'asset_id' },
@@ -203,6 +219,28 @@ const RECIPES = {
           { column: 'second_asset_id', table: 'asset' },
         ],
       },
+    ],
+  },
+  assetTab: {
+    what: 'Asset tab',
+    parts: [
+      {
+        table: 'asset_tab',
+        by: 'id',
+        // A tab is always on an asset. The asset may have gone to the bin after
+        // it, and is the thing to put back first.
+        requires: [
+          {
+            column: 'asset_id',
+            table: 'asset',
+            refusal:
+              'The asset this tab was on has been deleted since. Put the asset back first, then the tab.',
+          },
+        ],
+        forgets: [{ column: 'assignee_id', table: 'app_user' }],
+      },
+      { table: 'asset_tab_block', by: 'tab_id' },
+      { table: 'asset_tab_checklist_item', by: 'tab_id' },
     ],
   },
   card: {

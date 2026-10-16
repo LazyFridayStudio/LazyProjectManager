@@ -1,4 +1,9 @@
-import { createCommandSuccess, updateAssetCommand, type CommandSuccess } from '@lpm/shared';
+import {
+  createCommandSuccess,
+  updateAssetCommand,
+  type AssetPhase,
+  type CommandSuccess,
+} from '@lpm/shared';
 
 import { defineCommandHandler } from '../../../cqrs/command-registry.js';
 import { executeCommand, type CommandTransaction } from '../../../cqrs/execute-command.js';
@@ -16,7 +21,7 @@ interface UpdateAssetInput {
   assetId: string;
   categoryId?: string;
   name?: string;
-  status?: 'concept' | 'wip' | 'review' | 'approved' | 'final';
+  phase?: AssetPhase;
   description?: string | null;
   estimatedCostMinor?: number | null;
   dueOn?: string | null;
@@ -150,8 +155,8 @@ function buildPatch(input: UpdateAssetInput): Record<string, unknown> {
     patch.name = input.name;
   }
 
-  if (input.status !== undefined) {
-    patch.status = input.status;
+  if (input.phase !== undefined) {
+    patch.phase = input.phase;
   }
 
   if (input.description !== undefined) {

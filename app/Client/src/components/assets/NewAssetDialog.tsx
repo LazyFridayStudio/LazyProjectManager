@@ -1,4 +1,9 @@
-import { ASSET_STATUSES, describeAssetStatus, type AssetStatus } from '@lpm/shared';
+import {
+  ASSET_PHASES,
+  describeAssetPhase,
+  describeTemplateTabs,
+  type AssetPhase,
+} from '@lpm/shared';
 import { useState, type ChangeEvent } from 'react';
 
 import { readFieldProblems } from '../../api/failure-messages.js';
@@ -7,11 +12,12 @@ import { MarkdownField } from '../markdown/index.js';
 import { joinClassNames } from '../../lib/join-class-names.js';
 import { toMinorUnits } from '../../logic/projects/format-project-values.js';
 import { useCreateAsset } from '../../logic/assets/use-assets.js';
+import { useAssetTemplates } from '../../logic/assets/use-asset-tabs.js';
 import styles from './AssetLibraryScreen.module.css';
 
-const STATUS_OPTIONS = ASSET_STATUSES.map((status) => ({
-  value: status,
-  label: describeAssetStatus(status),
+const PHASE_OPTIONS = ASSET_PHASES.map((phase) => ({
+  value: phase,
+  label: describeAssetPhase(phase),
 }));
 
 /**
@@ -50,7 +56,12 @@ export interface NewAssetDialogProps {
   readonly projectId: string;
   readonly projectSlug: string;
   readonly currency: string;
-  readonly category: { readonly id: string; readonly name: string };
+  readonly category: {
+    readonly id: string;
+    readonly name: string;
+    /** The template it offers, which the dialog starts on. */
+    readonly defaultTemplateId: string | null;
+  };
   readonly onDone: () => void;
 }
 
@@ -72,7 +83,12 @@ export function NewAssetDialog({
   const createAsset = useCreateAsset(projectSlug);
   const problems = readFieldProblems(createAsset.error);
   const [name, setName] = useState('');
-  const [status, setStatus] = useState<AssetStatus>('concept');
+  const [phase, setPhase] = useState<AssetPhase>('pre_dev');
+  // Whatever the category offers, and an empty string for none — which a select
+  // cannot say as null. Sent either way, so what the dialog showed is what the
+  // asset gets, rather than the server deciding again.
+  const [templateId, setTemplateId] = useState(category.defaultTemplateId ?? '');
+  const templates = useAssetTemplates(projectId);
   const [cost, setCost] = useState('');
   const [dueOn, setDueOn] = useState('');
   const [description, setDescription] = useState('');
@@ -83,7 +99,8 @@ export function NewAssetDialog({
         projectId,
         categoryId: category.id,
         name: name.trim(),
-        status,
+        phase,
+        templateId: templateId === '' ? null : templateId,
         estimatedCostMinor: cost.trim() === '' ? null : toMinorUnits(cost),
         dueOn: dueOn === '' ? null : dueOn,
         description: description.trim() === '' ? null : description,
@@ -117,13 +134,29 @@ export function NewAssetDialog({
 
         <div className={styles.dialogPair}>
           <Select
-            label="Status"
-            options={STATUS_OPTIONS}
-            value={status}
+            label="Phase"
+            options={PHASE_OPTIONS}
+            value={phase}
             onChange={(event) => {
-              setStatus(event.target.value as AssetStatus);
+              setPhase(event.target.value as AssetPhase);
             }}
           />
+          {(templates.data?.templates.length ?? 0) > 0 && (
+            <Select
+              label="Start with tabs from"
+              options={[
+                { value: '', label: 'No template' },
+                ...(templates.data?.templates ?? []).map((template) => ({
+                  value: template.id,
+                  label: `${template.name} — ${describeTemplateTabs(template.definition)}`,
+                })),
+              ]}
+              value={templateId}
+              onChange={(event) => {
+                setTemplateId(event.target.value);
+              }}
+            />
+          )}
         </div>
 
         <div className={styles.dialogPair}>

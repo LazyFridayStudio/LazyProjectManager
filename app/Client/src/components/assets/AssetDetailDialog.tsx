@@ -1,8 +1,8 @@
 import {
-  ASSET_STATUSES,
-  describeAssetStatus,
+  ASSET_PHASES,
+  describeAssetPhase,
   type AssetDetailView,
-  type AssetStatus,
+  type AssetPhase,
 } from '@lpm/shared';
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 
@@ -23,7 +23,9 @@ import {
 import { MarkdownField, MarkdownText } from '../markdown/index.js';
 import { AssetFiles } from './AssetFiles.js';
 import { AssetLinks } from './AssetLinks.js';
-import { AssetSubtasks } from './AssetSubtasks.js';
+import { AssetTabPanel } from './AssetTabPanel.js';
+import { AssetTabsSummary } from './AssetTabsSummary.js';
+import { AssetTabStrip, OVERVIEW } from './AssetTabStrip.js';
 import { AssetTags } from './AssetTags.js';
 import {
   formatMoney,
@@ -37,9 +39,9 @@ import { PersonPicker } from '../projects/index.js';
 import styles from './AssetLibraryScreen.module.css';
 import { WorkLog } from '../work/index.js';
 
-const STATUS_OPTIONS = ASSET_STATUSES.map((status) => ({
-  value: status,
-  label: describeAssetStatus(status),
+const PHASE_OPTIONS = ASSET_PHASES.map((phase) => ({
+  value: phase,
+  label: describeAssetPhase(phase),
 }));
 
 export interface AssetDetailDialogProps {
@@ -112,7 +114,7 @@ export function AssetDetailDialog({
 
 interface AssetFormState {
   name: string;
-  status: AssetStatus;
+  phase: AssetPhase;
   cost: string;
   dueOn: string;
   description: string;
@@ -125,7 +127,7 @@ interface AssetFormState {
 function toForm(asset: AssetDetailView): AssetFormState {
   return {
     name: asset.name,
-    status: asset.status,
+    phase: asset.phase,
     cost: asset.estimatedCostMinor === null ? '' : String(asset.estimatedCostMinor / 100),
     dueOn: asset.dueOn ?? '',
     description: asset.description ?? '',
@@ -139,7 +141,7 @@ function fromForm(assetId: string, form: AssetFormState): UpdateAssetInput {
   return {
     assetId,
     name: form.name.trim(),
-    status: form.status,
+    phase: form.phase,
     estimatedCostMinor: form.cost.trim() === '' ? null : toMinorUnits(form.cost),
     dueOn: form.dueOn === '' ? null : form.dueOn,
     description: form.description.trim() === '' ? null : form.description,
@@ -182,6 +184,10 @@ function AssetForm({
   const problems = readFieldProblems(updateAsset.error);
   const canWrite = !asset.project.archived;
   const askToDelete = useAskToDeleteAsset(projectSlug, onDone);
+  // The Overview until somebody picks a tab, and the Overview again if the tab
+  // they were reading goes — deleted here, or by somebody else meanwhile.
+  const [chosenTab, setChosenTab] = useState<string>(OVERVIEW);
+  const selected = asset.tabs.some((tab) => tab.id === chosenTab) ? chosenTab : OVERVIEW;
 
   // A refetch after saving, or somebody else's change arriving, is the authority
   // on what the asset is. Keyed off `updatedAt` so typing is not interrupted by
@@ -235,7 +241,14 @@ function AssetForm({
           {isEditing ? (
             <Editing form={form} problems={problems} asset={asset} onChange={setForm} />
           ) : (
-            <Reading asset={asset} projectSlug={projectSlug} canWrite={canWrite} {...openers} />
+            <Reading
+              asset={asset}
+              projectSlug={projectSlug}
+              canWrite={canWrite}
+              selected={selected}
+              onSelect={setChosenTab}
+              {...openers}
+            />
           )}
 
           <div className={styles.detailActions}>
@@ -299,27 +312,91 @@ interface ReadingProps extends Openers {
   readonly asset: AssetDetailView;
   readonly projectSlug: string;
   readonly canWrite: boolean;
+  /** The tab being read, or the Overview. */
+  readonly selected: string;
+  readonly onSelect: (tabId: string) => void;
 }
 
-/** The asset as it reads, which is what opening one is usually for. */
+/**
+ * The asset as it reads, which is what opening one is usually for.
+ *
+ * Its name and phase on top whichever tab is open, then the row of tabs, then
+ * the one chosen: the Overview, which is the asset itself, or one of the jobs
+ * inside it.
+ */
 function Reading({
   asset,
   projectSlug,
   canWrite,
-  onOpenCard,
-  onOpenAsset,
+  selected,
+  onSelect,
+  ...openers
 }: ReadingProps): React.JSX.Element {
+  const tab = asset.tabs.find((each) => each.id === selected);
+
   return (
     <>
       <div>
         <h2 className={styles.detailName}>{asset.name}</h2>
         <div className={styles.detailStatus}>
-          <span className={styles.statusDot} data-status={asset.status} aria-hidden />
-          <span className={styles.statusName}>{describeAssetStatus(asset.status)}</span>
+          <span className={styles.phaseDot} data-phase={asset.phase} aria-hidden />
+          <span className={styles.phaseName}>{describeAssetPhase(asset.phase)}</span>
           <span className={styles.detailStamp}>· updated {formatTimeAgo(asset.updatedAt)}</span>
         </div>
       </div>
 
+      <AssetTabStrip
+        assetId={asset.id}
+        projectSlug={projectSlug}
+        tabs={asset.tabs}
+        selected={selected}
+        canWrite={canWrite}
+        onSelect={onSelect}
+      />
+
+      {tab === undefined ? (
+        <Overview
+          asset={asset}
+          projectSlug={projectSlug}
+          canWrite={canWrite}
+          onSelect={onSelect}
+          {...openers}
+        />
+      ) : (
+        <AssetTabPanel
+          // Keyed, so a rename half typed on one tab does not follow somebody
+          // to the next.
+          key={tab.id}
+          asset={asset}
+          tab={tab}
+          projectSlug={projectSlug}
+          canWrite={canWrite}
+          onGone={() => {
+            onSelect(OVERVIEW);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+/**
+ * The asset itself: what it costs, what it is, the jobs it is broken into, and
+ * everything filed against it whichever job it was for.
+ */
+function Overview({
+  asset,
+  projectSlug,
+  canWrite,
+  onSelect,
+  onOpenCard,
+  onOpenAsset,
+}: Omit<ReadingProps, 'selected'>): React.JSX.Element {
+  // So the asset's own lists can say which tab a file is for.
+  const tabNames = new Map(asset.tabs.map((tab) => [tab.id, tab.title]));
+
+  return (
+    <>
       <Estimate asset={asset} />
 
       <section>
@@ -331,11 +408,11 @@ function Reading({
         )}
       </section>
 
-      <AssetSubtasks
-        assetId={asset.id}
+      <AssetTabsSummary
+        asset={asset}
         projectSlug={projectSlug}
-        subtasks={asset.subtasks}
         canWrite={canWrite}
+        onOpenTab={onSelect}
       />
 
       <AssetTags
@@ -347,7 +424,7 @@ function Reading({
 
       <dl className={styles.facts}>
         <Fact label="Category" value={asset.category.name} />
-        <Fact label="Status" value={describeAssetStatus(asset.status)} />
+        <Fact label="Phase" value={describeAssetPhase(asset.phase)} />
         <Fact
           label="Estimated cost"
           value={
@@ -367,6 +444,7 @@ function Reading({
         projectSlug={projectSlug}
         files={asset.files}
         canWrite={canWrite}
+        tabNames={tabNames}
       />
 
       <WorkLog
@@ -416,15 +494,15 @@ function Estimate({ asset }: { asset: AssetDetailView }): React.JSX.Element {
 }
 
 /**
- * Moves the asset on to the next stage of being made.
+ * Moves the asset on to its next phase.
  *
- * An asset goes through the same five stages everywhere, so unlike a card there
- * is always exactly one thing "onwards" means — which is why this is one button
- * and not the strip of lists a card gets.
+ * An asset goes through the same three phases everywhere, so unlike a card
+ * there is always exactly one thing "onwards" means — which is why this is one
+ * button and not the strip of lists a card gets.
  *
  * Live outside edit mode, as the card's is: it changes how far along a thing is
  * rather than what it says, and making somebody open a form to say a model has
- * been approved is how a library stops being kept up to date.
+ * gone into production is how a library stops being kept up to date.
  */
 function Advance({
   asset,
@@ -434,10 +512,10 @@ function Advance({
   projectSlug: string;
 }): React.JSX.Element | null {
   const updateAsset = useUpdateAsset(projectSlug, asset.id);
-  const next = ASSET_STATUSES[ASSET_STATUSES.indexOf(asset.status) + 1];
+  const next = ASSET_PHASES[ASSET_PHASES.indexOf(asset.phase) + 1];
 
   if (next === undefined) {
-    // Final. There is nowhere further for a finished thing to go.
+    // In production. There is nowhere further for it to go.
     return null;
   }
 
@@ -447,10 +525,10 @@ function Advance({
       busy={updateAsset.isPending}
       busyLabel="Saving…"
       onClick={() => {
-        updateAsset.mutate({ assetId: asset.id, status: next }, {});
+        updateAsset.mutate({ assetId: asset.id, phase: next }, {});
       }}
     >
-      {`Mark ${describeAssetStatus(next).toLowerCase()}`}
+      {`Move to ${describeAssetPhase(next).toLowerCase()}`}
     </Button>
   );
 }
@@ -557,11 +635,11 @@ function Editing({ form, problems, asset, onChange }: EditingProps): React.JSX.E
 
       <div className={styles.dialogPair}>
         <Select
-          label="Status"
-          options={STATUS_OPTIONS}
-          value={form.status}
+          label="Phase"
+          options={PHASE_OPTIONS}
+          value={form.phase}
           onChange={(event) => {
-            set('status', event.target.value as AssetStatus);
+            set('phase', event.target.value as AssetPhase);
           }}
         />
       </div>

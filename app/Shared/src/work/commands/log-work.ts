@@ -27,6 +27,13 @@ export const logWorkCommand = defineCommand(
   z.object({
     cardId: z.string().uuid().optional(),
     assetId: z.string().uuid().optional(),
+    /**
+     * The tab of that asset the hours were for, when they were for one.
+     *
+     * Only with `assetId`: the hours are still the asset's, and this says which
+     * part of it they went on.
+     */
+    assetTabId: z.string().uuid().optional(),
     /** Above zero: an entry for no time is a note, and there is a field for that. */
     minutes: z.number().int().min(1).max(MAXIMUM_ESTIMATE_MINUTES),
     /**

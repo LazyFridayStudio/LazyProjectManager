@@ -58,7 +58,7 @@ export const searchCardsHandler = defineQueryHandler({
         'asset.id as id',
         'asset.assetKey as assetKey',
         'asset.name as name',
-        'asset.status as status',
+        'asset.phase as phase',
         'assetCategory.name as categoryName',
       ])
       .where('asset.projectId', '=', project.projectId)

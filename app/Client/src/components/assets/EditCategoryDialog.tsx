@@ -1,15 +1,17 @@
-import type { AssetCategory } from '@lpm/shared';
+import { describeTemplateTabs, type AssetCategory } from '@lpm/shared';
 import { useState, type ChangeEvent } from 'react';
 
 import { readFieldProblems } from '../../api/failure-messages.js';
-import { Button, ColorPicker, Field, useModalDialog } from '../ui/index.js';
+import { Button, ColorPicker, Field, Select, useModalDialog } from '../ui/index.js';
 import { toMinorUnits } from '../../logic/projects/format-project-values.js';
 import { useMoveAssetCategory, useUpdateAssetCategory } from '../../logic/assets/use-assets.js';
+import { useAssetTemplates } from '../../logic/assets/use-asset-tabs.js';
 import { CategoryParent } from './CategoryParent.js';
 import styles from './AssetLibraryScreen.module.css';
 
 export interface EditCategoryDialogProps {
   readonly category: AssetCategory;
+  readonly projectId: string;
   readonly projectSlug: string;
   readonly currency: string;
   /** The whole library, so this one can be moved inside another. */
@@ -29,6 +31,7 @@ export interface EditCategoryDialogProps {
  */
 export function EditCategoryDialog({
   category,
+  projectId,
   projectSlug,
   currency,
   categories,
@@ -47,6 +50,8 @@ export function EditCategoryDialog({
     category.budgetMinor === null ? '' : String(category.budgetMinor / 100),
   );
   const [wantedParentId, setWantedParentId] = useState<string | null>(parentId);
+  // An empty string is none, which a select cannot say as null.
+  const [templateId, setTemplateId] = useState(category.defaultTemplateId ?? '');
 
   const submit = (): void => {
     /*
@@ -80,6 +85,7 @@ export function EditCategoryDialog({
         name: name.trim(),
         color,
         budgetMinor: budget.trim() === '' ? null : toMinorUnits(budget),
+        defaultTemplateId: templateId === '' ? null : templateId,
       },
       {
         onSuccess: dialog.close,
@@ -135,6 +141,13 @@ export function EditCategoryDialog({
 
         <ColorPicker label="Colour" value={color} onChange={setColor} problem={problems.color} />
 
+        <DefaultTemplate
+          projectId={projectId}
+          value={templateId}
+          problem={problems.defaultTemplateId}
+          onChange={setTemplateId}
+        />
+
         <div className={styles.dialogActions}>
           <Button tone="stop" onClick={dialog.close}>
             Cancel
@@ -151,5 +164,49 @@ export function EditCategoryDialog({
         </div>
       </form>
     </dialog>
+  );
+}
+
+/**
+ * The template an asset filed here starts from.
+ *
+ * Offered, never imposed: whoever adds an asset here can choose another, or
+ * none. Only shown once the project has a template to offer.
+ */
+function DefaultTemplate({
+  projectId,
+  value,
+  problem,
+  onChange,
+}: {
+  readonly projectId: string;
+  /** An empty string is none, which a select cannot say as null. */
+  readonly value: string;
+  readonly problem: string | undefined;
+  readonly onChange: (templateId: string) => void;
+}): React.JSX.Element | null {
+  const templates = useAssetTemplates(projectId);
+  const offered = templates.data?.templates ?? [];
+
+  if (offered.length === 0) {
+    return null;
+  }
+
+  return (
+    <Select
+      label="New assets start with tabs from"
+      options={[
+        { value: '', label: 'No template' },
+        ...offered.map((template) => ({
+          value: template.id,
+          label: `${template.name} — ${describeTemplateTabs(template.definition)}`,
+        })),
+      ]}
+      value={value}
+      problem={problem}
+      onChange={(event) => {
+        onChange(event.target.value);
+      }}
+    />
   );
 }

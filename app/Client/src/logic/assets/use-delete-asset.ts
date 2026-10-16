@@ -68,7 +68,7 @@ function whatGoesWithIt(asset: AssetDetailView): string {
   const held = [
     countOf(asset.references.length, 'reference image', 'reference images'),
     countOf(asset.files.length, 'working file', 'working files'),
-    countOf(asset.subtasks.length, 'stage', 'stages'),
+    countOf(asset.tabs.length, 'tab', 'tabs'),
     countOf(asset.tags.length, 'tag', 'tags'),
   ].filter((part) => part !== null);
 

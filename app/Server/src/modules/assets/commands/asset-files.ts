@@ -9,12 +9,13 @@ import { defineCommandHandler } from '../../../cqrs/command-registry.js';
 import { executeCommand, type CommandTransaction } from '../../../cqrs/execute-command.js';
 import { requireActor, type RequestActor } from '../../../cqrs/request-context.js';
 import { AssetNotFoundError, positionBetween, type MembershipRole } from '../../../domain/index.js';
+import { assertTabIsOnAsset } from '../asset-access.js';
 import { loadWritableProject } from '../../board/cards/card-access.js';
 import { assertProjectPermission, loadMembershipRole } from '../../projects/project-access.js';
 
 interface LinkFileRequest {
   readonly transaction: CommandTransaction;
-  readonly input: { assetId: string; label: string; url: string };
+  readonly input: { assetId: string; label: string; url: string; assetTabId?: string };
   readonly actor: RequestActor;
   readonly role: MembershipRole;
 }
@@ -30,7 +31,7 @@ export const linkAssetFileHandler = defineCommandHandler({
   definition: linkAssetFileCommand,
 
   async execute(
-    input: { commandId: string; assetId: string; label: string; url: string },
+    input: { commandId: string; assetId: string; label: string; url: string; assetTabId?: string },
     context,
   ): Promise<CommandSuccess> {
     const actor = requireActor(context, linkAssetFileCommand.name);
@@ -69,6 +70,10 @@ async function linkFile({ transaction, input, actor, role }: LinkFileRequest): P
     asset.projectId,
   );
 
+  if (input.assetTabId !== undefined) {
+    await assertTabIsOnAsset(transaction.database, input.assetTabId, asset.id);
+  }
+
   const last = await transaction.database
     .selectFrom('assetFile')
     .select('position')
@@ -87,6 +92,7 @@ async function linkFile({ transaction, input, actor, role }: LinkFileRequest): P
       fileId: null,
       url: input.url,
       label: input.label,
+      tabId: input.assetTabId ?? null,
       position: positionBetween(last === undefined ? null : Number(last.position), null),
     })
     .returning('id')

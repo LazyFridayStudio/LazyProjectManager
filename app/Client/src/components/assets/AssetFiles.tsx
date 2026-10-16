@@ -17,6 +17,18 @@ export interface AssetFilesProps {
   readonly projectSlug: string;
   readonly files: readonly AssetFile[];
   readonly canWrite: boolean;
+  /**
+   * The tab these are for, when they are shown on one.
+   *
+   * What is added here then says it is for that tab, and the caller hands over
+   * only the files that already do. The asset's own list is still all of them.
+   */
+  readonly tabId?: string;
+  /**
+   * What each tab is called, so the asset's own list can say which tab a file
+   * is for. Absent on a tab, where it would only ever name itself.
+   */
+  readonly tabNames?: ReadonlyMap<string, string>;
 }
 
 /**
@@ -36,10 +48,12 @@ export function AssetFiles({
   projectSlug,
   files,
   canWrite,
+  tabId,
+  tabNames,
 }: AssetFilesProps): React.JSX.Element {
   const [isLinking, setIsLinking] = useState(false);
   const picker = useRef<HTMLInputElement>(null);
-  const add = useAddAssetFiles(projectSlug, assetId);
+  const add = useAddAssetFiles(projectSlug, assetId, tabId);
 
   // Anything at all: this is the list for what a studio actually works in.
   const upload = (chosen: FileList | null): void => {
@@ -79,6 +93,7 @@ export function AssetFiles({
               assetId={assetId}
               projectSlug={projectSlug}
               canWrite={canWrite}
+              tabName={file.tabId === null ? undefined : tabNames?.get(file.tabId)}
             />
           ))}
         </ul>
@@ -113,6 +128,7 @@ export function AssetFiles({
         <LinkForm
           assetId={assetId}
           projectSlug={projectSlug}
+          tabId={tabId}
           onDone={() => {
             setIsLinking(false);
           }}
@@ -141,6 +157,8 @@ interface FileRowProps {
   readonly assetId: string;
   readonly projectSlug: string;
   readonly canWrite: boolean;
+  /** The tab it is for, said on the asset's own list. */
+  readonly tabName?: string | undefined;
 }
 
 /**
@@ -150,7 +168,13 @@ interface FileRowProps {
  * 900MB" and "opens somebody else's website" are different things to be about
  * to do, and the link on its own does not say which.
  */
-function FileRow({ file, assetId, projectSlug, canWrite }: FileRowProps): React.JSX.Element {
+function FileRow({
+  file,
+  assetId,
+  projectSlug,
+  canWrite,
+  tabName,
+}: FileRowProps): React.JSX.Element {
   const display = useDisplay();
   const remove = useRemoveAssetFile(projectSlug, assetId);
 
@@ -166,7 +190,10 @@ function FileRow({ file, assetId, projectSlug, canWrite }: FileRowProps): React.
         {file.label}
       </a>
 
-      <span className={styles.where}>{file.stored ? describeSize(file.bytes) : 'linked'}</span>
+      <span className={styles.where}>
+        {tabName === undefined ? '' : `${tabName} · `}
+        {file.stored ? describeSize(file.bytes) : 'linked'}
+      </span>
 
       {canWrite && (
         <button
@@ -232,10 +259,12 @@ function describeSize(bytes: number | null): string {
 function LinkForm({
   assetId,
   projectSlug,
+  tabId,
   onDone,
 }: {
   assetId: string;
   projectSlug: string;
+  tabId: string | undefined;
   onDone: () => void;
 }): React.JSX.Element {
   const [label, setLabel] = useState('');
@@ -245,7 +274,12 @@ function LinkForm({
 
   const submit = (): void => {
     link.mutate(
-      { assetId, label: label.trim(), url: url.trim() },
+      {
+        assetId,
+        label: label.trim(),
+        url: url.trim(),
+        ...(tabId === undefined ? {} : { assetTabId: tabId }),
+      },
       {
         onSuccess: () => {
           setLabel('');

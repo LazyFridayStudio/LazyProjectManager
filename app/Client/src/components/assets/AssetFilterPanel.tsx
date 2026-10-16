@@ -1,10 +1,10 @@
-import { describeAssetStatus, ASSET_STATUSES } from '@lpm/shared';
+import { describeAssetPhase, ASSET_PHASES } from '@lpm/shared';
 
 import { joinClassNames } from '../../lib/join-class-names.js';
 import {
   countFilters,
   isFiltering,
-  toggleStatus,
+  togglePhase,
   toggleTag,
   NO_FILTERS,
   type AssetFilters,
@@ -63,18 +63,18 @@ export function AssetFilterPanel({
       </div>
 
       <div className={styles.group}>
-        <span className={styles.groupLabel}>Status</span>
+        <span className={styles.groupLabel}>Phase</span>
         <div className={styles.chips}>
-          {ASSET_STATUSES.map((status) => (
+          {ASSET_PHASES.map((phase) => (
             <Chip
-              key={status}
-              label={describeAssetStatus(status)}
-              isOn={filters.statuses.includes(status)}
+              key={phase}
+              label={describeAssetPhase(phase)}
+              isOn={filters.phases.includes(phase)}
               onPress={() => {
-                onChange(toggleStatus(filters, status));
+                onChange(togglePhase(filters, phase));
               }}
             >
-              <span className={styles.statusDot} data-status={status} aria-hidden />
+              <span className={styles.phaseDot} data-phase={phase} aria-hidden />
             </Chip>
           ))}
         </div>

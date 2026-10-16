@@ -170,6 +170,9 @@ const AGGREGATE_TYPE_BY_KIND: Readonly<Record<RecoverableKind, string>> = {
   // Under its project, as its category's is: the trail names an entry by joining
   // to the thing, and joins to a project but not to an asset.
   asset: 'project',
+  // Under its project too: a tab is part of an asset, and the trail joins to
+  // neither.
+  assetTab: 'project',
   // Under itself rather than under its project, because a restored card exists
   // again — so the trail can join to it and name it by its key, which is how
   // anybody refers to a card.

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { defineQuery } from '../../envelope/query-definition.js';
 import { cardLinkKindSchema, cardPrioritySchema, cardTypeSchema } from '../board-vocabulary.js';
-import { assetStatusSchema } from '../../assets/asset-vocabulary.js';
+import { assetPhaseSchema } from '../../assets/asset-vocabulary.js';
 import { scmLinkKindSchema } from '../../scm/scm-vocabulary.js';
 import { cardAssigneeSchema } from './board-view.js';
 import { workDoneSchema } from '../../work/work-view.js';
@@ -113,7 +113,7 @@ export const cardAssetLinkSchema = z.object({
   linkId: z.string().uuid(),
   assetId: z.string().uuid(),
   name: z.string(),
-  status: assetStatusSchema,
+  phase: assetPhaseSchema,
   categoryName: z.string(),
 });
 

@@ -2,7 +2,7 @@ import {
   createAssetCategoryCommand,
   createAssetCommand,
   createCommandSuccess,
-  type AssetStatus,
+  type AssetPhase,
   type CommandSuccess,
 } from '@lpm/shared';
 
@@ -22,6 +22,8 @@ import {
   loadMembershipRole,
   loadProjectForWrite,
 } from '../../projects/project-access.js';
+import type { WritableAsset } from '../asset-access.js';
+import { addTabsFromTemplate, loadTemplateOfProject } from '../asset-template-tabs.js';
 import { CATEGORY_NAME_CONSTRAINT } from '../category-names.js';
 
 interface CreateCategoryInput {
@@ -172,10 +174,11 @@ interface CreateAssetInput {
   projectId: string;
   categoryId: string;
   name: string;
-  status: AssetStatus;
+  phase: AssetPhase;
   description?: string | null;
   estimatedCostMinor?: number | null;
   dueOn?: string | null;
+  templateId?: string | null;
 }
 
 /**
@@ -223,7 +226,7 @@ async function createAsset({ transaction, input, actor }: AssetRequest): Promise
   // would otherwise file this asset somewhere nobody looking at it can see.
   const category = await transaction.database
     .selectFrom('assetCategory')
-    .select('id')
+    .select(['id', 'defaultTemplateId'])
     .where('id', '=', input.categoryId)
     .where('projectId', '=', project.id)
     .executeTakeFirst();
@@ -252,7 +255,7 @@ async function createAsset({ transaction, input, actor }: AssetRequest): Promise
         projectCode: project.code,
       }),
       name: input.name,
-      status: input.status,
+      phase: input.phase,
       description: blankToNull(input.description),
       estimatedCostMinor: input.estimatedCostMinor ?? null,
       dueOn: input.dueOn ?? null,
@@ -267,8 +270,14 @@ async function createAsset({ transaction, input, actor }: AssetRequest): Promise
       reporterId: actor.userId,
       position: positionBetween(last === undefined ? null : Number(last.position), null),
     })
-    .returning('id')
+    .returning(['id', 'assetKey'])
     .executeTakeFirstOrThrow();
+
+  await startFromTemplate(
+    { transaction, input, actor },
+    { id: asset.id, assetKey: asset.assetKey, projectId: project.id, accountId: actor.accountId },
+    category.defaultTemplateId,
+  );
 
   transaction.appendEvent({
     accountId: actor.accountId,
@@ -279,6 +288,32 @@ async function createAsset({ transaction, input, actor }: AssetRequest): Promise
   });
 
   return asset.id;
+}
+
+/**
+ * Gives a new asset the tabs of the template it starts from.
+ *
+ * Absent is whatever the category offers, and null is none: somebody adding the
+ * one creature that is different says so.
+ */
+async function startFromTemplate(
+  { transaction, input, actor }: AssetRequest,
+  asset: WritableAsset,
+  offered: string | null,
+): Promise<void> {
+  const templateId = input.templateId === undefined ? offered : input.templateId;
+
+  if (templateId === null) {
+    return;
+  }
+
+  const definition = await loadTemplateOfProject(transaction, {
+    actor,
+    projectId: asset.projectId,
+    templateId,
+  });
+
+  await addTabsFromTemplate(transaction, asset, definition);
 }
 
 function blankToNull(value: string | null | undefined): string | null {

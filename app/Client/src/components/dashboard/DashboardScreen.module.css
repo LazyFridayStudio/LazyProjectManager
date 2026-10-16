@@ -179,24 +179,16 @@
   font-size: var(--font-size-micro);
 }
 
-.barFill[data-status='concept'] {
-  background: var(--color-status-concept);
+.barFill[data-phase='pre_dev'] {
+  background: var(--color-phase-pre_dev);
 }
 
-.barFill[data-status='wip'] {
-  background: var(--color-status-wip);
+.barFill[data-phase='dev'] {
+  background: var(--color-phase-dev);
 }
 
-.barFill[data-status='review'] {
-  background: var(--color-status-review);
-}
-
-.barFill[data-status='approved'] {
-  background: var(--color-status-approved);
-}
-
-.barFill[data-status='final'] {
-  background: var(--color-status-final);
+.barFill[data-phase='production'] {
+  background: var(--color-phase-production);
 }
 
 /* The three counts a stand-up is actually about, under a rule. */

@@ -1,4 +1,4 @@
-import type { AssetStatus } from '@lpm/shared';
+import type { AssetPhase, AssetTabBlockKind } from '@lpm/shared';
 import type { ColumnType, Generated } from 'kysely';
 
 /**
@@ -32,6 +32,8 @@ export interface AssetCategoryTable {
   budgetMinor: MinorUnits;
   /** Among its siblings, so each parent orders what is directly under it. */
   position: Position;
+  /** The template an asset filed here starts from. Offered, never imposed. */
+  defaultTemplateId: string | null;
   archivedAt: Date | null;
   createdAt: CreatedAt;
 }
@@ -44,7 +46,7 @@ export interface AssetTable {
   /** `DRCH-AST-6`. Handed out by `assetSequence` and never reused. */
   assetKey: string;
   name: string;
-  status: Generated<AssetStatus>;
+  phase: Generated<AssetPhase>;
   description: string | null;
   estimatedCostMinor: MinorUnits;
   /** Who is making it. */
@@ -91,6 +93,8 @@ export interface AssetFileTable {
   url: string | null;
   /** What to call it in the list. The filename, for something uploaded. */
   label: string;
+  /** The tab it is for, or null for the asset as a whole. Emptied if the tab goes. */
+  tabId: string | null;
   position: Position;
   createdAt: CreatedAt;
 }
@@ -123,23 +127,67 @@ export interface AssetTagTable {
 }
 
 /**
- * The stages an asset is made in: Mesh, UV, Texture, Animation.
+ * One job inside an asset: Mesh, UVs, Rig.
  *
- * `asset.status` says how far along the whole thing is; these say which of the
- * jobs inside it are finished, which is the part somebody schedules around.
- * Freeform and per asset — a prop and a cinematic want different lists, and
- * nothing here holds an opinion about which.
- *
- * No `accountId`, unlike a tag: these are reached through the asset and never
- * queried across the install, so a second copy of which account they belong to
- * would be a column nothing reads and one more thing to keep true.
+ * `asset.phase` says where the whole thing is; a tab is one part of the work
+ * inside it, with its own person, its own date and blocks to say the rest.
+ * Freeform and per asset, or copied from a template the project wrote.
  */
-export interface AssetSubtaskTable {
+export interface AssetTabTable {
   id: Generated<string>;
+  /** The bin checks the account on the thing it keeps, and a tab is kept on its own. */
+  accountId: string;
   assetId: string;
   title: string;
   done: Generated<boolean>;
+  assigneeId: string | null;
+  dueOn: string | null;
   position: Position;
+  createdAt: CreatedAt;
+}
+
+/**
+ * What a tab is built from, top to bottom.
+ *
+ * Carries its asset as well as its tab, so a deleted asset takes its blocks to
+ * the bin along with it: the bin finds rows by a column naming the thing.
+ */
+export interface AssetTabBlockTable {
+  id: Generated<string>;
+  assetId: string;
+  tabId: string;
+  kind: AssetTabBlockKind;
+  /** What a notes block says, and null for every other kind. */
+  body: string | null;
+  position: Position;
+  createdAt: CreatedAt;
+}
+
+/** One line of a checklist block. Carries its asset and tab for the bin, as a block does. */
+export interface AssetTabChecklistItemTable {
+  id: Generated<string>;
+  assetId: string;
+  tabId: string;
+  blockId: string;
+  title: string;
+  done: Generated<boolean>;
+  position: Position;
+  createdAt: CreatedAt;
+}
+
+/**
+ * A set of tabs a project keeps, to start assets from.
+ *
+ * The definition is `jsonb`, written as a string and read back as `text`: the
+ * `CamelCasePlugin` renames the keys of any object it finds in a result, and a
+ * template's keys are its own rather than column names.
+ */
+export interface AssetTemplateTable {
+  id: Generated<string>;
+  accountId: string;
+  projectId: string;
+  name: string;
+  definition: ColumnType<unknown, string, string>;
   createdAt: CreatedAt;
 }
 

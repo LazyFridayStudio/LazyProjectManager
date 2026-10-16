@@ -29,6 +29,17 @@ describe('GIVEN an event that has just been recorded', () => {
         expect([...getScopesForEvent(name)].sort()).toEqual(['asset', 'assets', 'projects']);
       }
     });
+
+    it('THEN work inside it leaves the sidebar alone, which counts nothing it changes', () => {
+      for (const name of [
+        'assets.tabAdded',
+        'assets.blockMoved',
+        'assets.checklistItemUpdated',
+        'assets.templateApplied',
+      ]) {
+        expect([...getScopesForEvent(name)].sort()).toEqual(['asset', 'assets']);
+      }
+    });
   });
 
   describe('WHEN a file has arrived or been thumbnailed', () => {

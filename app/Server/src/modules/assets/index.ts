@@ -15,10 +15,25 @@ export { linkAssetFileHandler, removeAssetFileHandler } from './commands/asset-f
 export { tagAssetHandler, untagAssetHandler } from './commands/asset-tags.js';
 
 export {
-  addAssetSubtaskHandler,
-  removeAssetSubtaskHandler,
-  updateAssetSubtaskHandler,
-} from './commands/asset-subtasks.js';
+  addAssetChecklistItemHandler,
+  addAssetTabBlockHandler,
+  addAssetTabHandler,
+  deleteAssetTabHandler,
+  moveAssetTabBlockHandler,
+  moveAssetTabHandler,
+  removeAssetChecklistItemHandler,
+  removeAssetTabBlockHandler,
+  updateAssetChecklistItemHandler,
+  updateAssetTabBlockHandler,
+  updateAssetTabHandler,
+} from './commands/asset-tabs.js';
+
+export {
+  applyAssetTemplateHandler,
+  createAssetTemplateHandler,
+  deleteAssetTemplateHandler,
+  updateAssetTemplateHandler,
+} from './commands/asset-templates.js';
 
 export { deleteAssetCategoryHandler } from './commands/delete-category.js';
 
@@ -35,3 +50,5 @@ export { moveAssetCategoryHandler } from './commands/move-category.js';
 export { assetDetailHandler } from './queries/asset-detail.js';
 
 export { assetLibraryHandler } from './queries/asset-library.js';
+
+export { assetTemplatesHandler } from './queries/asset-templates.js';

@@ -14,7 +14,7 @@ import {
   tertiaryRamp,
   type TonalRamp,
 } from './color-tokens.js';
-import { colorByAssetStatus, assetStatuses } from './asset-status-colors.js';
+import { colorByAssetPhase, assetPhases } from './asset-phase-colors.js';
 import { colorByCardType, cardTypes } from './card-type-colors.js';
 import {
   baseLineHeight,
@@ -58,7 +58,7 @@ export function renderCssCustomProperties(): string {
       ...darkThemeDeclarations(),
       ...textToneDeclarations(),
       ...cardTypeDeclarations(),
-      ...assetStatusDeclarations(),
+      ...assetPhaseDeclarations(),
       ...typographyDeclarations(),
       ...shapeDeclarations(),
       ...interactionStateDeclarations(),
@@ -273,8 +273,8 @@ function cardTypeDeclarations(): readonly CustomPropertyDeclaration[] {
   return cardTypes.map((cardType) => [`--color-card-${cardType}`, colorByCardType[cardType]]);
 }
 
-function assetStatusDeclarations(): readonly CustomPropertyDeclaration[] {
-  return assetStatuses.map((status) => [`--color-status-${status}`, colorByAssetStatus[status]]);
+function assetPhaseDeclarations(): readonly CustomPropertyDeclaration[] {
+  return assetPhases.map((phase) => [`--color-phase-${phase}`, colorByAssetPhase[phase]]);
 }
 
 function typographyDeclarations(): readonly CustomPropertyDeclaration[] {

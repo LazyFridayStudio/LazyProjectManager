@@ -9,6 +9,13 @@ export const workEntrySchema = z.object({
   minutes: z.number().int().positive(),
   workedOn: z.string(),
   note: z.string().nullable(),
+  /**
+   * The asset tab it was for, when it was for one.
+   *
+   * Always null on a card. On an asset it is what lets a tab show its own hours
+   * while the asset still adds up all of them.
+   */
+  assetTabId: z.string().uuid().nullable(),
   /** Whether the person reading this may take it back off. */
   isMine: z.boolean(),
 });
