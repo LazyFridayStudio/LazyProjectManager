@@ -295,8 +295,9 @@ interface PanelHeadProps {
 }
 
 /**
- * Everything about the panel itself, on one bar across the top: what the asset
- * is filed as, which part of it is open, and what can be done to it.
+ * Everything about the panel itself, on one bar across the top: which part of
+ * it is open on the left, what the asset is filed as in the middle, and what
+ * can be done to it on the right.
  *
  * The tabs are here rather than in a column, because they are how the whole
  * panel is read, the pictures included. Edit and Delete sit beside the cross
@@ -315,16 +316,6 @@ function PanelHead({
 }: PanelHeadProps): React.JSX.Element {
   return (
     <div className={styles.detailHead}>
-      <span
-        className={styles.detailCategory}
-        style={{ '--category-color': asset.category.color } as React.CSSProperties}
-      >
-        <span className={styles.detailCategoryDot} aria-hidden />
-        {asset.category.name}
-      </span>
-      {/* What it is called out loud, in the slot the design draws it in. */}
-      <span className={styles.detailKey}>{asset.assetKey}</span>
-
       <div className={styles.detailTabs}>
         <AssetTabStrip
           assetId={asset.id}
@@ -336,27 +327,41 @@ function PanelHead({
         />
       </div>
 
-      {canWrite && !isEditing && (
-        <Button aria-label="Edit" title="Edit" onClick={onEdit}>
+      <div className={styles.detailFiled}>
+        <span
+          className={styles.detailCategory}
+          style={{ '--category-color': asset.category.color } as React.CSSProperties}
+        >
+          <span className={styles.detailCategoryDot} aria-hidden />
+          {asset.category.name}
+        </span>
+        {/* What it is called out loud, beside what it is filed under. */}
+        <span className={styles.detailKey}>{asset.assetKey}</span>
+      </div>
+
+      <div className={styles.detailControls}>
+        {canWrite && !isEditing && (
+          <Button aria-label="Edit" title="Edit" onClick={onEdit}>
+            <ButtonIcon>
+              <PencilIcon size={14} />
+            </ButtonIcon>
+          </Button>
+        )}
+        {canWrite && !isEditing && asset.canDelete && (
+          // Beside Edit, as a card's is: these are the two things somebody
+          // does to the asset itself, and the red is what tells them apart.
+          <Button tone="stop" aria-label="Delete asset" title="Delete asset" onClick={onDelete}>
+            <ButtonIcon>
+              <TrashIcon size={14} />
+            </ButtonIcon>
+          </Button>
+        )}
+        <Button aria-label="Close" title="Close" onClick={onClose}>
           <ButtonIcon>
-            <PencilIcon size={14} />
+            <CloseIcon size={14} />
           </ButtonIcon>
         </Button>
-      )}
-      {canWrite && !isEditing && asset.canDelete && (
-        // Beside Edit, as a card's is: these are the two things somebody
-        // does to the asset itself, and the red is what tells them apart.
-        <Button tone="stop" aria-label="Delete asset" title="Delete asset" onClick={onDelete}>
-          <ButtonIcon>
-            <TrashIcon size={14} />
-          </ButtonIcon>
-        </Button>
-      )}
-      <Button aria-label="Close" title="Close" onClick={onClose}>
-        <ButtonIcon>
-          <CloseIcon size={14} />
-        </ButtonIcon>
-      </Button>
+      </div>
     </div>
   );
 }

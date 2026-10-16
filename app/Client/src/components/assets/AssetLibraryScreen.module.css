@@ -890,13 +890,37 @@
   min-height: 0;
 }
 
+/*
+ * Three parts, each a third of the bar: the tabs from the left edge, what the
+ * asset is filed as in the middle, and the controls at the right.
+ *
+ * The outer two share the width equally so the middle is the middle of the
+ * panel rather than of whatever the tabs leave. Every part is the bar's full
+ * height, so the tabs, the words and the buttons line up on one centre.
+ */
 .detailHead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 16px;
+  flex: none;
+  padding: 0 18px 0 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.detailFiled {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
-  flex: none;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--color-divider);
+}
+
+.detailControls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 10px 0;
 }
 
 /* The key, and then whatever else names it. Both monospace, because both are
@@ -996,27 +1020,16 @@
   background: var(--category-color);
 }
 
-.detailHead > :last-child {
-  margin-left: auto;
-}
-
 /*
- * The tabs, between what the asset is filed as and what can be done to it.
+ * The tabs, the bar's full height from its left edge.
  *
- * Takes what the bar has left, so the controls stay at the right edge however
- * many tabs there are, and wraps onto a second line rather than pushing them
- * off it.
+ * One pixel down over the bar's rule, so the open tab can cover it and read as
+ * part of the page it opens.
  */
 .detailTabs {
   display: flex;
-  align-self: stretch;
-  align-items: flex-end;
-  flex: 1;
   min-width: 0;
-  margin-left: 12px;
-  /* Down through the bar's padding to its rule, so the open tab can sit on it
-     and cover it. Fourteen pixels of padding and the one of the rule. */
-  margin-bottom: -15px;
+  margin-bottom: -1px;
 }
 
 .detailName {

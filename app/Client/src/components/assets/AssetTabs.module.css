@@ -1,18 +1,18 @@
 /* --- The row of tabs ------------------------------------------------------ */
 
 /*
- * Tabs sitting on the bottom edge of the panel's top bar, the way a folder's
- * do: the open one is joined to the page under it, and the rest are behind.
+ * Tabs the full height of the panel's top bar, the way a folder's are: the open
+ * one is joined to the page under it, and the rest are behind.
  *
- * Wrapped rather than scrolled sideways. A creature's row is five or six short
- * words, and a strip that scrolled would hide the one somebody is looking for
- * behind an arrow.
+ * Scrolled sideways rather than wrapped once there are more than fit. A tab is
+ * the bar's height, and a second row of them would be a second bar.
  */
 .strip {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 2px;
+  align-items: stretch;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 /* Anything on the row that is not a tab — adding one — sits in its middle. */
@@ -28,12 +28,14 @@
  */
 .tab {
   display: inline-flex;
+  flex: none;
   align-items: center;
   gap: 6px;
-  padding: 9px 16px;
+  padding: 0 20px;
   border: 1px solid transparent;
+  border-top: 0;
   border-bottom: 0;
-  border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+  border-radius: 0;
   background: transparent;
   font: inherit;
   font-size: var(--font-size-small);
