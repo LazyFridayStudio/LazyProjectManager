@@ -1,16 +1,19 @@
 /* --- The row of tabs ------------------------------------------------------ */
 
 /*
- * Tabs the full height of the panel's top bar, the way a folder's are: the open
- * one is joined to the page under it, and the rest are behind.
+ * Tabs standing on the panel's top bar the way a folder's do: each its own
+ * shape with a rounded top, the open one joined to the page under it, and the
+ * rest behind.
  *
  * Scrolled sideways rather than wrapped once there are more than fit. A tab is
- * the bar's height, and a second row of them would be a second bar.
+ * nearly the bar's height, and a second row of them would be a second bar.
  */
 .strip {
   display: flex;
   align-items: stretch;
+  gap: 4px;
   min-width: 0;
+  padding: 8px 0 0 10px;
   overflow-x: auto;
   scrollbar-width: thin;
 }
@@ -18,33 +21,34 @@
 /* Anything on the row that is not a tab — adding one — sits in its middle. */
 .strip > :not(.tab) {
   align-self: center;
-  margin-left: 8px;
+  margin: -8px 0 0 8px;
 }
 
 /*
- * A tab behind: the words, and a fill when pointed at. No frame, because a
- * frame on every tab is a row of chips — and the frame is what says which one
- * is open.
+ * A tab behind: outlined on three sides with a rounded top, on the surface
+ * tone the app draws things you pick up on, and standing on the bar's rule.
+ * Each is plainly its own thing to press, rather than a word beside the open
+ * one.
  */
 .tab {
   display: inline-flex;
   flex: none;
   align-items: center;
   gap: 6px;
-  padding: 0 20px;
-  border: 1px solid transparent;
-  border-top: 0;
-  border-bottom: 0;
-  border-radius: 0;
-  background: transparent;
+  padding: 0 18px;
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+  background: var(--color-surface);
   font: inherit;
   font-size: var(--font-size-small);
   color: var(--color-text-muted);
   cursor: pointer;
 }
 
+/* Warmed towards the accent when pointed at, the colour the open one wears. */
 .tab:hover {
-  background: var(--color-surface);
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));
   color: var(--color-text);
 }
 
@@ -54,16 +58,15 @@
 }
 
 /*
- * The open one: framed on three sides, the accent across its top, and the
- * panel's own ground where its bottom edge would be — so it covers the bar's
- * rule beneath it and reads as part of the page it opens.
+ * The open one: the page's own ground, the accent across its top, and no rule
+ * under it — so it is the one tab joined to what it opens.
  */
 .tab[aria-selected='true'] {
   border-color: var(--color-divider);
+  border-top-color: var(--color-accent);
+  border-bottom-color: var(--color-panel);
   background: var(--color-panel);
-  box-shadow:
-    inset 0 2px 0 var(--color-accent),
-    0 1px 0 var(--color-panel);
+  box-shadow: inset 0 1px 0 var(--color-accent);
   color: var(--color-text);
 }
 
