@@ -1,26 +1,39 @@
 /* --- The row of tabs ------------------------------------------------------ */
 
 /*
- * Wrapped rather than scrolled sideways.
+ * Tabs sitting on the bottom edge of the panel's top bar, the way a folder's
+ * do: the open one is joined to the page under it, and the rest are behind.
  *
- * A creature's row is five or six short words, and a strip that scrolled would
- * hide the one somebody is looking for behind an arrow. Wrapped, a long row is
- * two lines of the panel's top bar and every tab is still in sight.
+ * Wrapped rather than scrolled sideways. A creature's row is five or six short
+ * words, and a strip that scrolled would hide the one somebody is looking for
+ * behind an arrow.
  */
 .strip {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
+  align-items: flex-end;
+  gap: 2px;
 }
 
+/* Anything on the row that is not a tab — adding one — sits in its middle. */
+.strip > :not(.tab) {
+  align-self: center;
+  margin-left: 8px;
+}
+
+/*
+ * A tab behind: the words, and a fill when pointed at. No frame, because a
+ * frame on every tab is a row of chips — and the frame is what says which one
+ * is open.
+ */
 .tab {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
-  border: 1px solid var(--color-divider);
-  border-radius: var(--radius-tag);
+  padding: 9px 16px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: var(--radius-panel) var(--radius-panel) 0 0;
   background: transparent;
   font: inherit;
   font-size: var(--font-size-small);
@@ -29,18 +42,26 @@
 }
 
 .tab:hover {
-  border-color: var(--color-accent);
+  background: var(--color-surface);
   color: var(--color-text);
 }
 
 .tab:focus-visible {
   outline: var(--focus-ring);
-  outline-offset: var(--focus-ring-offset);
+  outline-offset: calc(-1 * var(--focus-ring-offset));
 }
 
-/* The one being read, in the accent: the same mark a selected list uses. */
+/*
+ * The open one: framed on three sides, the accent across its top, and the
+ * panel's own ground where its bottom edge would be — so it covers the bar's
+ * rule beneath it and reads as part of the page it opens.
+ */
 .tab[aria-selected='true'] {
-  border-color: var(--color-accent);
+  border-color: var(--color-divider);
+  background: var(--color-panel);
+  box-shadow:
+    inset 0 2px 0 var(--color-accent),
+    0 1px 0 var(--color-panel);
   color: var(--color-text);
 }
 

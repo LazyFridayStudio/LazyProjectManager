@@ -1008,9 +1008,15 @@
  * off it.
  */
 .detailTabs {
+  display: flex;
+  align-self: stretch;
+  align-items: flex-end;
   flex: 1;
   min-width: 0;
   margin-left: 12px;
+  /* Down through the bar's padding to its rule, so the open tab can sit on it
+     and cover it. Fourteen pixels of padding and the one of the rule. */
+  margin-bottom: -15px;
 }
 
 .detailName {
