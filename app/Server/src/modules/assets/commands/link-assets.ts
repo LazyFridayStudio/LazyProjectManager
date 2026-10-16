@@ -15,6 +15,7 @@ import {
 } from '../../../domain/index.js';
 import { loadWritableProject } from '../../board/cards/card-access.js';
 import { assertProjectPermission, loadMembershipRole } from '../../projects/project-access.js';
+import { showOnTheOverview } from '../asset-access.js';
 
 /** Named in `0062-an-asset-can-be-linked-to-another`, and the only clash this insert expects. */
 const LINK_UNIQUE_CONSTRAINT = 'asset_link_unique';
@@ -106,6 +107,9 @@ async function link({ transaction, input, actor, role }: LinkRequest): Promise<s
   // `do nothing` rather than catching the unique violation: a failed statement
   // aborts the transaction in Postgres, so there would be nothing left to ask
   // about the link that already exists.
+  await showOnTheOverview(transaction.database, firstAssetId, 'assets');
+  await showOnTheOverview(transaction.database, secondAssetId, 'assets');
+
   const created = await transaction.database
     .insertInto('assetLink')
     .values({ accountId: project.accountId, firstAssetId, secondAssetId })

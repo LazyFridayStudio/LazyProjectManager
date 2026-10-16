@@ -51,6 +51,7 @@ describe('GIVEN a heading carried over another', () => {
       name: id,
       color: '#adadad',
       budgetMinor: null,
+      defaultTemplateId: null,
       count: 0,
       estimatedMinor: 0,
       categories,

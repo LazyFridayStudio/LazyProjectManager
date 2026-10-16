@@ -258,6 +258,27 @@ The lists and their ids come from `board.view`. A move respects the
 work-in-progress limit, so a full list refuses one — that refusal is the app's
 and names what it hit.
 
+## Working an asset in tabs
+
+An asset is in one of three phases — `pre_dev`, `dev`, `production` — and its
+work is broken into tabs, each built from blocks (`notes`, `checklist`, `files`,
+`work`). A project keeps templates: sets of tabs a new asset starts from.
+
+```
+GET /api/q/assets.templates?projectId=<id>           # what the project keeps
+-d '{"commandId":"<uuid>","projectId":"<id>","categoryId":"<id>","name":"Tank","templateId":"<id>"}'
+  → /api/c/assets.createAsset                        # leave templateId out for the category's own
+GET /api/q/assets.detail?assetId=<id>                # .tabs, each with its blocks
+-d '{"commandId":"<uuid>","assetTabId":"<id>","done":true}'
+  → /api/c/assets.updateTab
+```
+
+`assets.applyTemplate` adds a template's tabs to an asset that already exists,
+after the ones it has. `assets.createTemplate` takes the tabs as a definition,
+so a template can be written by hand as easily as saved from an asset. Hours
+(`work.log`) and links to files (`assets.linkFile`) take an `assetTabId` to say
+which tab they were for; they stay the asset's either way.
+
 ## Finding anything else
 
 Every screen in the app is these two endpoints, so an agent can do anything a

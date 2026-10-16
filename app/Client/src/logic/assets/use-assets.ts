@@ -1,5 +1,4 @@
 import {
-  addAssetSubtaskCommand,
   moveAssetCategoryCommand,
   moveAssetCommand,
   assetDetailQuery,
@@ -17,12 +16,10 @@ import {
   promoteAssetReferenceCommand,
   removeAssetFileCommand,
   removeAssetReferenceCommand,
-  removeAssetSubtaskCommand,
   tagAssetCommand,
   untagAssetCommand,
   updateAssetCategoryCommand,
   updateAssetCommand,
-  updateAssetSubtaskCommand,
   type AssetDetailView,
   type AssetLibraryView,
 } from '@lpm/shared';
@@ -50,7 +47,7 @@ import { uploadFile } from '../files/upload-file.js';
  * is instant.
  */
 const libraryKey = (baseUrl: string, slug: string, filters: AssetFilters) =>
-  ['assets', baseUrl, slug, filters.search, filters.tags, filters.statuses] as const;
+  ['assets', baseUrl, slug, filters.search, filters.tags, filters.phases] as const;
 
 /**
  * The sidebar's copy of the same categories.
@@ -531,6 +528,8 @@ export function usePromoteAssetReference(
 export function useAddAssetFiles(
   projectSlug: string,
   assetId: string,
+  /** The tab they are for, when they are added from one. */
+  assetTabId?: string,
 ): ReturnType<typeof useMutation<string[], Error, readonly File[]>> {
   const { client } = useApiClient();
   const refresh = useAssetRefresh(projectSlug, assetId);
@@ -540,7 +539,13 @@ export function useAddAssetFiles(
       const ids: string[] = [];
 
       for (const file of files) {
-        ids.push(await uploadFile(client, { kind: 'assetFile', assetId }, file));
+        ids.push(
+          await uploadFile(
+            client,
+            { kind: 'assetFile', assetId, ...(assetTabId === undefined ? {} : { assetTabId }) },
+            file,
+          ),
+        );
       }
 
       return ids;
@@ -618,56 +623,20 @@ export function useUntagAsset(
   });
 }
 
-export type AddAssetSubtaskInput = z.input<typeof addAssetSubtaskCommand.inputSchema>;
-export type UpdateAssetSubtaskInput = z.input<typeof updateAssetSubtaskCommand.inputSchema>;
-export type RemoveAssetSubtaskInput = z.input<typeof removeAssetSubtaskCommand.inputSchema>;
-
 /**
- * The stages an asset is made in.
+ * The panel and the library behind it, and nothing else.
  *
- * All three refresh the panel and the tile, because the tile carries the count:
- * ticking Mesh off in the panel has to move `2/5` to `3/5` behind it, or the
- * library disagrees with the thing open on top of it.
+ * For work inside one asset — its tabs and what is on them — which the tile
+ * counts and the sidebar does not.
  */
-export function useAddAssetSubtask(
-  projectSlug: string,
-  assetId: string,
-): ReturnType<typeof useMutation<unknown, Error, AddAssetSubtaskInput>> {
-  const { client } = useApiClient();
-  const refresh = useAssetRefresh(projectSlug, assetId);
+export function useAssetAndTileRefresh(projectSlug: string, assetId: string): () => Promise<void> {
+  const { baseUrl } = useApiClient();
+  const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: (input: AddAssetSubtaskInput) => client.command(addAssetSubtaskCommand, input),
-    onSuccess: refresh,
-  });
-}
-
-export function useUpdateAssetSubtask(
-  projectSlug: string,
-  assetId: string,
-): ReturnType<typeof useMutation<unknown, Error, UpdateAssetSubtaskInput>> {
-  const { client } = useApiClient();
-  const refresh = useAssetRefresh(projectSlug, assetId);
-
-  return useMutation({
-    mutationFn: (input: UpdateAssetSubtaskInput) =>
-      client.command(updateAssetSubtaskCommand, input),
-    onSuccess: refresh,
-  });
-}
-
-export function useRemoveAssetSubtask(
-  projectSlug: string,
-  assetId: string,
-): ReturnType<typeof useMutation<unknown, Error, RemoveAssetSubtaskInput>> {
-  const { client } = useApiClient();
-  const refresh = useAssetRefresh(projectSlug, assetId);
-
-  return useMutation({
-    mutationFn: (input: RemoveAssetSubtaskInput) =>
-      client.command(removeAssetSubtaskCommand, input),
-    onSuccess: refresh,
-  });
+  return async () => {
+    await queryClient.invalidateQueries({ queryKey: assetKey(baseUrl, assetId) });
+    await queryClient.invalidateQueries({ queryKey: ['assets', baseUrl, projectSlug] });
+  };
 }
 
 /** The panel and the tile behind it, both of which draw the sheet. */

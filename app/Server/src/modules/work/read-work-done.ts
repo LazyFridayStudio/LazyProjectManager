@@ -38,6 +38,7 @@ export async function readWorkDone(request: WorkDoneRequest): Promise<WorkDone> 
       'workLog.minutes as minutes',
       'workLog.workedOn as workedOn',
       'workLog.note as note',
+      'workLog.assetTabId as assetTabId',
       'workLog.userId as userId',
       'who.displayName as displayName',
       'who.initials as initials',
@@ -72,6 +73,7 @@ export async function readWorkDone(request: WorkDoneRequest): Promise<WorkDone> 
       // one, rather than becoming midnight somewhere.
       workedOn: row.workedOn,
       note: row.note,
+      assetTabId: row.assetTabId,
       isMine: row.userId === request.readerId,
     };
   });

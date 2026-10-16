@@ -38,20 +38,18 @@ export const dashboardWorkSchema = z.object({
 /**
  * How far along the things being made are.
  *
- * The five stages an asset goes through, in order, so the shape of the pipeline
- * is legible: a project with everything in `concept` and a project with
- * everything in `review` are in very different trouble.
+ * The three phases an asset goes through, in order, so the shape of the
+ * pipeline is legible: a project with everything in Pre-dev and a project with
+ * everything in Dev are in very different trouble.
  */
 export const dashboardPipelineSchema = z.object({
   total: z.number().int(),
-  byStatus: z.object({
-    concept: z.number().int(),
-    wip: z.number().int(),
-    review: z.number().int(),
-    approved: z.number().int(),
-    final: z.number().int(),
+  byPhase: z.object({
+    pre_dev: z.number().int(),
+    dev: z.number().int(),
+    production: z.number().int(),
   }),
-  /** Assets past their date and not yet approved. */
+  /** Assets past their date and not yet in production. */
   overdueCount: z.number().int(),
   /** How many have nobody's name on them, which is usually the real bottleneck. */
   unassignedCount: z.number().int(),

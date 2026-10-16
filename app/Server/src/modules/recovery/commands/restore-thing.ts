@@ -14,6 +14,7 @@ import {
 } from '../../../cqrs/request-context.js';
 import { InvariantViolatedError, type PermittedAction } from '../../../domain/index.js';
 import { assertProjectPermission, loadMembershipRole } from '../../projects/project-access.js';
+import { showOnTheOverview } from '../../assets/asset-access.js';
 import { DeletedThingNotFoundError } from '../recovery-errors.js';
 import {
   describeKind,
@@ -46,6 +47,10 @@ export const restoreDeletedThingHandler = defineCommandHandler({
         const binned = await take(transaction, actor, input.deletedThingId);
 
         await restoreFrom(transaction, binned);
+
+        if (binned.kind === 'card') {
+          await showTheCardOnItsAssets(transaction, binned.subjectId);
+        }
 
         transaction.appendEvent({
           accountId: actor.accountId,
@@ -170,6 +175,9 @@ const AGGREGATE_TYPE_BY_KIND: Readonly<Record<RecoverableKind, string>> = {
   // Under its project, as its category's is: the trail names an entry by joining
   // to the thing, and joins to a project but not to an asset.
   asset: 'project',
+  // Under its project too: a tab is part of an asset, and the trail joins to
+  // neither.
+  assetTab: 'project',
   // Under itself rather than under its project, because a restored card exists
   // again — so the trail can join to it and name it by its key, which is how
   // anybody refers to a card.
@@ -196,4 +204,27 @@ function whatItHappenedTo(binned: {
     aggregateId:
       aggregateType === 'project' ? (binned.projectId ?? binned.subjectId) : binned.subjectId,
   };
+}
+
+/**
+ * A restored card is linked to its assets again, and each shows it.
+ *
+ * The links come back as rows rather than through the command that makes
+ * one, so the Linked work an asset's Overview would have gained by a fresh
+ * link is added here — an asset whose card came back and did not say so
+ * would be the link nobody looking at the asset could find.
+ */
+async function showTheCardOnItsAssets(
+  transaction: CommandTransaction,
+  cardId: string,
+): Promise<void> {
+  const links = await transaction.database
+    .selectFrom('cardAssetLink')
+    .select('assetId')
+    .where('cardId', '=', cardId)
+    .execute();
+
+  for (const link of links) {
+    await showOnTheOverview(transaction.database, link.assetId, 'cards');
+  }
 }

@@ -1,7 +1,7 @@
 import { sql, type Database } from '@lpm/database';
 import {
   projectDashboardQuery,
-  ASSET_STATUSES,
+  ASSET_PHASES,
   CARD_TYPES,
   type ProjectDashboardView,
 } from '@lpm/shared';
@@ -72,7 +72,7 @@ export const projectDashboardHandler = defineQueryHandler({
       },
       pipeline: {
         total: row.assetCount,
-        byStatus: countBy(ASSET_STATUSES, row.assetsByStatus),
+        byPhase: countBy(ASSET_PHASES, row.assetsByPhase),
         overdueCount: row.assetsOverdue,
         unassignedCount: row.assetsUnassigned,
       },
@@ -89,7 +89,7 @@ export const projectDashboardHandler = defineQueryHandler({
 /**
  * Every name in the set, including the ones with nothing in them.
  *
- * A pipeline drawn from only the statuses that happen to have assets is a
+ * A pipeline drawn from only the phases that happen to have assets is a
  * pipeline whose shape changes as it fills, and the empty stages are half of
  * what the shape says.
  */
@@ -130,7 +130,7 @@ interface DashboardRow {
   pointsTotal: number;
   openByType: Record<string, number>;
   assetCount: number;
-  assetsByStatus: Record<string, number>;
+  assetsByPhase: Record<string, number>;
   assetsOverdue: number;
   assetsUnassigned: number;
   estimatedMinor: string;
@@ -179,7 +179,7 @@ async function selectDashboard(query: DashboardQuery): Promise<DashboardRow | un
       work.points_total                         as points_total,
       coalesce(work.open_by_type, '{}'::json)   as open_by_type,
       pipeline.asset_count                      as asset_count,
-      coalesce(pipeline.by_status, '{}'::json)  as assets_by_status,
+      coalesce(pipeline.by_phase, '{}'::json)   as assets_by_phase,
       pipeline.overdue                          as assets_overdue,
       pipeline.unassigned                       as assets_unassigned,
       pipeline.estimated                        as estimated_minor,
@@ -221,26 +221,25 @@ async function selectDashboard(query: DashboardQuery): Promise<DashboardRow | un
         select
           count(*)::int                                                    as asset_count,
           count(*) filter (
-            where asset.due_on < current_date and asset.status not in ('approved', 'final')
+            where asset.due_on < current_date and asset.phase <> 'production'
           )::int                                                           as overdue,
           count(*) filter (where asset.assignee_id is null)::int           as unassigned,
           coalesce(sum(asset.estimated_cost_minor), 0)                     as estimated,
-          -- What will not now go down: an approved estimate is a commitment.
+          -- What will not now go down: an estimate for something in production
+          -- is a commitment.
           coalesce(
-            sum(asset.estimated_cost_minor) filter (
-              where asset.status in ('approved', 'final')
-            ),
+            sum(asset.estimated_cost_minor) filter (where asset.phase = 'production'),
             0
           )                                                                as committed,
           (
-            select json_object_agg(counted.status, counted.total)
+            select json_object_agg(counted.phase, counted.total)
             from (
-              select staged.status as status, count(*)::int as total
+              select staged.phase as phase, count(*)::int as total
               from asset as staged
               where staged.project_id = project.id
-              group by staged.status
+              group by staged.phase
             ) counted
-          )                                                                as by_status
+          )                                                                as by_phase
         from asset
         where asset.project_id = project.id
       ) pipeline on true

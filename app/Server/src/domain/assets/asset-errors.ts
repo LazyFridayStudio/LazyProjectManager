@@ -26,3 +26,19 @@ export class AssetCategoryNameTakenError extends DomainError {
     super('CONFLICT', `This project already has a category called ${name}.`);
   }
 }
+
+/** No such template in this project, or none this actor is allowed to know about. */
+export class AssetTemplateNotFoundError extends DomainError {
+  constructor() {
+    super('NOT_FOUND', 'That template does not exist.');
+  }
+}
+
+/** Two templates with one name is a picker nobody can choose from. */
+export class AssetTemplateNameTakenError extends DomainError {
+  constructor(name: string) {
+    super('CONFLICT', `This project already has a template called ${name}.`, {
+      name: 'Already taken.',
+    });
+  }
+}

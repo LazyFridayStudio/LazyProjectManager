@@ -63,9 +63,24 @@ export function getInvalidationChannel(accountId: string): string {
  * what a `board.cardMoved` means without the worker having to know what the
  * browser keeps.
  */
+/** The asset events that change what is inside one asset and nothing around it. */
+const ASSET_WORK_EVENTS = [
+  'assets.tab',
+  'assets.block',
+  'assets.checklistItem',
+  'assets.templateApplied',
+] as const;
+
 export function getScopesForEvent(eventName: string): readonly InvalidationScope[] {
   if (eventName.startsWith('projects.')) {
     return ['projects'];
+  }
+
+  if (ASSET_WORK_EVENTS.some((prefix) => eventName.startsWith(prefix))) {
+    // The work inside an asset: its tabs, their blocks, a checklist's lines, a
+    // template applied. The tile counts the tabs and the panel draws them; the
+    // sidebar counts assets and categories, and none of these changes either.
+    return ['assets', 'asset'];
   }
 
   if (eventName.startsWith('assets.')) {

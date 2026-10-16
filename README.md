@@ -61,8 +61,10 @@ project they did not have open.
 ![The asset library](docs/images/assets.png)
 
 Every model, sprite and sound the game is made of, in categories you nest and reorder, moving
-**concept → wip → review → approved → final**. Files live in your own S3-compatible storage, and the
-brief sits on the asset with its reference sheets, tags and subtasks.
+**pre-dev → dev → production**. Each asset is worked in tabs — Mesh, UVs, Rig, Animation — built from
+notes, checklists, files and logged hours, and a project keeps templates so the next creature starts
+with the same tabs. Files live in your own S3-compatible storage, and the brief sits on the asset's
+Overview with its reference sheets and tags.
 
 ### Timeline
 

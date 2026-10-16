@@ -1,29 +1,208 @@
 import { z } from 'zod';
 
 /**
- * How far along an asset is.
+ * Which broad phase of making an asset is in.
+ *
+ * Three, and the same everywhere: before anybody builds it, while they do, and
+ * once it is in the game. Done and in-review belong to each of the asset's tabs,
+ * which is where the work itself is — the asset only says which of these it has
+ * reached. Snake case, as a project's phases are.
  *
  * Deliberately not the board's list names. A card moves through whatever columns
- * a studio invents; an asset goes through the same five stages everywhere,
- * because they are stages of making a thing rather than of managing work.
+ * a studio invents; an asset goes through these, because they are phases of
+ * making a thing rather than of managing work.
  */
-export const ASSET_STATUSES = ['concept', 'wip', 'review', 'approved', 'final'] as const;
+export const ASSET_PHASES = ['pre_dev', 'dev', 'production'] as const;
 
-export type AssetStatus = (typeof ASSET_STATUSES)[number];
+export type AssetPhase = (typeof ASSET_PHASES)[number];
 
-export const assetStatusSchema = z.enum(ASSET_STATUSES);
+export const assetPhaseSchema = z.enum(ASSET_PHASES);
 
-const STATUS_LABELS: Readonly<Record<AssetStatus, string>> = {
-  concept: 'Concept',
-  wip: 'WIP',
-  review: 'Review',
-  approved: 'Approved',
-  final: 'Final',
+const PHASE_LABELS: Readonly<Record<AssetPhase, string>> = {
+  pre_dev: 'Pre-dev',
+  dev: 'Dev',
+  production: 'Production',
 };
 
-export function describeAssetStatus(status: AssetStatus): string {
-  return STATUS_LABELS[status];
+export function describeAssetPhase(phase: AssetPhase): string {
+  return PHASE_LABELS[phase];
 }
+
+/**
+ * Everything an asset's tabs and its Overview can be built from, and each at
+ * most once in each place: one checklist on a tab, one set of notes. A second
+ * of a kind is a second place to look for the same thing.
+ *
+ * Notes and a checklist hold what somebody wrote. The rest hold nothing of their
+ * own: each shows something the asset already has — its files and hours, its
+ * cost, its tags, its links, its tabs — so taking the block away only stops
+ * showing it, and putting it back shows it again.
+ */
+export const ASSET_BLOCK_KINDS = [
+  'notes',
+  'checklist',
+  'files',
+  'work',
+  'estimate',
+  'tabs',
+  'tags',
+  'cards',
+  'assets',
+] as const;
+
+export type AssetBlockKind = (typeof ASSET_BLOCK_KINDS)[number];
+
+export const assetBlockKindSchema = z.enum(ASSET_BLOCK_KINDS);
+
+/**
+ * What a tab can be built from: what somebody wrote, and the files and hours
+ * that say they were for it. The asset's cost, tags and links are the asset's,
+ * and belong on its Overview.
+ */
+export const ASSET_TAB_BLOCK_KINDS = ['notes', 'checklist', 'files', 'work'] as const;
+
+export type AssetTabBlockKind = (typeof ASSET_TAB_BLOCK_KINDS)[number];
+
+export const assetTabBlockKindSchema = z.enum(ASSET_TAB_BLOCK_KINDS);
+
+/**
+ * What the Overview can be built from, in the order they are offered: the
+ * sections it always used to draw, and then what can be written on it.
+ *
+ * Beyond these it always has a description, an assignee and a reporter, which
+ * are not blocks: every asset has them, and none can be taken off.
+ */
+export const ASSET_OVERVIEW_BLOCK_KINDS: readonly AssetBlockKind[] = [
+  'estimate',
+  'tabs',
+  'tags',
+  'files',
+  'work',
+  'cards',
+  'assets',
+  'notes',
+  'checklist',
+];
+
+const BLOCK_LABELS: Readonly<Record<AssetBlockKind, string>> = {
+  notes: 'Notes',
+  checklist: 'Checklist',
+  files: 'Files',
+  work: 'Work',
+  estimate: 'Estimate',
+  tabs: 'Tab list',
+  tags: 'Tags',
+  cards: 'Linked work',
+  assets: 'Linked assets',
+};
+
+export function describeAssetBlockKind(kind: AssetBlockKind): string {
+  return BLOCK_LABELS[kind];
+}
+
+/** What a tab is called: Mesh, UVs, Rig. Short, because it sits in a row of them. */
+export const assetTabTitleSchema = z.string().trim().min(1, 'Name the tab.').max(60);
+
+/** What a notes block says. As long as a description may be. */
+export const assetTabNotesSchema = z.string().max(20_000);
+
+/** One line of a checklist on a tab, held to what a card's step is held to. */
+export const assetChecklistItemTitleSchema = z
+  .string()
+  .trim()
+  .min(1, 'Say what the item is.')
+  .max(200);
+
+/** What a template is called in the picker: Rigged creature, Static prop. */
+export const assetTemplateNameSchema = z.string().trim().min(1, 'Name the template.').max(100);
+
+/**
+ * The most tabs one asset has, and the most lines one checklist has.
+ *
+ * Not a rule about how anybody should work — past these a row of tabs is a
+ * scrolling strip, and a checklist is a page nobody reads to the bottom of.
+ * How many blocks a place has needs no number: one of each kind.
+ */
+export const MAXIMUM_TABS_PER_ASSET = 30;
+export const MAXIMUM_ITEMS_PER_CHECKLIST = 100;
+
+/** Blocks with no kind twice, as a tab and an Overview hold them. */
+function oneOfEachKind(blocks: readonly { readonly kind: string }[]): boolean {
+  return new Set(blocks.map((block) => block.kind)).size === blocks.length;
+}
+
+const ONE_OF_EACH = 'A place has one block of each kind.';
+
+/**
+ * One block as a template keeps it.
+ *
+ * What it says and nothing about who did it: a checklist's items come back
+ * unticked, and a files or work block comes back empty, because the files and
+ * hours belonged to the asset it was saved from.
+ */
+const templateNotesSchema = z.object({ kind: z.literal('notes'), body: assetTabNotesSchema });
+
+const templateChecklistSchema = z.object({
+  kind: z.literal('checklist'),
+  items: z.array(assetChecklistItemTitleSchema).max(MAXIMUM_ITEMS_PER_CHECKLIST),
+});
+
+export const assetTemplateBlockSchema = z.discriminatedUnion('kind', [
+  templateNotesSchema,
+  templateChecklistSchema,
+  z.object({ kind: z.literal('files') }),
+  z.object({ kind: z.literal('work') }),
+]);
+
+export type AssetTemplateBlock = z.infer<typeof assetTemplateBlockSchema>;
+
+/**
+ * One block of the Overview as a template keeps it: a tab's blocks, and the
+ * sections only the Overview has. Those carry nothing — which sections an asset
+ * shows is the template's business, and what is in them is the asset's.
+ */
+export const assetTemplateOverviewBlockSchema = z.discriminatedUnion('kind', [
+  templateNotesSchema,
+  templateChecklistSchema,
+  z.object({ kind: z.literal('files') }),
+  z.object({ kind: z.literal('work') }),
+  z.object({ kind: z.literal('estimate') }),
+  z.object({ kind: z.literal('tabs') }),
+  z.object({ kind: z.literal('tags') }),
+  z.object({ kind: z.literal('cards') }),
+  z.object({ kind: z.literal('assets') }),
+]);
+
+export type AssetTemplateOverviewBlock = z.infer<typeof assetTemplateOverviewBlockSchema>;
+
+/**
+ * What a template is: the tabs to make, in order, what each is built from, and
+ * what the Overview shows.
+ *
+ * No assignee, no due date and nothing ticked. Those are about one asset; a
+ * template is about the kind of thing it is.
+ */
+export const assetTemplateDefinitionSchema = z.object({
+  tabs: z
+    .array(
+      z.object({
+        title: assetTabTitleSchema,
+        blocks: z.array(assetTemplateBlockSchema).refine(oneOfEachKind, ONE_OF_EACH),
+      }),
+    )
+    .max(MAXIMUM_TABS_PER_ASSET),
+  /**
+   * The Overview's blocks, added to an asset that does not show them already.
+   *
+   * Defaulted, so a template saved before the Overview had blocks still reads.
+   */
+  overview: z
+    .array(assetTemplateOverviewBlockSchema)
+    .refine(oneOfEachKind, ONE_OF_EACH)
+    .default([]),
+});
+
+export type AssetTemplateDefinition = z.infer<typeof assetTemplateDefinitionSchema>;
 
 export const assetNameSchema = z.string().trim().min(1).max(200);
 

@@ -6,7 +6,7 @@ export interface ModalDialog {
   /** Spread onto the `dialog` element. */
   readonly dialogProps: {
     readonly ref: RefObject<HTMLDialogElement | null>;
-    readonly onClose: () => void;
+    readonly onClose: (event: React.SyntheticEvent<HTMLDialogElement>) => void;
     readonly onCancel: (event: React.SyntheticEvent<HTMLDialogElement>) => void;
     readonly onPointerDown: (event: React.PointerEvent<HTMLDialogElement>) => void;
     readonly onClick: (event: React.MouseEvent<HTMLDialogElement>) => void;
@@ -107,7 +107,11 @@ export function useModalDialog(
   return {
     dialogProps: {
       ref: dialogRef,
-      onClose,
+      onClose: (event) => {
+        if (isItsOwn(event)) {
+          onClose();
+        }
+      },
       /*
        * Escape, held back so it leaves the way the other two do.
        *
@@ -118,6 +122,10 @@ export function useModalDialog(
        * twice wants it gone, not animated.
        */
       onCancel: (event) => {
+        if (!isItsOwn(event)) {
+          return;
+        }
+
         event.preventDefault();
         close();
       },
@@ -139,4 +147,19 @@ export function useModalDialog(
     },
     close,
   };
+}
+
+/**
+ * Whether a dialog's close or Escape is this dialog's own, rather than one
+ * opened inside it.
+ *
+ * React passes `close` and `cancel` up the tree like any other event, so a
+ * dialog opened from inside a panel — adding a tab to an asset — would close
+ * the panel too when it closed, and Escape in it would close both.
+ */
+export function isItsOwn(event: {
+  readonly target: EventTarget | null;
+  readonly currentTarget: EventTarget | null;
+}): boolean {
+  return event.target === event.currentTarget;
 }

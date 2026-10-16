@@ -59,6 +59,7 @@ export const CATALOGUES = {
       'asset.delete',
       'asset.link',
       'asset.manageCategory',
+      'asset.manageTemplate',
       'file.upload',
       'file.remove',
     ],
@@ -257,13 +258,15 @@ export const RULE_DESCRIPTIONS: Readonly<Record<PermittedAction, string>> = {
   'asset.view': 'Open the asset library and look at what is in it.',
   'asset.create': 'Add an asset to the library.',
   'asset.update':
-    'Change an asset: what it is called, how far along it is, its tags, its reference images, its working files, and which cards it is about.',
+    'Change an asset: what it is called, which phase it is in, its tabs and what is on them, its tags, its reference images, its working files, and which cards it is about.',
   'asset.delete':
-    'Delete an asset outright, and every reference image, working file, stage and tag on it. It waits a week in the bin before it is really gone. Separate from changing one, because a studio that lets everybody fill the library in does not necessarily let everybody empty it.',
+    'Delete an asset outright, and every reference image, working file, tab and tag on it. It waits a week in the bin before it is really gone. Separate from changing one, because a studio that lets everybody fill the library in does not necessarily let everybody empty it.',
   'asset.link':
     'Link one asset to another in the same project, or unlink them: a boss and what it drops, a set and its pieces. Separate from changing an asset, the way linking cards is separate from editing one, because a link changes what two assets say about each other.',
   'asset.manageCategory':
     'Add, rename or remove a category in the asset library. The shelves rather than what is on them.',
+  'asset.manageTemplate':
+    "Save, rename or delete the project's asset templates: the sets of tabs a new asset starts from. Starting an asset from one is changing the asset, and does not need this.",
   'file.upload': 'Attach a file to a card or an asset.',
   'file.remove': 'Take an attached file off a card or an asset.',
   'doc.view': "Read the project's design documents.",

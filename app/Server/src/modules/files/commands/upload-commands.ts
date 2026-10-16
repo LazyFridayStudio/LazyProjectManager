@@ -32,6 +32,7 @@ import { loadWritableCard, loadWritableProject } from '../../board/cards/card-ac
 import { assertProjectPermission, loadMembershipRole } from '../../projects/project-access.js';
 import type { PermittedAction } from '../../../domain/index.js';
 import { assertIsAnAgent } from '../../identity/is-an-agent.js';
+import { assertTabIsOnAsset } from '../../assets/asset-access.js';
 
 /**
  * Who is asking, and whether they may.
@@ -245,18 +246,7 @@ async function attachTo({
   }
 
   if (target.kind === 'assetFile') {
-    await database
-      .insertInto('assetFile')
-      .values({
-        accountId,
-        assetId: target.assetId,
-        fileId,
-        // The filename is what to call it until somebody says otherwise, which
-        // is what they called it on their own machine.
-        label: filename,
-        position: await nextPosition(database, 'assetFile', target.assetId),
-      })
-      .execute();
+    await attachWorkingFile({ database, target, fileId, filename, accountId });
 
     return;
   }
@@ -270,6 +260,36 @@ async function attachTo({
       assetId: target.assetId,
       fileId,
       position: await nextPosition(database, 'assetReference', target.assetId),
+    })
+    .execute();
+}
+
+/** A working file of an asset, on the tab it is for when it is for one. */
+async function attachWorkingFile({
+  database,
+  target,
+  fileId,
+  filename,
+  accountId,
+}: Omit<Attachment, 'target' | 'uploadedBy'> & {
+  readonly target: Extract<UploadTarget, { kind: 'assetFile' }>;
+}): Promise<void> {
+  // A tab of another asset would tag the file to a tab that never shows it.
+  if (target.assetTabId !== undefined) {
+    await assertTabIsOnAsset(database, target.assetTabId, target.assetId);
+  }
+
+  await database
+    .insertInto('assetFile')
+    .values({
+      accountId,
+      assetId: target.assetId,
+      fileId,
+      // The filename is what to call it until somebody says otherwise, which is
+      // what they called it on their own machine.
+      label: filename,
+      tabId: target.assetTabId ?? null,
+      position: await nextPosition(database, 'assetFile', target.assetId),
     })
     .execute();
 }

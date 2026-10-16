@@ -62,6 +62,9 @@ import * as oneSyncAtATime from './0059-one-sync-at-a-time.js';
 import * as aCategoryInsideACategory from './0060-a-category-inside-a-category.js';
 import * as aNameCanWaitForTheEndOfACommand from './0061-a-name-can-wait-for-the-end-of-a-command.js';
 import * as anAssetCanBeLinkedToAnother from './0062-an-asset-can-be-linked-to-another.js';
+import * as anAssetIsWorkedInTabs from './0063-an-asset-is-worked-in-tabs.js';
+import * as theOverviewIsBuiltFromBlocks from './0064-the-overview-is-built-from-blocks.js';
+import * as oneBlockOfEachKind from './0065-one-block-of-each-kind.js';
 
 /**
  * Migrations are registered here by hand rather than discovered from disk.
@@ -134,6 +137,9 @@ const migrationsByName: Readonly<Record<string, Migration>> = {
   '0060-a-category-inside-a-category': aCategoryInsideACategory,
   '0061-a-name-can-wait-for-the-end-of-a-command': aNameCanWaitForTheEndOfACommand,
   '0062-an-asset-can-be-linked-to-another': anAssetCanBeLinkedToAnother,
+  '0063-an-asset-is-worked-in-tabs': anAssetIsWorkedInTabs,
+  '0064-the-overview-is-built-from-blocks': theOverviewIsBuiltFromBlocks,
+  '0065-one-block-of-each-kind': oneBlockOfEachKind,
 };
 
 export const migrationProvider: MigrationProvider = {

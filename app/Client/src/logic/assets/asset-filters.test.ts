@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   countFilters,
   isFiltering,
-  toggleStatus,
+  togglePhase,
   toggleTag,
   toQueryParams,
   NO_FILTERS,
@@ -27,8 +27,8 @@ describe('GIVEN the library filter', () => {
       expect(toggleTag(chosen, 'act-1').tags).toEqual([]);
     });
 
-    it('THEN tags and statuses are counted together, since both narrow', () => {
-      const both = toggleStatus(toggleTag(NO_FILTERS, 'act-1'), 'review');
+    it('THEN tags and phases are counted together, since both narrow', () => {
+      const both = togglePhase(toggleTag(NO_FILTERS, 'act-1'), 'dev');
 
       expect(countFilters(both)).toBe(2);
       expect(isFiltering(both)).toBe(true);
@@ -41,12 +41,12 @@ describe('GIVEN the library filter', () => {
 
   describe('WHEN it is sent to the server', () => {
     it('THEN lists travel as one parameter, because a parameter is a primitive', () => {
-      const filters = toggleStatus(toggleTag(toggleTag(NO_FILTERS, 'act-1'), 'modular'), 'review');
+      const filters = togglePhase(toggleTag(toggleTag(NO_FILTERS, 'act-1'), 'modular'), 'dev');
 
       expect(toQueryParams({ ...filters, search: 'crane' })).toEqual({
         search: 'crane',
         tags: 'act-1,modular',
-        statuses: 'review',
+        phases: 'dev',
       });
     });
   });

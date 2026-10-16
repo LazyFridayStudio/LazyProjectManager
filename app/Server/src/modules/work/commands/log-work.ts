@@ -5,12 +5,14 @@ import { executeCommand, type CommandTransaction } from '../../../cqrs/execute-c
 import type { RequestActor } from '../../../cqrs/request-context.js';
 import { InvariantViolatedError } from '../../../domain/index.js';
 import { authoriseWithinProject } from '../../projects/project-access.js';
+import { assertTabIsOnAsset } from '../../assets/asset-access.js';
 import { findWhatWasWorkedOn, type WorkedOn } from '../what-was-worked-on.js';
 
 interface LogWorkInput {
   commandId: string;
   cardId?: string;
   assetId?: string;
+  assetTabId?: string;
   minutes: number;
   workedOn: string;
   note?: string;
@@ -66,11 +68,22 @@ interface AppendRequest {
 async function append(request: AppendRequest): Promise<void> {
   const { transaction, input, actor, worked } = request;
 
+  if (input.assetTabId !== undefined) {
+    // Hours on a card cannot name an asset's tab, and hours on one asset cannot
+    // name another's: either would be counted by something that never shows them.
+    if (worked.kind !== 'asset') {
+      throw new InvariantViolatedError('Only hours on an asset can be for one of its tabs.');
+    }
+
+    await assertTabIsOnAsset(transaction.database, input.assetTabId, worked.id);
+  }
+
   const entry = await transaction.database
     .insertInto('workLog')
     .values({
       cardId: worked.kind === 'card' ? worked.id : null,
       assetId: worked.kind === 'asset' ? worked.id : null,
+      assetTabId: input.assetTabId ?? null,
       userId: actor.userId,
       minutes: input.minutes,
       workedOn: input.workedOn,

@@ -146,11 +146,10 @@ async function selectBudget(query: BudgetQuery): Promise<BudgetRow[]> {
         select
           count(*)::int                                            as asset_count,
           coalesce(sum(asset.estimated_cost_minor), 0)             as estimated,
-          -- An approved estimate is a commitment: it will not now go down.
+          -- An estimate for something in production is a commitment: it will
+          -- not now go down.
           coalesce(
-            sum(asset.estimated_cost_minor) filter (
-              where asset.status in ('approved', 'final')
-            ),
+            sum(asset.estimated_cost_minor) filter (where asset.phase = 'production'),
             0
           )                                                        as committed,
           -- The part of the total that is missing rather than nought.

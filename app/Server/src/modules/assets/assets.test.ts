@@ -229,11 +229,11 @@ describe('GIVEN a project with things to make', () => {
       expect(category?.count).toBe(2);
     });
 
-    it('THEN one starts as a concept, because that is where a thing starts', async () => {
+    it('THEN one starts in pre-dev, because that is where a thing starts', async () => {
       const props = await addCategory('Environment Props');
       await addAsset(props, 'Ruined watchtower');
 
-      expect((await library()).categories[0]?.assets[0]?.status).toBe('concept');
+      expect((await library()).categories[0]?.assets[0]?.phase).toBe('pre_dev');
     });
 
     it('THEN what they are estimated to cost adds up against the budget', async () => {
@@ -663,11 +663,11 @@ describe('GIVEN a project with things to make', () => {
         await addAsset(props, 'Ruined watchtower', { estimatedCostMinor: 240_000 })
       ).json<{ id: string }>().id;
 
-      await command('assets.updateAsset', { assetId, status: 'review' });
+      await command('assets.updateAsset', { assetId, phase: 'dev' });
 
       const view = await detail(assetId);
 
-      expect(view.status).toBe('review');
+      expect(view.phase).toBe('dev');
       // Untouched, because an absent field means leave it.
       expect(view.estimatedCostMinor).toBe(240_000);
       expect(view.name).toBe('Ruined watchtower');
@@ -802,9 +802,9 @@ describe('GIVEN a project with things to make', () => {
       const mira = await seedMember('mira@northwind.test');
 
       await command('assets.updateAsset', { assetId, assigneeId: mira });
-      await command('assets.updateAsset', { assetId, status: 'review' });
+      await command('assets.updateAsset', { assetId, phase: 'dev' });
 
-      // The status edit did not mention them, so they stayed.
+      // The phase edit did not mention them, so they stayed.
       expect((await detail(assetId)).assignee?.userId).toBe(mira);
 
       await command('assets.updateAsset', { assetId, assigneeId: null });
@@ -898,7 +898,7 @@ describe('GIVEN a project with things to make', () => {
         assetId,
         name: 'Ruined watchtower',
         categoryName: 'Environment Props',
-        status: 'concept',
+        phase: 'pre_dev',
       });
 
       const [fromAsset] = (await detail(assetId)).cards;
@@ -994,7 +994,7 @@ describe('GIVEN a project with things to make', () => {
           assetId: helm,
           assetKey: 'SLTM-AST-2',
           name: 'Hound-skull helm',
-          status: 'concept',
+          phase: 'pre_dev',
           category: expect.objectContaining({ name: 'Helmets' }) as unknown,
         },
       ]);
@@ -1218,9 +1218,9 @@ describe('GIVEN a project with things to make', () => {
       const crane = (await addAsset(props, 'Harbour crane')).json<{ id: string }>().id;
       const leviathan = (await addAsset(bosses, 'Tidewrought Leviathan')).json<{ id: string }>().id;
 
-      await command('assets.updateAsset', { assetId: watchtower, status: 'approved' });
-      await command('assets.updateAsset', { assetId: crane, status: 'review' });
-      await command('assets.updateAsset', { assetId: leviathan, status: 'review' });
+      await command('assets.updateAsset', { assetId: watchtower, phase: 'production' });
+      await command('assets.updateAsset', { assetId: crane, phase: 'dev' });
+      await command('assets.updateAsset', { assetId: leviathan, phase: 'dev' });
 
       await command('assets.addTag', { assetId: watchtower, tag: 'act-1' });
       await command('assets.addTag', { assetId: watchtower, tag: 'modular' });
@@ -1263,10 +1263,10 @@ describe('GIVEN a project with things to make', () => {
       expect(category?.assets).toHaveLength(1);
     });
 
-    it('THEN a status narrows across every category', async () => {
+    it('THEN a phase narrows across every category', async () => {
       await seedLibrary();
 
-      expect(shownIn(await filtered({ statuses: 'review' })).sort()).toEqual([
+      expect(shownIn(await filtered({ phases: 'dev' })).sort()).toEqual([
         'Harbour crane',
         'Tidewrought Leviathan',
       ]);
@@ -1805,190 +1805,6 @@ describe('GIVEN a project with things to make', () => {
       }
 
       expect(await headings()).toEqual(['Interface', 'Environment Props', 'Characters']);
-    });
-  });
-
-  describe('WHEN an asset is broken into the stages it is made in', () => {
-    let charactersId: string;
-
-    beforeEach(async () => {
-      charactersId = await addCategory('Characters');
-    });
-
-    async function stagedAsset(name = 'Drowned sentinel'): Promise<string> {
-      return (await addAsset(charactersId, name)).json<{ id: string }>().id;
-    }
-
-    async function addStage(assetId: string, title: string): Promise<string> {
-      const response = await command('assets.addSubtask', { assetId, title });
-
-      return response.json<{ id: string }>().id;
-    }
-
-    it('THEN they come back in the order somebody put them, not alphabetical', async () => {
-      const assetId = await stagedAsset();
-
-      await addStage(assetId, 'Mesh');
-      await addStage(assetId, 'UV');
-      await addStage(assetId, 'Texture');
-      await addStage(assetId, 'Animation');
-
-      // The list is a pipeline. Somebody who puts UV above Texture means it to
-      // stay there, and a checklist that reordered itself would not be trusted.
-      expect((await detail(assetId)).subtasks.map((stage) => stage.title)).toEqual([
-        'Mesh',
-        'UV',
-        'Texture',
-        'Animation',
-      ]);
-    });
-
-    it('THEN a new stage is not done yet', async () => {
-      const assetId = await stagedAsset();
-
-      await addStage(assetId, 'Mesh');
-
-      expect((await detail(assetId)).subtasks[0]?.done).toBe(false);
-    });
-
-    it('THEN ticking one off leaves the others alone', async () => {
-      const assetId = await stagedAsset();
-      const mesh = await addStage(assetId, 'Mesh');
-
-      await addStage(assetId, 'UV');
-      await command('assets.updateSubtask', { assetSubtaskId: mesh, done: true });
-
-      expect((await detail(assetId)).subtasks).toMatchObject([
-        { title: 'Mesh', done: true },
-        { title: 'UV', done: false },
-      ]);
-    });
-
-    it('THEN one can be unticked again, because work comes back', async () => {
-      const assetId = await stagedAsset();
-      const mesh = await addStage(assetId, 'Mesh');
-
-      await command('assets.updateSubtask', { assetSubtaskId: mesh, done: true });
-      await command('assets.updateSubtask', { assetSubtaskId: mesh, done: false });
-
-      expect((await detail(assetId)).subtasks[0]?.done).toBe(false);
-    });
-
-    it('THEN renaming one keeps whether it was done', async () => {
-      const assetId = await stagedAsset();
-      const stage = await addStage(assetId, 'Textures');
-
-      await command('assets.updateSubtask', { assetSubtaskId: stage, done: true });
-      await command('assets.updateSubtask', { assetSubtaskId: stage, title: 'Texture' });
-
-      expect((await detail(assetId)).subtasks[0]).toMatchObject({
-        title: 'Texture',
-        done: true,
-      });
-    });
-
-    it('THEN a change that says nothing is refused rather than silently doing nothing', async () => {
-      const assetId = await stagedAsset();
-      const stage = await addStage(assetId, 'Mesh');
-
-      const response = await command('assets.updateSubtask', { assetSubtaskId: stage });
-
-      expect(response.statusCode).toBe(422);
-    });
-
-    it('THEN removing one really does remove it, because a stage is a working note', async () => {
-      const assetId = await stagedAsset();
-      const mesh = await addStage(assetId, 'Mesh');
-
-      await addStage(assetId, 'UV');
-      await command('assets.removeSubtask', { assetSubtaskId: mesh });
-
-      expect((await detail(assetId)).subtasks.map((stage) => stage.title)).toEqual(['UV']);
-    });
-
-    it('THEN the tile counts them, so a library says how far along things are', async () => {
-      const assetId = await stagedAsset();
-      const mesh = await addStage(assetId, 'Mesh');
-
-      await addStage(assetId, 'UV');
-      await addStage(assetId, 'Texture');
-      await command('assets.updateSubtask', { assetSubtaskId: mesh, done: true });
-
-      const tile = (await library()).categories[0]?.assets[0];
-
-      expect(tile).toMatchObject({ subtaskCount: 3, subtasksDone: 1 });
-    });
-
-    it('THEN an asset nobody has broken up counts nought of nought', async () => {
-      const assetId = await stagedAsset();
-
-      // Which the tile draws as nothing at all rather than as 0/0: a library
-      // where most things are one job would otherwise be a column of noise.
-      expect((await library()).categories[0]?.assets[0]).toMatchObject({
-        subtaskCount: 0,
-        subtasksDone: 0,
-      });
-      expect((await detail(assetId)).subtasks).toEqual([]);
-    });
-
-    it('THEN one asset’s stages are its own', async () => {
-      const first = await stagedAsset('Drowned sentinel');
-      const second = await stagedAsset('Harbour lantern');
-
-      await addStage(first, 'Mesh');
-
-      expect((await detail(second)).subtasks).toEqual([]);
-    });
-
-    it('THEN the same add sent twice adds one stage, not two', async () => {
-      const assetId = await stagedAsset();
-      const commandId = nextCommandId();
-
-      for (let attempt = 0; attempt < 2; attempt += 1) {
-        await server.inject({
-          method: 'POST',
-          url: '/api/c/assets.addSubtask',
-          payload: { commandId, assetId, title: 'Mesh' },
-          cookies: { lpm_session: ownerCookie },
-        });
-      }
-
-      expect((await detail(assetId)).subtasks).toHaveLength(1);
-    });
-
-    it('THEN an asset from another account is refused', async () => {
-      const response = await command('assets.addSubtask', {
-        assetId: '018f0000-0000-7000-8000-000000000000',
-        title: 'Mesh',
-      });
-
-      expect(response.statusCode).toBe(404);
-    });
-
-    it('THEN a stage that is not there is refused the same way', async () => {
-      const response = await command('assets.updateSubtask', {
-        assetSubtaskId: '018f0000-0000-7000-8000-000000000000',
-        done: true,
-      });
-
-      expect(response.statusCode).toBe(404);
-    });
-
-    it('THEN removing the asset takes its stages with it', async () => {
-      const assetId = await stagedAsset();
-
-      await addStage(assetId, 'Mesh');
-      await testDatabase.database.deleteFrom('asset').where('id', '=', assetId).execute();
-
-      // The cascade is for a project being removed underneath it. An asset
-      // archives rather than deletes, so this is the only way they go.
-      const left = await testDatabase.database
-        .selectFrom('assetSubtask')
-        .select('id')
-        .where('assetId', '=', assetId)
-        .execute();
-
-      expect(left).toEqual([]);
     });
   });
 
@@ -2547,20 +2363,18 @@ describe('GIVEN a project with things to make', () => {
       expect(view.budget.estimatedMinor).toBe(0);
     });
 
-    it('THEN every stage of the pipeline is named, including the empty ones', async () => {
+    it('THEN every phase of the pipeline is named, including the empty ones', async () => {
       const props = await addCategory('Environment Props');
       const assetId = (await addAsset(props, 'Ruined watchtower')).json<{ id: string }>().id;
 
-      await command('assets.updateAsset', { assetId, status: 'review' });
+      await command('assets.updateAsset', { assetId, phase: 'dev' });
 
       // A pipeline drawn from only what is populated changes shape as it fills,
       // and the gaps are half of what the shape says.
-      expect((await dashboard()).pipeline.byStatus).toEqual({
-        concept: 0,
-        wip: 0,
-        review: 1,
-        approved: 0,
-        final: 0,
+      expect((await dashboard()).pipeline.byPhase).toEqual({
+        pre_dev: 0,
+        dev: 1,
+        production: 0,
       });
     });
 
@@ -2607,7 +2421,7 @@ describe('GIVEN a project with things to make', () => {
       expect(view.work.blockedCount).toBe(0);
     });
 
-    it('THEN what is approved is counted as committed, because it will not go down', async () => {
+    it('THEN what is in production is counted as committed, because it will not go down', async () => {
       const props = await addCategory('Environment Props');
       const estimated = (
         await addAsset(props, 'Ruined watchtower', { estimatedCostMinor: 240_000 })
@@ -2616,7 +2430,7 @@ describe('GIVEN a project with things to make', () => {
         await addAsset(props, 'Harbour crane', { estimatedCostMinor: 100_000 })
       ).json<{ id: string }>().id;
 
-      await command('assets.updateAsset', { assetId: approved, status: 'approved' });
+      await command('assets.updateAsset', { assetId: approved, phase: 'production' });
 
       const view = await dashboard();
 
@@ -2680,14 +2494,14 @@ describe('GIVEN a project with things to make', () => {
       });
     });
 
-    it('THEN what is approved is committed, because it will not go down', async () => {
+    it('THEN what is in production is committed, because it will not go down', async () => {
       const props = await addCategory('Environment Props');
       const assetId = (
         await addAsset(props, 'Harbour crane', { estimatedCostMinor: 100_000 })
       ).json<{ id: string }>().id;
 
       await addAsset(props, 'Ruined watchtower', { estimatedCostMinor: 240_000 });
-      await command('assets.updateAsset', { assetId, status: 'approved' });
+      await command('assets.updateAsset', { assetId, phase: 'production' });
 
       expect((await budget()).totals).toMatchObject({
         estimatedMinor: 340_000,

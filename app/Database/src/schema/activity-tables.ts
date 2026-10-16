@@ -36,6 +36,8 @@ export interface WorkLogTable {
   id: Generated<string>;
   cardId: string | null;
   assetId: string | null;
+  /** The tab of that asset the hours went on, when they went on one. Never set on a card's. */
+  assetTabId: string | null;
   /** Null once the person has left; the hours they worked stay on the record. */
   userId: string | null;
   minutes: number;

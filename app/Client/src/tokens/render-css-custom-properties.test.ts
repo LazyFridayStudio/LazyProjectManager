@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { accentRamp, darkThemeColors, lightThemeColors, paperThemeColors } from './color-tokens.js';
-import { colorByAssetStatus } from './asset-status-colors.js';
+import { colorByAssetPhase } from './asset-phase-colors.js';
 import { colorByCardType } from './card-type-colors.js';
 import { renderCssCustomProperties } from './render-css-custom-properties.js';
 import { motionDurationMs } from './motion-tokens.js';
@@ -34,9 +34,9 @@ describe('GIVEN the design tokens rendered to a stylesheet', () => {
   });
 
   describe('WHEN an asset is drawn anywhere in the library', () => {
-    it('THEN every status has one colour, so the tile and the dashboard agree', () => {
-      for (const [status, color] of Object.entries(colorByAssetStatus)) {
-        expect(stylesheet).toContain(`--color-status-${status}: ${color};`);
+    it('THEN every phase has one colour, so the tile and the dashboard agree', () => {
+      for (const [phase, color] of Object.entries(colorByAssetPhase)) {
+        expect(stylesheet).toContain(`--color-phase-${phase}: ${color};`);
       }
     });
   });

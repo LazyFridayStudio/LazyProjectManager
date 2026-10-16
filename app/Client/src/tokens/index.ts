@@ -9,11 +9,11 @@ export {
 } from './color-tokens.js';
 
 export {
-  assetStatuses,
-  colorByAssetStatus,
-  getColorForAssetStatus,
-  type AssetStatus,
-} from './asset-status-colors.js';
+  assetPhases,
+  colorByAssetPhase,
+  getColorForAssetPhase,
+  type AssetPhase,
+} from './asset-phase-colors.js';
 
 export {
   cardTypes,

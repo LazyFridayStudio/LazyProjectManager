@@ -15,7 +15,10 @@ export type {
   AssetReferenceTable,
   AssetSequenceTable,
   AssetTable,
-  AssetSubtaskTable,
+  AssetTabBlockTable,
+  AssetTabChecklistItemTable,
+  AssetTabTable,
+  AssetTemplateTable,
   AssetTagTable,
   CardAssetLinkTable,
 } from './asset-tables.js';

@@ -2,7 +2,7 @@ import { DndContext, DragOverlay, useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-  describeAssetStatus,
+  describeAssetPhase,
   type AssetCategory,
   type AssetLibraryView,
   type AssetTile,
@@ -49,6 +49,7 @@ import { EditCategoryDialog } from './EditCategoryDialog.js';
 import { useDeleteCategory } from '../../logic/assets/use-delete-category.js';
 import { NewAssetCategoryDialog } from './NewAssetCategoryDialog.js';
 import { NewAssetDialog } from './NewAssetDialog.js';
+import { AssetTemplatesDialog } from './AssetTemplatesDialog.js';
 import { LoadingProject } from '../shell/LoadingProject.js';
 import { ProjectShell } from '../shell/ProjectShell.js';
 import {
@@ -107,6 +108,7 @@ function Library({ view, slug, filters, onFilter }: LibraryProps): React.JSX.Ele
   const [opened, setOpened] = useState<string | null>(null);
   const [openedCard, setOpenedCard] = useState<string | null>(null);
   const [isFilterShown, setIsFilterShown] = useState(false);
+  const [isKeepingTemplates, setIsKeepingTemplates] = useState(false);
   const canWrite = !view.project.archived;
 
   // Which category was named, and by what. Read from the router rather than
@@ -154,6 +156,9 @@ function Library({ view, slug, filters, onFilter }: LibraryProps): React.JSX.Ele
           }}
           onNewCategory={() => {
             setIsAddingCategory(true);
+          }}
+          onTemplates={() => {
+            setIsKeepingTemplates(true);
           }}
         />
 
@@ -225,6 +230,15 @@ function Library({ view, slug, filters, onFilter }: LibraryProps): React.JSX.Ele
           onOpenAsset={setOpened}
           onOpenCard={setOpenedCard}
         />
+
+        {isKeepingTemplates && (
+          <AssetTemplatesDialog
+            projectId={view.project.id}
+            onDone={() => {
+              setIsKeepingTemplates(false);
+            }}
+          />
+        )}
       </div>
     </ProjectShell>
   );
@@ -849,6 +863,7 @@ function Opened({
       {editing !== null && (
         <EditCategoryDialog
           category={editing}
+          projectId={view.project.id}
           projectSlug={slug}
           currency={view.project.currency}
           categories={view.categories}
@@ -864,7 +879,12 @@ function Opened({
           projectId={view.project.id}
           projectSlug={slug}
           currency={view.project.currency}
-          category={addingTo}
+          category={{
+            ...addingTo,
+            defaultTemplateId:
+              flattenCategories(view.categories).find((found) => found.category.id === addingTo.id)
+                ?.category.defaultTemplateId ?? null,
+          }}
           onDone={() => {
             onCloseAdding();
           }}
@@ -885,6 +905,7 @@ interface LibraryHeaderProps {
   readonly onFilter: (filters: AssetFilters) => void;
   readonly onToggleFilters: () => void;
   readonly onNewCategory: () => void;
+  readonly onTemplates: () => void;
 }
 
 /**
@@ -904,6 +925,7 @@ function LibraryHeader({
   onFilter,
   onToggleFilters,
   onNewCategory,
+  onTemplates,
 }: LibraryHeaderProps): React.JSX.Element {
   return (
     <ScreenHeader
@@ -942,6 +964,10 @@ function LibraryHeader({
           <Button onClick={onToggleFilters}>
             {narrowed ? `Filters · ${String(countFilters(filters))}` : 'Filters'}
           </Button>
+
+          {/* The sets of tabs a new asset can start from, beside the shelves
+              they are offered on. */}
+          <Button onClick={onTemplates}>Templates</Button>
 
           {canWrite && (
             <Button
@@ -1103,14 +1129,14 @@ function TileFace({ asset, currency }: { asset: AssetTile; currency: string }): 
       <AssetPicture
         url={asset.primaryReferenceUrl}
         alt=""
-        fallback={describeAssetStatus(asset.status).toLowerCase()}
+        fallback={describeAssetPhase(asset.phase).toLowerCase()}
         imageClassName={styles.thumbnailImage}
         fallbackClassName={styles.thumbnail}
       />
       <span className={styles.assetName}>{asset.name}</span>
       <span className={styles.assetFoot}>
-        <span className={styles.statusDot} data-status={asset.status} aria-hidden />
-        <span className={styles.statusName}>{describeAssetStatus(asset.status)}</span>
+        <span className={styles.phaseDot} data-phase={asset.phase} aria-hidden />
+        <span className={styles.phaseName}>{describeAssetPhase(asset.phase)}</span>
         <span className={styles.assetCost}>
           {asset.estimatedCostMinor === null
             ? '—'
@@ -1125,7 +1151,7 @@ function TileFace({ asset, currency }: { asset: AssetTile; currency: string }): 
         <span className={styles.assetLinked} data-linked={asset.linkedCardCount > 0}>
           {asset.linkedCardCount === 0 ? 'unlinked' : `${String(asset.linkedCardCount)} linked`}
         </span>
-        <Stages done={asset.subtasksDone} total={asset.subtaskCount} />
+        <Stages done={asset.tabsDone} total={asset.tabCount} />
       </span>
       {/* What the studio files it under. On the tile because that
                       is where somebody scanning for "everything act-1" looks. */}

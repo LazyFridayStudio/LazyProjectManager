@@ -1,4 +1,4 @@
-import { describeAssetStatus, type CardDetailView } from '@lpm/shared';
+import { describeAssetPhase, type CardDetailView } from '@lpm/shared';
 import { useState } from 'react';
 
 import { useLinkAsset, useUnlinkAsset } from '../../../logic/assets/use-assets.js';
@@ -75,7 +75,7 @@ export function CardAssets({
                 <span className={styles.rowTitle} title={link.name}>
                   {link.name}
                 </span>
-                <span className={styles.state}>{describeAssetStatus(link.status)}</span>
+                <span className={styles.state}>{describeAssetPhase(link.phase)}</span>
               </button>
               {canWrite && (
                 <button

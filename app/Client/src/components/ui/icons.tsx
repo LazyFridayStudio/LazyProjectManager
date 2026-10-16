@@ -97,6 +97,42 @@ export function PencilIcon({ size = 16 }: { size?: number }): React.JSX.Element 
 }
 
 /**
+ * A disk. What a control that keeps something for later is marked with.
+ *
+ * Not one of the three the mark rule enforces. The square with its shutter cut
+ * out of the top edge and a label across the bottom, which is what "save" has
+ * looked like long after anybody saw the thing it was drawn from. Ink runs 2.4
+ * to 13.6, centred on its box like the others.
+ */
+export function SaveIcon({ size = 16 }: { size?: number }): React.JSX.Element {
+  return (
+    <svg {...shared(size)}>
+      <path d="M3.4 2.4h7.6l2.6 2.6v7.6a1 1 0 0 1-1 1H3.4a1 1 0 0 1-1-1V3.4a1 1 0 0 1 1-1z" />
+      <path d="M5.2 2.4v3.4h5V2.4" />
+      <path d="M4.8 13.6V9.6h6.4v4" />
+    </svg>
+  );
+}
+
+/**
+ * A cross. What a control that closes a panel is marked with.
+ *
+ * Not one of the three the mark rule enforces: closing makes nothing and takes
+ * nothing away. Two strokes crossing at the centre, ink 3.6 to 12.4 both ways,
+ * so it is centred on its own box like the others and a touch smaller than the
+ * plus — a cross drawn to the same reach reads heavier, because its strokes are
+ * the diagonal of the box.
+ */
+export function CloseIcon({ size = 16 }: { size?: number }): React.JSX.Element {
+  return (
+    <svg {...shared(size)}>
+      <path d="M3.6 3.6 12.4 12.4" />
+      <path d="M12.4 3.6 3.6 12.4" />
+    </svg>
+  );
+}
+
+/**
  * An arrow into a tray. What a control that hands somebody a file is marked
  * with.
  *

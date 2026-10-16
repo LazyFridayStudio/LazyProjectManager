@@ -1,46 +1,27 @@
-import {
-  ASSET_STATUSES,
-  describeAssetStatus,
-  type AssetDetailView,
-  type AssetStatus,
-} from '@lpm/shared';
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { describeAssetPhase, type AssetDetailView } from '@lpm/shared';
+import { useEffect, useRef, useState } from 'react';
 
 import { describeFailure, readFieldProblems } from '../../api/failure-messages.js';
-import { joinClassNames } from '../../lib/join-class-names.js';
-import { appendBlock } from '../../logic/markdown/index.js';
 import {
   Button,
   ButtonIcon,
-  Field,
+  CloseIcon,
   Loading,
   PencilIcon,
-  Select,
   TrashIcon,
   useArrivesWith,
+  useHeightFollows,
   useModalDialog,
 } from '../ui/index.js';
-import { MarkdownField, MarkdownText } from '../markdown/index.js';
-import { AssetFiles } from './AssetFiles.js';
-import { AssetLinks } from './AssetLinks.js';
-import { AssetSubtasks } from './AssetSubtasks.js';
-import { AssetTags } from './AssetTags.js';
-import {
-  formatMoney,
-  formatTimeAgo,
-  toMinorUnits,
-} from '../../logic/projects/format-project-values.js';
+import { AssetCard } from './AssetBlocks.js';
+import { AssetOverview, type AssetFormState } from './AssetOverview.js';
+import { AssetTabPanel } from './AssetTabPanel.js';
+import { AssetTabStrip, OVERVIEW } from './AssetTabStrip.js';
+import { formatTimeAgo, toMinorUnits } from '../../logic/projects/format-project-values.js';
 import { AssetReferenceSheet } from './AssetReferenceSheet.js';
 import { useAsset, useUpdateAsset, type UpdateAssetInput } from '../../logic/assets/use-assets.js';
 import { useAskToDeleteAsset } from '../../logic/assets/use-delete-asset.js';
-import { PersonPicker } from '../projects/index.js';
 import styles from './AssetLibraryScreen.module.css';
-import { WorkLog } from '../work/index.js';
-
-const STATUS_OPTIONS = ASSET_STATUSES.map((status) => ({
-  value: status,
-  label: describeAssetStatus(status),
-}));
 
 export interface AssetDetailDialogProps {
   readonly assetId: string;
@@ -99,6 +80,7 @@ export function AssetDetailDialog({
         <AssetForm
           key={asset.data.id}
           ref={contents}
+          panel={dialog.dialogProps.ref}
           asset={asset.data}
           projectSlug={projectSlug}
           onDone={dialog.close}
@@ -110,22 +92,10 @@ export function AssetDetailDialog({
   );
 }
 
-interface AssetFormState {
-  name: string;
-  status: AssetStatus;
-  cost: string;
-  dueOn: string;
-  description: string;
-  /** Empty string is "nobody yet", which a select cannot express as null. */
-  assigneeId: string;
-  /** Empty string is an asset nobody was recorded as asking for. */
-  reporterId: string;
-}
-
 function toForm(asset: AssetDetailView): AssetFormState {
   return {
     name: asset.name,
-    status: asset.status,
+    phase: asset.phase,
     cost: asset.estimatedCostMinor === null ? '' : String(asset.estimatedCostMinor / 100),
     dueOn: asset.dueOn ?? '',
     description: asset.description ?? '',
@@ -139,7 +109,7 @@ function fromForm(assetId: string, form: AssetFormState): UpdateAssetInput {
   return {
     assetId,
     name: form.name.trim(),
-    status: form.status,
+    phase: form.phase,
     estimatedCostMinor: form.cost.trim() === '' ? null : toMinorUnits(form.cost),
     dueOn: form.dueOn === '' ? null : form.dueOn,
     description: form.description.trim() === '' ? null : form.description,
@@ -164,6 +134,8 @@ type Openers = Pick<AssetDetailDialogProps, 'onOpenCard' | 'onOpenAsset'>;
 
 interface AssetFormProps extends Openers {
   readonly ref: React.Ref<HTMLFormElement>;
+  /** The dialog around the form, whose height follows what the form shows. */
+  readonly panel: React.RefObject<HTMLDialogElement | null>;
   readonly asset: AssetDetailView;
   readonly projectSlug: string;
   readonly onDone: () => void;
@@ -171,17 +143,39 @@ interface AssetFormProps extends Openers {
 
 function AssetForm({
   ref,
+  panel,
   asset,
   projectSlug,
   onDone,
   ...openers
 }: AssetFormProps): React.JSX.Element {
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditingNow] = useState(false);
   const [form, setForm] = useState<AssetFormState>(() => toForm(asset));
   const updateAsset = useUpdateAsset(projectSlug, asset.id);
   const problems = readFieldProblems(updateAsset.error);
   const canWrite = !asset.project.archived;
+  // Only in edit mode. Reading an asset is reading it: nothing on the panel
+  // changes anything until somebody has said they mean to.
+  const canChange = canWrite && isEditing;
   const askToDelete = useAskToDeleteAsset(projectSlug, onDone);
+  // The Overview until somebody picks a tab, and the Overview again if the tab
+  // they were reading goes — deleted here, or by somebody else meanwhile.
+  const [chosenTab, setChosenTabNow] = useState<string>(OVERVIEW);
+  const selected = asset.tabs.some((tab) => tab.id === chosenTab) ? chosenTab : OVERVIEW;
+  const tab = asset.tabs.find((each) => each.id === selected);
+
+  // Another tab, or the same one opened for editing, is another height. The
+  // panel goes there smoothly rather than jumping, so the bar somebody just
+  // pressed stays where their eye is.
+  const beforeResize = useHeightFollows(panel, `${selected}:${String(isEditing)}`);
+  const setChosenTab = (tabId: string): void => {
+    beforeResize();
+    setChosenTabNow(tabId);
+  };
+  const setIsEditing = (editing: boolean): void => {
+    beforeResize();
+    setIsEditingNow(editing);
+  };
 
   // A refetch after saving, or somebody else's change arriving, is the authority
   // on what the asset is. Keyed off `updatedAt` so typing is not interrupted by
@@ -190,9 +184,19 @@ function AssetForm({
     setForm(toForm(asset));
   }, [asset.updatedAt]);
 
+  const stopEditing = (): void => {
+    setForm(toForm(asset));
+    updateAsset.reset();
+    setIsEditing(false);
+  };
+
   const submit = (): void => {
     updateAsset.mutate(fromForm(asset.id, form), {
-      onSuccess: onDone,
+      // Back to reading the asset, which is what saving was for. The panel
+      // stays open: what was just saved is usually what somebody checks next.
+      onSuccess: () => {
+        setIsEditing(false);
+      },
       // A problem with a field stays on that field, where the thing to change
       // is. Anything else — a refused write, a server that went away — has
       // nowhere to be but the display.
@@ -208,18 +212,21 @@ function AssetForm({
         submit();
       }}
     >
-      <div className={styles.detailHead}>
-        <span
-          className={styles.detailCategory}
-          style={{ '--category-color': asset.category.color } as React.CSSProperties}
-        >
-          <span className={styles.detailCategoryDot} aria-hidden />
-          {asset.category.name}
-        </span>
-        {/* What it is called out loud, in the slot the design draws it in. */}
-        <span className={styles.detailKey}>{asset.assetKey}</span>
-        <Button onClick={onDone}>Close</Button>
-      </div>
+      <PanelHead
+        asset={asset}
+        projectSlug={projectSlug}
+        selected={selected}
+        canWrite={canWrite}
+        isEditing={isEditing}
+        onSelect={setChosenTab}
+        onEdit={() => {
+          setIsEditing(true);
+        }}
+        onDelete={() => {
+          askToDelete(asset);
+        }}
+        onClose={onDone}
+      />
 
       <div className={styles.detailBody}>
         {/* The sheet stays put while the right-hand column is being edited: the
@@ -228,417 +235,146 @@ function AssetForm({
           assetId={asset.id}
           projectSlug={projectSlug}
           references={asset.references}
-          canWrite={canWrite}
+          canWrite={canChange}
         />
 
         <div className={styles.detailSide}>
-          {isEditing ? (
-            <Editing form={form} problems={problems} asset={asset} onChange={setForm} />
+          <Heading asset={asset} />
+
+          {tab === undefined ? (
+            <AssetOverview
+              asset={asset}
+              projectSlug={projectSlug}
+              canWrite={canChange}
+              editing={isEditing ? { form, problems, onChange: setForm } : null}
+              onSelect={setChosenTab}
+              {...openers}
+            />
           ) : (
-            <Reading asset={asset} projectSlug={projectSlug} canWrite={canWrite} {...openers} />
+            <AssetTabPanel
+              // Keyed, so a rename half typed on one tab does not follow
+              // somebody to the next.
+              key={tab.id}
+              asset={asset}
+              tab={tab}
+              projectSlug={projectSlug}
+              canWrite={canChange}
+              onGone={() => {
+                setChosenTab(OVERVIEW);
+              }}
+            />
           )}
 
-          <div className={styles.detailActions}>
-            {canWrite && !isEditing && (
-              <>
-                <Advance asset={asset} projectSlug={projectSlug} />
-                <Button
-                  aria-label="Edit"
-                  title="Edit"
-                  onClick={() => {
-                    setIsEditing(true);
-                  }}
-                >
-                  <ButtonIcon>
-                    <PencilIcon size={14} />
-                  </ButtonIcon>
-                </Button>
-                {asset.canDelete && (
-                  // Beside Edit, as a card's is: these are the two things
-                  // somebody does to the asset itself, and the red is what
-                  // tells them apart.
-                  <Button
-                    tone="stop"
-                    aria-label="Delete asset"
-                    title="Delete asset"
-                    onClick={() => {
-                      askToDelete(asset);
-                    }}
-                  >
-                    <ButtonIcon>
-                      <TrashIcon size={14} />
-                    </ButtonIcon>
-                  </Button>
-                )}
-              </>
-            )}
-            {canWrite && isEditing && (
-              <>
-                <Button tone="go" type="submit" busy={updateAsset.isPending} busyLabel="Saving…">
-                  Save changes
-                </Button>
-                <Button
-                  tone="stop"
-                  onClick={() => {
-                    setForm(toForm(asset));
-                    setIsEditing(false);
-                  }}
-                >
-                  Cancel
-                </Button>
-              </>
-            )}
-          </div>
+          {canChange && (
+            <div className={styles.detailActions}>
+              <Button tone="go" type="submit" busy={updateAsset.isPending} busyLabel="Saving…">
+                Save changes
+              </Button>
+              <Button tone="stop" onClick={stopEditing}>
+                Cancel
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </form>
   );
 }
 
-interface ReadingProps extends Openers {
+interface PanelHeadProps {
   readonly asset: AssetDetailView;
   readonly projectSlug: string;
+  /** The tab being read, or the Overview. */
+  readonly selected: string;
   readonly canWrite: boolean;
-}
-
-/** The asset as it reads, which is what opening one is usually for. */
-function Reading({
-  asset,
-  projectSlug,
-  canWrite,
-  onOpenCard,
-  onOpenAsset,
-}: ReadingProps): React.JSX.Element {
-  return (
-    <>
-      <div>
-        <h2 className={styles.detailName}>{asset.name}</h2>
-        <div className={styles.detailStatus}>
-          <span className={styles.statusDot} data-status={asset.status} aria-hidden />
-          <span className={styles.statusName}>{describeAssetStatus(asset.status)}</span>
-          <span className={styles.detailStamp}>· updated {formatTimeAgo(asset.updatedAt)}</span>
-        </div>
-      </div>
-
-      <Estimate asset={asset} />
-
-      <section>
-        <h3 className={styles.detailHeading}>Description</h3>
-        {asset.description === null ? (
-          <p className={styles.missing}>No description provided.</p>
-        ) : (
-          <MarkdownText source={asset.description} />
-        )}
-      </section>
-
-      <AssetSubtasks
-        assetId={asset.id}
-        projectSlug={projectSlug}
-        subtasks={asset.subtasks}
-        canWrite={canWrite}
-      />
-
-      <AssetTags
-        assetId={asset.id}
-        projectSlug={projectSlug}
-        tags={asset.tags}
-        canWrite={canWrite}
-      />
-
-      <dl className={styles.facts}>
-        <Fact label="Category" value={asset.category.name} />
-        <Fact label="Status" value={describeAssetStatus(asset.status)} />
-        <Fact
-          label="Estimated cost"
-          value={
-            asset.estimatedCostMinor === null
-              ? null
-              : formatMoney(asset.estimatedCostMinor, asset.project.currency)
-          }
-        />
-        <Fact label="Target date" value={asset.dueOn} />
-        <Fact label="Assignee" value={asset.assignee?.displayName ?? null} />
-        <Fact label="Reporter" value={asset.reporter?.displayName ?? null} />
-        <Fact label="Reference images" value={String(asset.references.length)} />
-      </dl>
-
-      <AssetFiles
-        assetId={asset.id}
-        projectSlug={projectSlug}
-        files={asset.files}
-        canWrite={canWrite}
-      />
-
-      <WorkLog
-        what={{ assetId: asset.id }}
-        work={asset.work}
-        // An asset is estimated in money rather than in time, so there is
-        // nothing to hold the hours against. The total still says what it took.
-        estimateMinutes={null}
-        canWrite={canWrite}
-      />
-
-      <LinkedCards asset={asset} onOpenCard={onOpenCard} />
-
-      <AssetLinks
-        asset={asset}
-        projectSlug={projectSlug}
-        canWrite={canWrite && asset.canLink}
-        onOpenAsset={onOpenAsset}
-      />
-    </>
-  );
+  readonly isEditing: boolean;
+  readonly onSelect: (tabId: string) => void;
+  readonly onEdit: () => void;
+  readonly onDelete: () => void;
+  readonly onClose: () => void;
 }
 
 /**
- * What the asset is estimated to cost, given its own box.
+ * Everything about the panel itself, on one bar across the top: which part of
+ * it is open on the left, what the asset is filed as in the middle, and what
+ * can be done to it on the right.
  *
- * The number a producer opens an asset to find. The line under it says what the
- * money is in and when the thing is wanted, because a bare figure with no
- * currency beside it is how two studios on the same project disagree by a
- * factor of one and a half.
+ * The tabs are here rather than in a column, because they are how the whole
+ * panel is read, the pictures included. Edit and Delete sit beside the cross
+ * that closes it, as the three things done to the panel rather than in it.
  */
-function Estimate({ asset }: { asset: AssetDetailView }): React.JSX.Element {
+function PanelHead({
+  asset,
+  projectSlug,
+  selected,
+  canWrite,
+  isEditing,
+  onSelect,
+  onEdit,
+  onDelete,
+  onClose,
+}: PanelHeadProps): React.JSX.Element {
   return (
-    <div className={styles.estimate}>
-      <div className={styles.estimateLabel}>Estimated cost</div>
-      <div className={styles.estimateValue}>
-        {asset.estimatedCostMinor === null
-          ? 'Not estimated'
-          : formatMoney(asset.estimatedCostMinor, asset.project.currency)}
+    <div className={styles.detailHead}>
+      <div className={styles.detailTabs}>
+        <AssetTabStrip
+          asset={asset}
+          projectSlug={projectSlug}
+          selected={selected}
+          canWrite={canWrite && isEditing}
+          onSelect={onSelect}
+        />
       </div>
-      <div className={styles.estimateNote}>
-        {asset.project.currency}
-        {asset.dueOn === null ? '' : ` · wanted by ${asset.dueOn}`}
+
+      <div className={styles.detailFiled}>
+        <span
+          className={styles.detailCategory}
+          style={{ '--category-color': asset.category.color } as React.CSSProperties}
+        >
+          <span className={styles.detailCategoryDot} aria-hidden />
+          {asset.category.name}
+        </span>
+        {/* What it is called out loud, beside what it is filed under. */}
+        <span className={styles.detailKey}>{asset.assetKey}</span>
+      </div>
+
+      <div className={styles.detailControls}>
+        {canWrite && !isEditing && (
+          <Button aria-label="Edit" title="Edit" onClick={onEdit}>
+            <ButtonIcon>
+              <PencilIcon size={14} />
+            </ButtonIcon>
+          </Button>
+        )}
+        {canWrite && !isEditing && asset.canDelete && (
+          // Beside Edit, as a card's is: these are the two things somebody
+          // does to the asset itself, and the red is what tells them apart.
+          <Button tone="stop" aria-label="Delete asset" title="Delete asset" onClick={onDelete}>
+            <ButtonIcon>
+              <TrashIcon size={14} />
+            </ButtonIcon>
+          </Button>
+        )}
+        <Button aria-label="Close" title="Close" onClick={onClose}>
+          <ButtonIcon>
+            <CloseIcon size={14} />
+          </ButtonIcon>
+        </Button>
       </div>
     </div>
   );
 }
 
-/**
- * Moves the asset on to the next stage of being made.
- *
- * An asset goes through the same five stages everywhere, so unlike a card there
- * is always exactly one thing "onwards" means — which is why this is one button
- * and not the strip of lists a card gets.
- *
- * Live outside edit mode, as the card's is: it changes how far along a thing is
- * rather than what it says, and making somebody open a form to say a model has
- * been approved is how a library stops being kept up to date.
- */
-function Advance({
-  asset,
-  projectSlug,
-}: {
-  asset: AssetDetailView;
-  projectSlug: string;
-}): React.JSX.Element | null {
-  const updateAsset = useUpdateAsset(projectSlug, asset.id);
-  const next = ASSET_STATUSES[ASSET_STATUSES.indexOf(asset.status) + 1];
-
-  if (next === undefined) {
-    // Final. There is nowhere further for a finished thing to go.
-    return null;
-  }
-
+/** What the asset is called and which phase it is in, over whichever tab is open. */
+function Heading({ asset }: { readonly asset: AssetDetailView }): React.JSX.Element {
   return (
-    <Button
-      tone="go"
-      busy={updateAsset.isPending}
-      busyLabel="Saving…"
-      onClick={() => {
-        updateAsset.mutate({ assetId: asset.id, status: next }, {});
-      }}
-    >
-      {`Mark ${describeAssetStatus(next).toLowerCase()}`}
-    </Button>
-  );
-}
-
-/**
- * The work outstanding on this asset.
- *
- * The half that makes a library worth keeping: not what a thing is, but what is
- * still to be done to it. Open cards come first, because those are the ones
- * somebody opening an asset is asking about.
- */
-function LinkedCards({
-  asset,
-  onOpenCard,
-}: {
-  asset: AssetDetailView;
-  onOpenCard?: (cardId: string) => void;
-}): React.JSX.Element | null {
-  if (asset.cards.length === 0) {
-    return null;
-  }
-
-  return (
-    <section>
-      <h3 className={styles.detailHeading}>Linked work</h3>
-      <ul className={styles.cardList}>
-        {asset.cards.map((card) => (
-          <li key={card.linkId} className={styles.cardRow}>
-            {onOpenCard === undefined ? (
-              <CardSummary card={card} />
-            ) : (
-              <button
-                type="button"
-                className={styles.cardOpen}
-                onClick={() => {
-                  onOpenCard(card.cardId);
-                }}
-              >
-                <CardSummary card={card} />
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function CardSummary({ card }: { card: AssetDetailView['cards'][number] }): React.JSX.Element {
-  return (
-    <>
-      <span className={styles.cardKey}>{card.cardKey}</span>
-      <span className={styles.cardTitle} data-closed={card.closed}>
-        {card.title}
-      </span>
-      <span className={styles.cardState}>{card.closed ? 'Done' : 'Open'}</span>
-    </>
-  );
-}
-
-/** A value, or a dash — an empty row is harder to read than one that says so. */
-function Fact({ label, value }: { label: string; value: string | null }): React.JSX.Element {
-  return (
-    <>
-      <dt className={styles.factLabel}>{label}</dt>
-      <dd className={styles.factValue}>{value ?? '—'}</dd>
-    </>
-  );
-}
-
-interface EditingProps {
-  readonly form: AssetFormState;
-  readonly problems: Readonly<Record<string, string>>;
-  /** The asset as it stands: the currency to price it in, and who is on it. */
-  readonly asset: AssetDetailView;
-  /*
-   * The setter itself, so a change can be made from what the form is at the
-   * time rather than from what it was when this rendered. Two files dropped
-   * into the description arrive one upload apart, and the second would
-   * otherwise be written over the first.
-   */
-  readonly onChange: Dispatch<SetStateAction<AssetFormState>>;
-}
-
-function Editing({ form, problems, asset, onChange }: EditingProps): React.JSX.Element {
-  const set = <TField extends keyof AssetFormState>(
-    field: TField,
-    value: AssetFormState[TField],
-  ): void => {
-    onChange((current) => ({ ...current, [field]: value }));
-  };
-
-  return (
-    <>
-      <Field
-        label="Name"
-        autoFocus
-        value={form.name}
-        onChange={(event) => {
-          set('name', event.target.value);
-        }}
-        problem={problems.name}
-      />
-
-      <div className={styles.dialogPair}>
-        <Select
-          label="Status"
-          options={STATUS_OPTIONS}
-          value={form.status}
-          onChange={(event) => {
-            set('status', event.target.value as AssetStatus);
-          }}
-        />
+    <AssetCard label="Asset">
+      <h2 className={styles.detailName}>{asset.name}</h2>
+      <div className={styles.detailStatus}>
+        <span className={styles.phaseDot} data-phase={asset.phase} aria-hidden />
+        <span className={styles.phaseName}>{describeAssetPhase(asset.phase)}</span>
+        <span className={styles.detailStamp}>· updated {formatTimeAgo(asset.updatedAt)}</span>
       </div>
-
-      <div className={styles.dialogPair}>
-        <Field
-          label={`Estimated cost (${asset.project.currency})`}
-          value={form.cost}
-          onChange={(event) => {
-            set('cost', event.target.value);
-          }}
-          problem={problems.estimatedCostMinor}
-        />
-        <Field
-          label="Target date"
-          type="date"
-          value={form.dueOn}
-          onChange={(event) => {
-            set('dueOn', event.target.value);
-          }}
-          problem={problems.dueOn}
-        />
-      </div>
-
-      {/* Both, and in this order, because the library is read the way the board
-          is: who is making it is the question asked of a row, and who wanted it
-          is the question asked when the brief turns out to be thin. */}
-      <PersonPicker
-        label="Assignee"
-        nobody="Nobody yet"
-        projectId={asset.project.id}
-        value={form.assigneeId}
-        was={asset.assignee}
-        problem={problems.assignee}
-        onChange={(event) => {
-          set('assigneeId', event.target.value);
-        }}
-      />
-
-      <PersonPicker
-        label="Reporter"
-        nobody="Unknown"
-        projectId={asset.project.id}
-        value={form.reporterId}
-        was={asset.reporter}
-        problem={problems.reporter}
-        onChange={(event) => {
-          set('reporterId', event.target.value);
-        }}
-      />
-
-      {/* Not a `label`, because the field has buttons of its own and a label
-          wrapping them would press one every time somebody clicked it. The box
-          names itself instead. */}
-      <div className={styles.detailDescription}>
-        <span className={styles.dialogLabel}>Description</span>
-        <MarkdownField
-          label="Description"
-          className={joinClassNames(styles.dialogTextArea, styles.detailDescriptionBox)}
-          value={form.description}
-          files={{
-            uploadTo: { kind: 'assetFile', assetId: asset.id },
-            onInsert: (markdown: string) => {
-              onChange((current) => ({
-                ...current,
-                description: appendBlock(current.description, markdown),
-              }));
-            },
-          }}
-          onChange={(event) => {
-            set('description', event.target.value);
-          }}
-          onReplace={(next: string) => {
-            set('description', next);
-          }}
-        />
-      </div>
-    </>
+    </AssetCard>
   );
 }

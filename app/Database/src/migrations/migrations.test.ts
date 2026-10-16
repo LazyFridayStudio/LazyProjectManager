@@ -213,6 +213,9 @@ describe('GIVEN the migration set', () => {
         '0060-a-category-inside-a-category',
         '0061-a-name-can-wait-for-the-end-of-a-command',
         '0062-an-asset-can-be-linked-to-another',
+        '0063-an-asset-is-worked-in-tabs',
+        '0064-the-overview-is-built-from-blocks',
+        '0065-one-block-of-each-kind',
       ]);
       expect(provided).toEqual(names);
     });
@@ -286,6 +289,9 @@ describe('GIVEN the migration set', () => {
         '0060-a-category-inside-a-category',
         '0061-a-name-can-wait-for-the-end-of-a-command',
         '0062-an-asset-can-be-linked-to-another',
+        '0063-an-asset-is-worked-in-tabs',
+        '0064-the-overview-is-built-from-blocks',
+        '0065-one-block-of-each-kind',
       ]);
     });
   });
@@ -329,7 +335,10 @@ describe('GIVEN the migration set', () => {
           'asset_reference',
           'asset_file',
           'asset_tag',
-          'asset_subtask',
+          'asset_tab',
+          'asset_tab_block',
+          'asset_tab_checklist_item',
+          'asset_template',
           'asset_sequence',
           'card_asset_link',
           'asset_link',
@@ -371,6 +380,39 @@ describe('GIVEN the migration set', () => {
   });
 
   describe('WHEN migrations are rolled back one at a time', () => {
+    it('THEN a place may hold more than one set of notes or checklist again', async () => {
+      const { error } = await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
+
+      expect(error).toBeUndefined();
+      expect(await indexDefinition('asset_overview_one_of_each')).toBe('');
+      expect(await indexDefinition('asset_overview_one_view')).toContain('notes');
+    });
+
+    it('THEN the Overview draws everything again, and keeps no blocks of its own', async () => {
+      const { error } = await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
+
+      expect(error).toBeUndefined();
+      expect(await checkConstraint('asset_tab_block_kind_fits_a_tab')).toBe('');
+      // The tabs are untouched: only the Overview's blocks went.
+      expect(await tableNames()).toEqual(expect.arrayContaining(['asset_tab', 'asset_tab_block']));
+    });
+
+    it('THEN an asset has a status and stages again, and no tabs or templates', async () => {
+      const { error } = await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
+      const remaining = await tableNames();
+
+      expect(error).toBeUndefined();
+      expect(remaining).not.toEqual(
+        expect.arrayContaining(['asset_tab', 'asset_tab_block', 'asset_template']),
+      );
+      expect(remaining).toContain('asset_subtask');
+      expect(await columnNames('asset')).toContain('status');
+      expect(await columnNames('asset')).not.toContain('phase');
+      // The hours and files themselves are untouched: only the tab they named goes.
+      expect(await columnNames('work_log')).not.toContain('asset_tab_id');
+      expect(await columnNames('asset_file')).not.toContain('tab_id');
+    });
+
     it('THEN the links between assets go, and the assets stay', async () => {
       const { error } = await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
       const remaining = await tableNames();
@@ -1010,8 +1052,12 @@ describe('GIVEN the migration set', () => {
    */
   describe('WHEN a library filed with subcategories is migrated', () => {
     it('THEN every subcategory becomes a category, and the assets move into it', async () => {
-      // Back past the steps that came after the tree as well: linking assets,
-      // and letting a name wait, which depends on the index the tree made.
+      // Back past the steps that came after the tree as well: one block of
+      // each kind, the Overview's blocks, tabs, linking assets, and letting a
+      // name wait, which depends on the index the tree made.
+      await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
+      await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
+      await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
       await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
       await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
       await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
@@ -1084,6 +1130,10 @@ describe('GIVEN the migration set', () => {
    */
   describe('WHEN groups written before assets could be linked are migrated', () => {
     it('THEN each says about linking assets what it said about changing them', async () => {
+      // Back past tabs, the Overview's blocks and one of each, which came after.
+      await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
+      await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
+      await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
       await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
 
       const allows = '00000000-0000-4000-8000-00000000a901';
@@ -1130,6 +1180,298 @@ describe('GIVEN the migration set', () => {
           { group_id: denies, effect: 'deny' },
           // Nothing said about assets, so nothing said about linking them.
         ]);
+      });
+    });
+  });
+
+  /*
+   * Run last, on the library made above, so it too starts from a complete schema
+   * and leaves one. The second migration in the set that moves data: every
+   * status becomes a phase and every stage becomes a tab.
+   */
+  describe('WHEN a library with statuses and stages is migrated to tabs', () => {
+    const SKETCHED = '00000000-0000-4000-8000-0000000000b1';
+    const MODELLED = '00000000-0000-4000-8000-0000000000b2';
+    const SHIPPED = '00000000-0000-4000-8000-0000000000b3';
+    const MESH = '00000000-0000-4000-8000-0000000000c1';
+    const TEXTURE = '00000000-0000-4000-8000-0000000000c2';
+    const SHELVES = '00000000-0000-4000-8000-00000000a904';
+    const VIEWERS = '00000000-0000-4000-8000-00000000a905';
+
+    beforeAll(async () => {
+      // Past the Overview's blocks and one of each too, which came after tabs.
+      await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
+      await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
+      await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
+
+      await withTestDatabase(async (database) => {
+        for (const [id, name, status] of [
+          [SKETCHED, 'Lantern', 'concept'],
+          [MODELLED, 'Barrel', 'review'],
+          [SHIPPED, 'Ladder', 'final'],
+        ] as const) {
+          await sql`
+            insert into asset
+              (id, account_id, project_id, category_id, asset_key, name, status, position)
+            values
+              (${id}, ${ACCOUNT}, ${PROJECT}, ${CATEGORY}, ${'SLTM-AST-' + id.slice(-2)},
+               ${name}, ${status}, 1)
+          `.execute(database);
+        }
+
+        // Out of order on purpose: the order somebody put them in is the order
+        // the tabs come back in.
+        await sql`
+          insert into asset_subtask (id, asset_id, title, done, position)
+          values (${TEXTURE}, ${MODELLED}, 'Texture', false, 2),
+                 (${MESH}, ${MODELLED}, 'Mesh', true, 1)
+        `.execute(database);
+
+        for (const [id, name, effect] of [
+          [SHELVES, 'Library setup', 'allow'],
+          [VIEWERS, 'Library viewers', 'deny'],
+        ] as const) {
+          await sql`
+            insert into permission_group (id, account_id, name) values (${id}, ${ACCOUNT}, ${name})
+          `.execute(database);
+          await sql`
+            insert into permission_rule (account_id, group_id, action, effect)
+            values (${ACCOUNT}, ${id}, 'asset.manageCategory', ${effect})
+          `.execute(database);
+        }
+      });
+
+      const { error } = await runMigrations(urlForDatabase(TEST_DATABASE_NAME));
+
+      expect(error).toBeUndefined();
+    });
+
+    it('THEN each status becomes the phase it was part of', async () => {
+      await withTestDatabase(async (database) => {
+        const phases = await sql<{ name: string; phase: string }>`
+          select name, phase from asset
+          where id in (${SKETCHED}, ${MODELLED}, ${SHIPPED}) order by name
+        `.execute(database);
+
+        expect(phases.rows).toEqual([
+          { name: 'Barrel', phase: 'dev' },
+          { name: 'Ladder', phase: 'production' },
+          { name: 'Lantern', phase: 'pre_dev' },
+        ]);
+      });
+    });
+
+    it('THEN each stage becomes a tab of the same name, done as it was, in its order', async () => {
+      await withTestDatabase(async (database) => {
+        const tabs = await sql<{ id: string; title: string; done: boolean; account_id: string }>`
+          select id, title, done, account_id from asset_tab
+          where asset_id = ${MODELLED} order by position
+        `.execute(database);
+
+        expect(tabs.rows).toEqual([
+          { id: MESH, title: 'Mesh', done: true, account_id: ACCOUNT },
+          { id: TEXTURE, title: 'Texture', done: false, account_id: ACCOUNT },
+        ]);
+      });
+    });
+
+    it('THEN each group says about templates what it said about categories', async () => {
+      await withTestDatabase(async (database) => {
+        const templating = await sql<{ group_id: string; effect: string }>`
+          select group_id, effect from permission_rule
+          where action = 'asset.manageTemplate' and group_id in (${SHELVES}, ${VIEWERS})
+          order by group_id
+        `.execute(database);
+
+        expect(templating.rows).toEqual([
+          { group_id: SHELVES, effect: 'allow' },
+          { group_id: VIEWERS, effect: 'deny' },
+        ]);
+      });
+    });
+
+    it('THEN hours can name a tab only when they are on an asset', async () => {
+      await withTestDatabase(async (database) => {
+        const refused = await sql`
+          insert into work_log (card_id, asset_id, asset_tab_id, minutes, worked_on)
+          values (null, null, ${MESH}, 60, '2026-10-01')
+        `
+          .execute(database)
+          .then(
+            () => null,
+            (error: unknown) => error,
+          );
+
+        expect(refused).not.toBeNull();
+      });
+    });
+  });
+
+  /*
+   * Run last, on the library the step above left: three assets, one with tabs.
+   * Every asset that has something gets the block that shows it.
+   */
+  describe('WHEN a library is migrated to an Overview built from blocks', () => {
+    const PRICED = '00000000-0000-4000-8000-0000000000d1';
+    const TAGGED = '00000000-0000-4000-8000-0000000000d2';
+    const EMPTY = '00000000-0000-4000-8000-0000000000d3';
+
+    async function kindsOn(assetId: string): Promise<string[]> {
+      let kinds: string[] = [];
+
+      await withTestDatabase(async (database) => {
+        const blocks = await sql<{ kind: string }>`
+          select kind from asset_tab_block
+          where asset_id = ${assetId} and tab_id is null order by position
+        `.execute(database);
+
+        kinds = blocks.rows.map((row) => row.kind);
+      });
+
+      return kinds;
+    }
+
+    beforeAll(async () => {
+      // Past one of each too, which came after.
+      await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
+      await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
+
+      await withTestDatabase(async (database) => {
+        for (const [id, name, cost] of [
+          [PRICED, 'Anchor', 120_000],
+          [TAGGED, 'Buoy', null],
+          [EMPTY, 'Chain', null],
+        ] as const) {
+          await sql`
+            insert into asset
+              (id, account_id, project_id, category_id, asset_key, name, estimated_cost_minor, position)
+            values
+              (${id}, ${ACCOUNT}, ${PROJECT}, ${CATEGORY}, ${'SLTM-AST-' + id.slice(-2)},
+               ${name}, ${cost}, 1)
+          `.execute(database);
+        }
+
+        await sql`insert into asset_tag (account_id, asset_id, tag) values (${ACCOUNT}, ${TAGGED}, 'harbour')`.execute(
+          database,
+        );
+        await sql`
+          insert into asset_tab (account_id, asset_id, title, position)
+          values (${ACCOUNT}, ${TAGGED}, 'Mesh', 1)
+        `.execute(database);
+      });
+
+      const { error } = await runMigrations(urlForDatabase(TEST_DATABASE_NAME));
+
+      expect(error).toBeUndefined();
+    });
+
+    it('THEN each asset shows the sections it has something in, in the order they were drawn', async () => {
+      expect(await kindsOn(PRICED)).toEqual(['estimate']);
+      expect(await kindsOn(TAGGED)).toEqual(['tabs', 'tags']);
+    });
+
+    it('THEN an asset with nothing shows nothing beyond what every asset has', async () => {
+      expect(await kindsOn(EMPTY)).toEqual([]);
+    });
+
+    it('THEN a tab cannot hold a section that is the whole asset’s', async () => {
+      await withTestDatabase(async (database) => {
+        const refused = await sql`
+          insert into asset_tab_block (asset_id, tab_id, kind, position)
+          select asset_id, id, 'estimate', 9 from asset_tab where asset_id = ${TAGGED}
+        `
+          .execute(database)
+          .then(
+            () => null,
+            (error: unknown) => error,
+          );
+
+        expect(refused).not.toBeNull();
+      });
+    });
+  });
+
+  /*
+   * Run last, on the library the step above left. Doubled-up notes and
+   * checklists fold into the first of their kind rather than going.
+   */
+  describe('WHEN a tab with two checklists and two sets of notes is migrated', () => {
+    const DOUBLED = '00000000-0000-4000-8000-0000000000e1';
+    const TAB = '00000000-0000-4000-8000-0000000000e2';
+    const FIRST_LIST = '00000000-0000-4000-8000-0000000000e3';
+    const SECOND_LIST = '00000000-0000-4000-8000-0000000000e4';
+
+    beforeAll(async () => {
+      await rollbackLastMigration(urlForDatabase(TEST_DATABASE_NAME));
+
+      await withTestDatabase(async (database) => {
+        await sql`
+          insert into asset (id, account_id, project_id, category_id, asset_key, name, position)
+          values (${DOUBLED}, ${ACCOUNT}, ${PROJECT}, ${CATEGORY}, 'SLTM-AST-E1', 'Davit', 1)
+        `.execute(database);
+        await sql`
+          insert into asset_tab (id, account_id, asset_id, title, position)
+          values (${TAB}, ${ACCOUNT}, ${DOUBLED}, 'Rig', 1)
+        `.execute(database);
+        await sql`
+          insert into asset_tab_block (id, asset_id, tab_id, kind, body, position)
+          values (${FIRST_LIST}, ${DOUBLED}, ${TAB}, 'checklist', null, 1),
+                 (${SECOND_LIST}, ${DOUBLED}, ${TAB}, 'checklist', null, 2),
+                 (gen_random_uuid(), ${DOUBLED}, ${TAB}, 'notes', 'Quadruped.', 3),
+                 (gen_random_uuid(), ${DOUBLED}, ${TAB}, 'notes', 'Tail too.', 4)
+        `.execute(database);
+        await sql`
+          insert into asset_tab_checklist_item (asset_id, tab_id, block_id, title, position)
+          values (${DOUBLED}, ${TAB}, ${FIRST_LIST}, 'Skeleton', 1),
+                 (${DOUBLED}, ${TAB}, ${SECOND_LIST}, 'Weights', 1)
+        `.execute(database);
+      });
+
+      const { error } = await runMigrations(urlForDatabase(TEST_DATABASE_NAME));
+
+      expect(error).toBeUndefined();
+    });
+
+    it('THEN the second checklist’s lines go on the end of the first, and it goes', async () => {
+      await withTestDatabase(async (database) => {
+        const lines = await sql<{ title: string; block_id: string }>`
+          select title, block_id from asset_tab_checklist_item
+          where asset_id = ${DOUBLED} order by position
+        `.execute(database);
+
+        expect(lines.rows).toEqual([
+          { title: 'Skeleton', block_id: FIRST_LIST },
+          { title: 'Weights', block_id: FIRST_LIST },
+        ]);
+      });
+    });
+
+    it('THEN the second set of notes is written under the first', async () => {
+      await withTestDatabase(async (database) => {
+        const blocks = await sql<{ kind: string; body: string | null }>`
+          select kind, body from asset_tab_block where tab_id = ${TAB} order by position
+        `.execute(database);
+
+        expect(blocks.rows).toEqual([
+          { kind: 'checklist', body: null },
+          { kind: 'notes', body: 'Quadruped.\n\nTail too.' },
+        ]);
+      });
+    });
+
+    it('THEN a second of any kind is refused from now on', async () => {
+      await withTestDatabase(async (database) => {
+        const refused = await sql`
+          insert into asset_tab_block (asset_id, tab_id, kind, position)
+          values (${DOUBLED}, ${TAB}, 'checklist', 9)
+        `
+          .execute(database)
+          .then(
+            () => null,
+            (error: unknown) => error,
+          );
+
+        expect(refused).not.toBeNull();
       });
     });
   });

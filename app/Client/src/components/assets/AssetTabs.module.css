@@ -1,0 +1,535 @@
+/* --- The row of tabs ------------------------------------------------------ */
+
+/*
+ * Tabs standing on the panel's top bar the way a folder's do: each its own
+ * shape with a rounded top, the open one joined to the page under it, and the
+ * rest behind.
+ *
+ * Scrolled sideways rather than wrapped once there are more than fit. A tab is
+ * nearly the bar's height, and a second row of them would be a second bar.
+ */
+.strip {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 0 0 10px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+/* What is done to the row — adding a tab, keeping it as a template — sits in
+   its middle, after the last tab. */
+.strip > :not(.tab) {
+  align-self: center;
+  margin: -8px 0 0 8px;
+}
+
+.rowActions {
+  display: inline-flex;
+  flex: none;
+  gap: 6px;
+}
+
+/*
+ * A tab behind: outlined on three sides with a rounded top, on the surface
+ * tone the app draws things you pick up on, and standing on the bar's rule.
+ * Each is plainly its own thing to press, rather than a word beside the open
+ * one.
+ */
+.tab {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 0 18px;
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+  background: var(--color-surface);
+  font: inherit;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+/* Warmed towards the accent when pointed at, the colour the open one wears. */
+.tab:hover {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));
+  color: var(--color-text);
+}
+
+.tab:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: calc(-1 * var(--focus-ring-offset));
+}
+
+/*
+ * The open one: the page's own ground, the accent across its top, and no rule
+ * under it — so it is the one tab joined to what it opens.
+ */
+.tab[aria-selected='true'] {
+  border-color: var(--color-divider);
+  border-top-color: var(--color-accent);
+  border-bottom-color: var(--color-panel);
+  background: var(--color-panel);
+  box-shadow: inset 0 1px 0 var(--color-accent);
+  color: var(--color-text);
+}
+
+/* A finished job steps back, so the row reads as how far along the asset is. */
+.tab[data-done='true'] {
+  color: var(--color-text-faint);
+}
+
+.tick {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-ok);
+}
+
+/* A tab's name, being typed over on the tab itself. */
+.tabInput {
+  width: 14ch;
+  padding: 3px 8px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-tag);
+  background: var(--color-control);
+  font: inherit;
+  font-size: var(--font-size-small);
+  color: var(--color-text);
+}
+
+.tabInput:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* The plus and the words on a button that makes one, side by side. */
+.addLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* --- One tab -------------------------------------------------------------- */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panelTitle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-title-weight);
+  overflow-wrap: anywhere;
+}
+
+/* Who is doing this part and by when, side by side, as the asset's own are. */
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.done {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.done input {
+  margin: 0;
+  cursor: pointer;
+}
+
+/*
+ * The quiet controls on a tab or a block: moving it, renaming it, taking it off.
+ *
+ * Small and unboxed, because they sit beside what they act on and a row of
+ * full buttons there would be louder than the thing itself.
+ */
+.quiet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--radius-tag);
+  background: none;
+  font: inherit;
+  font-size: var(--font-size-small);
+  line-height: 1;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.quiet:hover:not(:disabled) {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.quiet:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.quiet:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+/* Red, because it takes something away. Held back until pointed at, so a column
+   of them does not read as a column of warnings. */
+.quietStop {
+  color: color-mix(in srgb, var(--color-danger) 55%, transparent);
+}
+
+.quietStop:hover:not(:disabled) {
+  color: var(--color-danger);
+}
+
+/* --- Blocks --------------------------------------------------------------- */
+
+.blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/*
+ * One block, framed.
+ *
+ * Its controls get a row of their own above what it shows, rather than sitting
+ * in the corner over it: a files block and a linked-assets block draw a heading
+ * with its own action at the right, and a control laid on top of another is one
+ * neither of them can be pressed through. Only while editing, when the row is
+ * what somebody is there to use.
+ */
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+}
+
+.blockControls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+  margin: -6px -6px 0 0;
+}
+
+.blockHeading {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+.progress {
+  font-family: var(--font-mono);
+  letter-spacing: normal;
+  color: var(--color-text-faint);
+}
+
+.notesBox {
+  min-height: 160px;
+  resize: vertical;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.empty {
+  margin: 0;
+  font-size: var(--font-size-small);
+  font-style: italic;
+  color: var(--color-text-faint);
+}
+
+/* What a tab says about itself while it is being read: done, by whom, by when. */
+.readFacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.readFacts strong {
+  font-weight: normal;
+  color: var(--color-text);
+}
+
+/* --- The Overview's list of tabs ------------------------------------------ */
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summaryRows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.summaryRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  border-radius: var(--radius-tag);
+  font-size: var(--font-size-small);
+}
+
+.summaryRow:hover {
+  background: var(--color-surface);
+}
+
+.summaryRow input {
+  margin: 0;
+  cursor: pointer;
+}
+
+.summaryOpen {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: var(--color-text);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.summaryOpen[data-done='true'] {
+  color: var(--color-text-faint);
+  text-decoration: line-through;
+}
+
+.summaryOpen:hover {
+  color: var(--color-accent);
+}
+
+.summaryOpen:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.summaryWho {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+}
+
+/* A picker and the button it goes with, on one line. */
+.templateRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.templateRow > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --- The templates dialog ------------------------------------------------- */
+
+.templates {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.template {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+}
+
+.templateText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.templateName {
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+}
+
+.templateTabs {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-micro);
+  color: var(--color-text-faint);
+  overflow-wrap: anywhere;
+}
+
+/* --- People on a card ----------------------------------------------------- */
+
+.people {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* What they are to it on the left, who they are on the right. */
+.person {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: var(--font-size-small);
+}
+
+.personRole {
+  color: var(--color-text-muted);
+}
+
+.personName {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text);
+}
+
+.personNobody {
+  color: var(--color-text-faint);
+}
+
+/* The same round face the work log and the board draw a person with. */
+.face {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-divider);
+  border-radius: 50%;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-micro);
+}
+
+/* --- Adding a block -------------------------------------------------------- */
+
+/* The button, and the list that falls open under it. */
+.adder {
+  position: relative;
+}
+
+/*
+ * The empty card at the foot of the stack that a new block goes into.
+ *
+ * The shape of the blocks above it with a dashed edge, because it is the slot
+ * for one rather than one; green, because pressing it makes something.
+ */
+.addCard {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  border: 1px dashed color-mix(in srgb, var(--color-ok) 60%, transparent);
+  border-radius: var(--radius-panel);
+  background: transparent;
+  font: inherit;
+  font-size: var(--font-size-small);
+  color: var(--color-ok);
+  cursor: pointer;
+}
+
+.addCard:hover:not(:disabled),
+.addCard[aria-expanded='true'] {
+  border-style: solid;
+  border-color: var(--color-ok);
+  background: color-mix(in srgb, var(--color-ok) 10%, transparent);
+}
+
+.addCard:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.addCard:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* Placed against the window by the component, which knows where the button is. */
+.menu {
+  position: fixed;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  padding: 4px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.menuItem {
+  padding: 7px 10px;
+  border: 0;
+  border-radius: var(--radius-tag);
+  background: none;
+  font: inherit;
+  font-size: var(--font-size-small);
+  text-align: left;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.menuItem:hover {
+  background: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));
+}
+
+.menuItem:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: calc(-1 * var(--focus-ring-offset));
+}

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { defineQuery } from '../../envelope/query-definition.js';
 import { projectSlugSchema } from '../../projects/project-vocabulary.js';
-import { assetStatusSchema, ASSET_STATUSES } from '../asset-vocabulary.js';
+import { assetPhaseSchema, ASSET_PHASES } from '../asset-vocabulary.js';
 
 /**
  * The most assets one category returns.
@@ -17,7 +17,7 @@ export const MAXIMUM_ASSETS_PER_CATEGORY = 200;
 export const assetTileSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
-  status: assetStatusSchema,
+  phase: assetPhaseSchema,
   estimatedCostMinor: z.number().int().nullable(),
   dueOn: z.string().nullable(),
   /** The first of its reference images, or null while it has none. */
@@ -27,15 +27,15 @@ export const assetTileSchema = z.object({
   /** How many cards are about it, which is what "unlinked" on a tile means. */
   linkedCardCount: z.number().int(),
   /**
-   * The stages it is made in, and how many are ticked off.
+   * The tabs it is made in, and how many are done.
    *
    * On the tile rather than only in the panel, because the whole reason to
-   * write the stages down is to see at a glance which of forty assets are
-   * nearly there. Both nought for an asset nobody has broken up, which the tile
-   * draws as nothing rather than as `0/0`.
+   * break the work up is to see at a glance which of forty assets are nearly
+   * there. Both nought for an asset nobody has broken up, which the tile draws
+   * as nothing rather than as `0/0`.
    */
-  subtaskCount: z.number().int(),
-  subtasksDone: z.number().int(),
+  tabCount: z.number().int(),
+  tabsDone: z.number().int(),
   /** The words it is filed under, in the order they read best: alphabetical. */
   tags: z.array(z.string()),
 });
@@ -54,6 +54,8 @@ export interface AssetCategory {
   readonly name: string;
   readonly color: string;
   readonly budgetMinor: number | null;
+  /** The template an asset filed here starts from, or null for none. */
+  readonly defaultTemplateId: string | null;
   /**
    * Everything under it, however deep — not only what was returned, and not
    * only what is filed directly in it.
@@ -76,6 +78,7 @@ export const assetCategorySchema: z.ZodType<AssetCategory> = z.lazy(() =>
     name: z.string(),
     color: z.string(),
     budgetMinor: z.number().int().nullable(),
+    defaultTemplateId: z.string().uuid().nullable(),
     count: z.number().int(),
     estimatedMinor: z.number().int(),
     categories: z.array(assetCategorySchema),
@@ -112,7 +115,7 @@ export type AssetLibraryView = z.infer<typeof assetLibraryViewSchema>;
  * Query parameters are primitives by contract — a definition that needs to send
  * structured data has the wrong parameter shape — so several tags travel as
  * `modular,act-1`. Safe as a separator because a tag is letters, numbers and
- * hyphens, and a status is one of five words.
+ * hyphens, and a phase is one word with no comma in it.
  */
 function commaSeparated<TItem extends z.ZodTypeAny>(item: TItem, most: number) {
   return z
@@ -138,7 +141,7 @@ export const assetLibraryFilterSchema = z.object({
   search: z.string().trim().max(100).optional(),
   /** An asset must carry every one of them, as the design says. */
   tags: commaSeparated(z.string(), 20).optional(),
-  statuses: commaSeparated(assetStatusSchema, ASSET_STATUSES.length).optional(),
+  phases: commaSeparated(assetPhaseSchema, ASSET_PHASES.length).optional(),
 });
 
 /**

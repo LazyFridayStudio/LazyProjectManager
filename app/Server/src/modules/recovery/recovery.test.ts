@@ -606,12 +606,20 @@ describe('GIVEN an install where things get deleted', () => {
       const { assetId } = await makeAsset('Ruined watchtower');
       const cardId = await makeCard('Retopo the watchtower');
 
-      await command('assets.addSubtask', { assetId, title: 'Mesh' });
+      const mesh = (await command('assets.addTab', { assetId, title: 'Mesh' })).json<{
+        id: string;
+      }>().id;
+      const checklist = (
+        await command('assets.addBlock', { assetTabId: mesh, kind: 'checklist' })
+      ).json<{ id: string }>().id;
+
+      await command('assets.addChecklistItem', { blockId: checklist, title: 'Retopo' });
       await command('assets.addTag', { assetId, tag: 'act-1' });
       await command('assets.linkFile', {
         assetId,
         label: 'watchtower.blend',
         url: 'https://depot.example/watchtower.blend',
+        assetTabId: mesh,
       });
       await command('assets.linkCard', { cardId, assetId });
       await command('assets.deleteAsset', { assetId });
@@ -619,8 +627,13 @@ describe('GIVEN an install where things get deleted', () => {
       const restored = await restoreTheAsset();
 
       const read = testDatabase.database;
-      const stages = await read
-        .selectFrom('assetSubtask')
+      const tabs = await read
+        .selectFrom('assetTab')
+        .select('title')
+        .where('assetId', '=', assetId)
+        .execute();
+      const items = await read
+        .selectFrom('assetTabChecklistItem')
         .select('title')
         .where('assetId', '=', assetId)
         .execute();
@@ -631,7 +644,7 @@ describe('GIVEN an install where things get deleted', () => {
         .execute();
       const files = await read
         .selectFrom('assetFile')
-        .select('label')
+        .select(['label', 'tabId'])
         .where('assetId', '=', assetId)
         .execute();
       const links = await read
@@ -641,10 +654,12 @@ describe('GIVEN an install where things get deleted', () => {
         .execute();
 
       expect(restored.statusCode).toBe(200);
-      expect(stages).toEqual([{ title: 'Mesh' }]);
+      expect(tabs).toEqual([{ title: 'Mesh' }]);
+      expect(items).toEqual([{ title: 'Retopo' }]);
       expect(tags).toEqual([{ tag: 'act-1' }]);
-      // A linked file points at no stored file, and comes back all the same.
-      expect(files).toEqual([{ label: 'watchtower.blend' }]);
+      // A linked file points at no stored file, and comes back all the same —
+      // still on the tab it was for, which comes back before it.
+      expect(files).toEqual([{ label: 'watchtower.blend', tabId: mesh }]);
       expect(links).toEqual([{ cardId }]);
     });
 

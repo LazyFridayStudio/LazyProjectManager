@@ -3,6 +3,8 @@ import {
   type AssetDetailView,
   type AssetFile,
   type AssetReference,
+  type AssetTab,
+  type AssetTabBlock,
   type CardAssignee,
   type FileState,
   type LinkedAsset,
@@ -61,13 +63,13 @@ export const assetDetailHandler = defineQueryHandler({
       throw new AssetNotFoundError();
     }
 
-    const [cards, linkedAssets, references, files, tags, subtasks, work] = await Promise.all([
+    const [cards, linkedAssets, references, files, tags, worked, work] = await Promise.all([
       selectCards(context.database, row.id),
       selectLinkedAssets(context.database, row.id),
       selectReferences(context.database, row.id),
       selectFiles(context.database, row.id),
       selectTags(context.database, row.id),
-      selectSubtasks(context.database, row.id),
+      selectTabs(context.database, row.id),
       readWorkDone({
         database: context.database,
         what: { assetId: row.id },
@@ -81,7 +83,8 @@ export const assetDetailHandler = defineQueryHandler({
       references: references.map(toReference),
       files: files.map(toAssetFile),
       tags: tags.map((row) => row.tag),
-      subtasks,
+      tabs: worked.tabs,
+      overview: worked.overview,
       // Kysely types a SQL boolean as one that might arrive as a number, since
       // some drivers hand one back. `pg` does not, and the view says boolean.
       cards: cards.map((card) => ({ ...card, closed: Boolean(card.closed) })),
@@ -90,6 +93,7 @@ export const assetDetailHandler = defineQueryHandler({
       // Delete button and the command behind it cannot disagree about who may.
       canDelete: mayDo({ actor, role, action: 'asset.delete' }),
       canLink: mayDo({ actor, role, action: 'asset.link' }),
+      canManageTemplates: mayDo({ actor, role, action: 'asset.manageTemplate' }),
     };
   },
 });
@@ -120,7 +124,7 @@ function selectAsset({ database, actor, role, assetId }: AssetLookup) {
       'asset.id',
       'asset.assetKey',
       'asset.name',
-      'asset.status',
+      'asset.phase',
       'asset.description',
       'asset.estimatedCostMinor',
       'asset.dueOn',
@@ -213,6 +217,7 @@ function selectFiles(database: RequestContext['database'], assetId: string) {
       'assetFile.label',
       'assetFile.url',
       'assetFile.fileId',
+      'assetFile.tabId',
       'file.bytes',
       'file.state',
     ])
@@ -240,6 +245,7 @@ function toAssetFile(row: AssetFileRow): AssetFile {
     // `bigint` arrives from `pg` as a string, as everywhere. Null until the
     // upload is confirmed, and for anything linked.
     bytes: row.bytes === null || row.state !== 'stored' ? null : Number(row.bytes),
+    tabId: row.tabId,
   };
 }
 
@@ -260,18 +266,81 @@ function selectTags(database: RequestContext['database'], assetId: string) {
 }
 
 /**
- * The stages this asset is made in, in the order somebody put them.
+ * The tabs this asset is worked in, each with its blocks and their items, and
+ * the blocks of its Overview, which are the ones on no tab.
  *
- * By position rather than by when they were added, because the list is a
- * pipeline: somebody who puts UV above Texture means it to stay there, and a
- * checklist that reordered itself on every read would be one nobody trusted.
+ * Three statements for the three levels rather than a join across them: a join
+ * would repeat each tab once per checklist line under it, and an asset with a
+ * long animation list has far more lines than tabs. All three by position,
+ * because the order is the pipeline somebody laid out.
  */
-function selectSubtasks(database: RequestContext['database'], assetId: string) {
+async function selectTabs(
+  database: RequestContext['database'],
+  assetId: string,
+): Promise<{ tabs: AssetTab[]; overview: AssetTabBlock[] }> {
+  const [tabs, blocks, items] = await Promise.all([
+    selectTabRows(database, assetId),
+    database
+      .selectFrom('assetTabBlock')
+      .select(['id', 'tabId', 'kind', 'body'])
+      .where('assetId', '=', assetId)
+      .orderBy('position')
+      .execute(),
+    database
+      .selectFrom('assetTabChecklistItem')
+      .select(['id', 'blockId', 'title', 'done'])
+      .where('assetId', '=', assetId)
+      .orderBy('position')
+      .execute(),
+  ]);
+
+  const toBlock = (block: (typeof blocks)[number]): AssetTabBlock => ({
+    id: block.id,
+    kind: block.kind,
+    body: block.body,
+    items: items
+      .filter((item) => item.blockId === block.id)
+      .map((item) => ({ id: item.id, title: item.title, done: item.done })),
+  });
+
+  return {
+    overview: blocks.filter((block) => block.tabId === null).map(toBlock),
+    tabs: tabs.map((tab) => ({
+      id: tab.id,
+      title: tab.title,
+      done: tab.done,
+      dueOn: tab.dueOn,
+      assignee: personNamed({
+        userId: tab.assigneeId,
+        displayName: tab.assigneeName,
+        initials: tab.assigneeInitials,
+        avatarFileId: tab.assigneeAvatarFileId,
+        avatarState: tab.assigneeAvatarState,
+      }),
+      blocks: blocks.filter((block) => block.tabId === tab.id).map(toBlock),
+    })),
+  };
+}
+
+/** The tabs themselves, with the person on each. */
+function selectTabRows(database: RequestContext['database'], assetId: string) {
   return database
-    .selectFrom('assetSubtask')
-    .select(['id', 'title', 'done'])
-    .where('assetId', '=', assetId)
-    .orderBy('position')
+    .selectFrom('assetTab')
+    .leftJoin('appUser as assignee', 'assignee.id', 'assetTab.assigneeId')
+    .leftJoin('file as assigneeAvatar', 'assigneeAvatar.id', 'assignee.avatarFileId')
+    .select([
+      'assetTab.id',
+      'assetTab.title',
+      'assetTab.done',
+      'assetTab.dueOn',
+      'assetTab.assigneeId',
+      'assignee.displayName as assigneeName',
+      'assignee.initials as assigneeInitials',
+      'assignee.avatarFileId as assigneeAvatarFileId',
+      'assigneeAvatar.state as assigneeAvatarState',
+    ])
+    .where('assetTab.assetId', '=', assetId)
+    .orderBy('assetTab.position')
     .execute();
 }
 
@@ -318,7 +387,7 @@ function selectLinkedAssets(database: RequestContext['database'], assetId: strin
       'asset.id as assetId',
       'asset.assetKey',
       'asset.name',
-      'asset.status',
+      'asset.phase',
       'assetCategory.id as categoryId',
       'assetCategory.name as categoryName',
       'assetCategory.color as categoryColor',
@@ -340,7 +409,7 @@ function toLinkedAsset(row: Awaited<ReturnType<typeof selectLinkedAssets>>[numbe
     assetId: row.assetId,
     assetKey: row.assetKey,
     name: row.name,
-    status: row.status,
+    phase: row.phase,
     category: { id: row.categoryId, name: row.categoryName, color: row.categoryColor },
   };
 }
@@ -384,11 +453,13 @@ function toDetail(
   AssetDetailView,
   | 'canDelete'
   | 'canLink'
+  | 'canManageTemplates'
   | 'cards'
   | 'files'
   | 'linkedAssets'
+  | 'overview'
   | 'references'
-  | 'subtasks'
+  | 'tabs'
   | 'tags'
   | 'work'
 > {
@@ -396,7 +467,7 @@ function toDetail(
     id: row.id,
     assetKey: row.assetKey,
     name: row.name,
-    status: row.status,
+    phase: row.phase,
     description: row.description,
     // `bigint` arrives from `pg` as a string, as everywhere.
     estimatedCostMinor: row.estimatedCostMinor === null ? null : Number(row.estimatedCostMinor),

@@ -2,6 +2,8 @@ export {
   AssetCategoryNameTakenError,
   AssetCategoryNotInProjectError,
   AssetNotFoundError,
+  AssetTemplateNameTakenError,
+  AssetTemplateNotFoundError,
 } from './asset-errors.js';
 
 export {

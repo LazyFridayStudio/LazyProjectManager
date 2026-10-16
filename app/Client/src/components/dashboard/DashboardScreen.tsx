@@ -1,7 +1,7 @@
 import {
-  describeAssetStatus,
+  describeAssetPhase,
   describeCardType,
-  ASSET_STATUSES,
+  ASSET_PHASES,
   CARD_TYPES,
   type MilestonePlanView,
   type Milestone,
@@ -132,7 +132,7 @@ function Dashboard({
             <Figure
               label="Assets tracked"
               value={String(pipeline.total)}
-              note={`${String(pipeline.byStatus.approved + pipeline.byStatus.final)} approved`}
+              note={`${String(pipeline.byPhase.production)} in production`}
             />
           </div>
 
@@ -203,21 +203,21 @@ function Pipeline({ pipeline }: { pipeline: ProjectDashboardView['pipeline'] }):
 
   return (
     <>
-      {/* Every stage, including the empty ones: a pipeline drawn from only what
+      {/* Every phase, including the empty ones: a pipeline drawn from only what
           is populated changes shape as it fills, and the gaps are half of what
           the shape says. */}
       <div className={styles.stages}>
-        {ASSET_STATUSES.map((status) => (
-          <div key={status} className={styles.stage}>
-            <span className={styles.stageName}>{describeAssetStatus(status)}</span>
-            <Bar share={pipeline.byStatus[status] / pipeline.total} status={status} />
-            <span className={styles.stageCount}>{String(pipeline.byStatus[status])}</span>
+        {ASSET_PHASES.map((phase) => (
+          <div key={phase} className={styles.stage}>
+            <span className={styles.stageName}>{describeAssetPhase(phase)}</span>
+            <Bar share={pipeline.byPhase[phase] / pipeline.total} phase={phase} />
+            <span className={styles.stageCount}>{String(pipeline.byPhase[phase])}</span>
           </div>
         ))}
       </div>
 
       <div className={styles.notes}>
-        <span>Awaiting review: {String(pipeline.byStatus.review)}</span>
+        <span>In dev: {String(pipeline.byPhase.dev)}</span>
         <span data-alarming={pipeline.overdueCount > 0}>
           Overdue: {String(pipeline.overdueCount)}
         </span>
@@ -444,11 +444,11 @@ function Block({
 function Bar({
   share,
   over = false,
-  status,
+  phase,
 }: {
   share: number;
   over?: boolean;
-  status?: string;
+  phase?: string;
 }): React.JSX.Element {
   return (
     <span className={styles.bar}>
@@ -456,7 +456,7 @@ function Bar({
         className={styles.barFill}
         style={{ width: `${String(Math.min(100, Math.round(share * 100)))}%` }}
         data-over={over}
-        data-status={status}
+        data-phase={phase}
       />
     </span>
   );

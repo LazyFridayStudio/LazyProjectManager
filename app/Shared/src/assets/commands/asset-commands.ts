@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 import { defineCommand } from '../../envelope/command-definition.js';
-import { subtaskTitleSchema } from '../../board/commands/activity-commands.js';
 import { calendarDateSchema } from '../../projects/project-vocabulary.js';
 import {
   assetCategoryColorSchema,
@@ -10,7 +9,7 @@ import {
   assetFileLabelSchema,
   assetFileUrlSchema,
   assetNameSchema,
-  assetStatusSchema,
+  assetPhaseSchema,
   assetTagSchema,
 } from '../asset-vocabulary.js';
 
@@ -55,6 +54,11 @@ export const updateAssetCategoryCommand = defineCommand(
     name: assetCategoryNameSchema.optional(),
     color: assetCategoryColorSchema.optional(),
     budgetMinor: assetCostMinorSchema.nullish(),
+    /**
+     * The template an asset filed here starts from, null for none, and absent
+     * to leave it as it is.
+     */
+    defaultTemplateId: z.string().uuid().nullish(),
   }),
 );
 
@@ -120,10 +124,19 @@ export const createAssetCommand = defineCommand(
     projectId: z.string().uuid(),
     categoryId: z.string().uuid(),
     name: assetNameSchema,
-    status: assetStatusSchema.default('concept'),
+    phase: assetPhaseSchema.default('pre_dev'),
     description: z.string().max(20_000).nullish(),
     estimatedCostMinor: assetCostMinorSchema.nullish(),
     dueOn: calendarDateSchema.nullish(),
+    /**
+     * The template to start its tabs from.
+     *
+     * Absent means whatever its category offers, and null means none: a studio
+     * that set Creatures up to start with the creature tabs should get them
+     * without asking, and somebody adding the one creature that is different
+     * should be able to say so.
+     */
+    templateId: z.string().uuid().nullish(),
   }),
 );
 
@@ -142,7 +155,7 @@ export const updateAssetCommand = defineCommand(
     /** Moving it to another category, which is a re-filing rather than an edit. */
     categoryId: z.string().uuid().optional(),
     name: assetNameSchema.optional(),
-    status: assetStatusSchema.optional(),
+    phase: assetPhaseSchema.optional(),
     description: z.string().max(20_000).nullish(),
     estimatedCostMinor: assetCostMinorSchema.nullish(),
     dueOn: calendarDateSchema.nullish(),
@@ -163,7 +176,7 @@ export const updateAssetCommand = defineCommand(
  * Takes an asset out of the library.
  *
  * Everything on it goes with it — its reference images, its working files, its
- * stages, its tags, the hours logged against it and its links to cards and to
+ * tabs, its tags, the hours logged against it and its links to cards and to
  * other assets — and all of it waits a week in the bin, where putting the asset
  * back brings the lot. The cards and assets it was linked to stay where they are.
  */
@@ -278,6 +291,8 @@ export const linkAssetFileCommand = defineCommand(
     assetId: z.string().uuid(),
     label: assetFileLabelSchema,
     url: assetFileUrlSchema,
+    /** The tab it is for, when it is for one. The asset's own list shows it either way. */
+    assetTabId: z.string().uuid().optional(),
   }),
 );
 
@@ -315,49 +330,6 @@ export const untagAssetCommand = defineCommand(
     assetId: z.string().uuid(),
     tag: assetTagSchema,
   }),
-);
-
-/**
- * Adds a stage to an asset. It goes on the end of the ones already there.
- *
- * Freeform rather than chosen from a list: Mesh, UV, Texture and Animation are
- * what a character happens to need, and a prop, a sound and a cinematic each
- * want a different set. A fixed pipeline here would be an opinion about how a
- * studio works that this product does not hold.
- */
-export const addAssetSubtaskCommand = defineCommand(
-  'assets.addSubtask',
-  z.object({
-    assetId: z.string().uuid(),
-    title: subtaskTitleSchema,
-  }),
-);
-
-/**
- * Ticks a stage off, unticks it, or renames it.
- *
- * Both fields optional and at least one required, the way a card's is: the
- * checkbox sends `done` alone and the rename sends `title` alone, and a command
- * that demanded both would make each of them send back what it did not change.
- */
-export const updateAssetSubtaskCommand = defineCommand(
-  'assets.updateSubtask',
-  z
-    .object({
-      assetSubtaskId: z.string().uuid(),
-      title: subtaskTitleSchema.optional(),
-      done: z.boolean().optional(),
-    })
-    .refine(
-      (input) => input.title !== undefined || input.done !== undefined,
-      'Say what to change about the stage.',
-    ),
-);
-
-/** Removes a stage. Stages are working notes, so this really does delete. */
-export const removeAssetSubtaskCommand = defineCommand(
-  'assets.removeSubtask',
-  z.object({ assetSubtaskId: z.string().uuid() }),
 );
 
 /**

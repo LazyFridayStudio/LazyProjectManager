@@ -75,11 +75,19 @@
 
   display: flex;
   flex-direction: column;
-  padding: 6px 22px 22px;
+  gap: 12px;
+  padding: 14px 22px 22px;
 }
 
-/* One section per category, divided by a line rather than by a gap: the library
-   is one list read top to bottom, not a set of separate panels. */
+/*
+ * One card per category at the top of the library, the plate every other
+ * screen draws its sections on: a hairline, rounded corners, the panel's
+ * ground and its highlight along the top — with the category's own colour as a
+ * band across it, which is what the heading and the tree inside it already say.
+ *
+ * The tiles inside are on the surface tone, a step lighter, so they read as
+ * cards laid on the category's card rather than as holes in it.
+ */
 .category {
   /*
    * What the tree is drawn in: the category's colour, quietened.
@@ -100,24 +108,31 @@
   --spine-ink: color-mix(in srgb, var(--category-color) 72%, transparent);
 
   position: relative;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--color-divider);
+  padding: 12px 16px 16px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  box-shadow:
+    var(--panel-inset-highlight),
+    inset 0 3px 0 color-mix(in srgb, var(--category-color) 70%, transparent);
 }
 
 /*
- * A sub-category is indented one step, and has no rule under it.
+ * A sub-category is indented one step inside its parent's card, and is not a
+ * card itself: a card inside a card inside a card is a wall of frames, and the
+ * tree down the left already says what belongs to what.
  *
  * One step rather than a depth multiplied out, because the sections are nested
  * inside each other — the indent of everything above it is already applied by
  * the time this one is laid out, and multiplying as well made the fourth level
  * sit a hundred and twenty pixels in.
- *
- * The rule is what separates one group from the next. Drawn under every heading
- * at every depth it stops separating anything and turns a tree into a ledger.
  */
 .categoryNested {
   padding: 0 0 6px var(--category-indent);
-  border-bottom: none;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
 }
 
 /*
@@ -654,34 +669,26 @@
   gap: 7px;
 }
 
-.statusDot {
+.phaseDot {
   width: 6px;
   height: 6px;
   flex: none;
   background: var(--color-label);
 }
 
-.statusDot[data-status='concept'] {
-  background: var(--color-status-concept);
+.phaseDot[data-phase='pre_dev'] {
+  background: var(--color-phase-pre_dev);
 }
 
-.statusDot[data-status='wip'] {
-  background: var(--color-status-wip);
+.phaseDot[data-phase='dev'] {
+  background: var(--color-phase-dev);
 }
 
-.statusDot[data-status='review'] {
-  background: var(--color-status-review);
+.phaseDot[data-phase='production'] {
+  background: var(--color-phase-production);
 }
 
-.statusDot[data-status='approved'] {
-  background: var(--color-status-approved);
-}
-
-.statusDot[data-status='final'] {
-  background: var(--color-status-final);
-}
-
-.statusName {
+.phaseName {
   font-size: var(--font-size-micro);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -898,13 +905,37 @@
   min-height: 0;
 }
 
+/*
+ * Three parts, each a third of the bar: the tabs from the left edge, what the
+ * asset is filed as in the middle, and the controls at the right.
+ *
+ * The outer two share the width equally so the middle is the middle of the
+ * panel rather than of whatever the tabs leave. Every part is the bar's full
+ * height, so the tabs, the words and the buttons line up on one centre.
+ */
 .detailHead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 16px;
+  flex: none;
+  padding: 0 18px 0 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.detailFiled {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
-  flex: none;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--color-divider);
+}
+
+.detailControls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 10px 0;
 }
 
 /* The key, and then whatever else names it. Both monospace, because both are
@@ -958,19 +989,15 @@
 }
 
 /*
- * The number a producer opens an asset to find, given a box of its own.
+ * The number a producer opens an asset to find.
  *
- * Set on the panel's own ground rather than the surface a tile uses, so it
- * reads as a plate laid on the panel rather than as another card.
+ * Drawn straight onto the block it is in: the block is its card, and a box
+ * inside that would be a card inside a card.
  */
 .estimate {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding: 12px;
-  border: 1px solid var(--color-divider);
-  border-radius: var(--radius-panel);
-  background: var(--color-surface);
 }
 
 .estimateLabel {
@@ -1008,8 +1035,16 @@
   background: var(--category-color);
 }
 
-.detailHead > :last-child {
-  margin-left: auto;
+/*
+ * The tabs, the bar's full height from its left edge.
+ *
+ * One pixel down over the bar's rule, so the open tab can cover it and read as
+ * part of the page it opens.
+ */
+.detailTabs {
+  display: flex;
+  min-width: 0;
+  margin-bottom: -1px;
 }
 
 .detailName {
@@ -1018,37 +1053,6 @@
   font-size: var(--font-size-h3);
   font-weight: var(--font-title-weight);
   line-height: var(--font-heading-line-height);
-}
-
-/*
- * Label on the left, value on the right, one ruled row each.
- *
- * A grid rather than rows of flex, so every value lines up down one edge — the
- * whole use of this block is being able to run an eye down it.
- */
-.facts {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  margin: 0;
-  border-top: 1px solid var(--color-divider);
-  font-size: var(--font-size-small);
-}
-
-.factLabel,
-.factValue {
-  padding: 7px 0;
-  border-bottom: 1px solid var(--color-hairline);
-}
-
-.factLabel {
-  color: var(--color-text-muted);
-}
-
-.factValue {
-  margin: 0;
-  text-align: right;
-  font-family: var(--font-mono);
-  font-size: var(--font-size-small);
 }
 
 .detailHeading {

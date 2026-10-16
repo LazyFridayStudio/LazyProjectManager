@@ -711,6 +711,10 @@ test.describe.serial('a studio setting up for the first time', () => {
 
     await expect(panel.getByText('no reference images yet')).toBeVisible();
 
+    // Opened to be read: nothing here changes the asset until Edit says so.
+    await expect(panel.getByRole('button', { name: 'Upload' })).toHaveCount(0);
+    await panel.getByRole('button', { name: 'Edit' }).click();
+
     // Three at once, because that is how reference arrives: somebody finishes a
     // pass and has a handful of images, not one.
     await panel.getByLabel('Reference images').setInputFiles(
@@ -778,10 +782,6 @@ test.describe.serial('a studio setting up for the first time', () => {
 
     await expect(panel.getByRole('button', { name: /pasted/ })).toBeVisible();
 
-    // Said once, on the other side of the panel. The sheet used to count itself
-    // as well, which was two places for one number to be wrong in.
-    await expect(panel.getByText('Reference images')).toBeVisible();
-
     // A source file dropped here is left out and named, rather than becoming a
     // tile with a filename on it where the asset's thumbnail should be.
     await panel.getByLabel('Reference images').setInputFiles({
@@ -804,6 +804,9 @@ test.describe.serial('a studio setting up for the first time', () => {
     await page.getByRole('button', { name: 'Dismiss' }).click();
     await expect(problem).toBeHidden();
 
+    // Back to reading it.
+    await panel.getByRole('button', { name: 'Cancel' }).click();
+
     await panel.getByRole('button', { name: 'Close' }).click();
 
     // And the tile behind it counts them, rather than the panel being the only
@@ -821,6 +824,12 @@ test.describe.serial('a studio setting up for the first time', () => {
     const panel = page.getByRole('dialog', { name: 'Asset' });
     const files = panel.getByRole('region', { name: 'Files' });
 
+    // The Overview shows what somebody chose to show of it, and a new asset
+    // has not been given a Files section yet.
+    await expect(files).toHaveCount(0);
+    await panel.getByRole('button', { name: 'Edit' }).click();
+    await panel.getByRole('button', { name: 'Add block' }).click();
+    await page.getByRole('menuitem', { name: 'Files' }).click();
     await expect(files.getByText(/Nothing yet/)).toBeVisible();
 
     await files.getByLabel('Upload files').setInputFiles({
@@ -866,6 +875,9 @@ test.describe.serial('a studio setting up for the first time', () => {
 
     const tags = panel.getByRole('region', { name: 'Tags' });
 
+    await panel.getByRole('button', { name: 'Edit' }).click();
+    await panel.getByRole('button', { name: 'Add block' }).click();
+    await page.getByRole('menuitem', { name: 'Tags' }).click();
     await tags.getByRole('button', { name: 'Add tag' }).click();
 
     // Typed as somebody would, stored as one tag: `Act 1` and `act-1` are the
@@ -890,67 +902,139 @@ test.describe.serial('a studio setting up for the first time', () => {
 
     // And off again.
     await tile.click();
+    await panel.getByRole('button', { name: 'Edit' }).click();
     await tags.getByRole('button', { name: 'Remove act-1' }).click();
     await expect(tags.getByText('act-1')).toBeHidden();
     await panel.getByRole('button', { name: 'Close' }).click();
   });
 
-  test('breaks an asset into the stages it is made in, and counts them on the tile', async () => {
-    // What the status cannot say: `wip` is one word for the whole thing, and an
-    // asset at `wip` might have a finished mesh and no textures, or the reverse.
+  test('works an asset in tabs built from blocks, and keeps them as a template', async () => {
+    // One game item is many jobs. Each gets a tab, and a tab is built from
+    // blocks: a checklist here, notes or files or hours elsewhere.
     await page.getByRole('button', { name: new RegExp(ASSET) }).click();
 
     const panel = page.getByRole('dialog', { name: 'Asset' });
-    const stages = panel.getByRole('region', { name: 'Stages' });
+    const strip = panel.getByRole('tablist', { name: 'Asset tabs' });
 
-    await stages.getByRole('button', { name: 'Add stage' }).click();
+    // The Overview is the asset itself, and it is where the panel opens.
+    await expect(strip.getByRole('tab', { name: 'Overview' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
 
-    // The field stays open between stages: somebody adding Mesh is adding UV
-    // straight after, and reopening it each time is three extra presses. Each
-    // one is waited for before the next is typed, which is what a person does
-    // anyway — the field clears itself once the stage is really there.
-    await stages.getByLabel('New stage').fill('Mesh');
-    await stages.getByLabel('New stage').press('Enter');
-    await expect(stages.getByText('Mesh')).toBeVisible();
+    // Opened to be read, the row offers nothing to press but the tabs.
+    await expect(strip.getByRole('button', { name: 'Add tab' })).toHaveCount(0);
+    await panel.getByRole('button', { name: 'Edit' }).click();
 
-    await stages.getByLabel('New stage').fill('Texture');
-    await stages.getByLabel('New stage').press('Enter');
-    await expect(stages.getByText('Texture')).toBeVisible();
+    // A new tab opens as soon as it exists: the next thing anybody does with a
+    // tab called Mesh is put something on it.
+    // The + beside the tabs asks for a name, or a template to start from.
+    await strip.getByRole('button', { name: 'Add tab' }).click();
 
-    await expect(stages.getByText('0/2')).toBeVisible();
+    const adding = page.getByRole('dialog', { name: 'Add a tab' });
+    await adding.getByLabel('Name').fill('Mesh');
+    await adding.getByLabel('Name').press('Enter');
+    await expect(adding).toBeHidden();
 
-    // Ticked off where somebody is already looking, without a trip through Edit
-    // — and it stays ticked rather than snapping back while the server answers.
-    //
-    // `click` and then assert, rather than `check`, which verifies the box the
-    // instant it has pressed it. This one is a controlled input whose state
-    // arrives with the answer, so the assertion is the thing that has to wait.
-    const mesh = stages.getByRole('checkbox', { name: 'Mesh' });
+    const mesh = panel.getByRole('tabpanel', { name: 'Mesh' });
+    await expect(mesh).toBeVisible();
 
-    await mesh.click();
-    await expect(mesh).toBeChecked();
-    await expect(stages.getByText('1/2')).toBeVisible();
+    await mesh.getByRole('button', { name: 'Add block' }).click();
+    await page.getByRole('menuitem', { name: 'Checklist' }).click();
+
+    const checklist = mesh.getByRole('region', { name: 'Checklist block' });
+    await checklist.getByRole('button', { name: 'Add item' }).click();
+
+    // The field stays open between lines, and each is waited for before the
+    // next is typed — the field clears itself once the line is really there.
+    await checklist.getByLabel('New item').fill('Blockout');
+    await checklist.getByLabel('New item').press('Enter');
+    await expect(checklist.getByText('Blockout')).toBeVisible();
+
+    await checklist.getByLabel('New item').fill('Retopo');
+    await checklist.getByLabel('New item').press('Enter');
+    await expect(checklist.getByText('Retopo')).toBeVisible();
+
+    // `click` and then assert, rather than `check`: the box is controlled and
+    // its state arrives with the answer, so the assertion is what has to wait.
+    const blockout = checklist.getByRole('checkbox', { name: 'Blockout' });
+
+    await blockout.click();
+    await expect(blockout).toBeChecked();
+    await expect(checklist.getByText('1/2')).toBeVisible();
+
+    await strip.getByRole('button', { name: 'Add tab' }).click();
+    await adding.getByLabel('Name').fill('Rig');
+    await adding.getByRole('button', { name: 'Add tab' }).click();
+    await expect(adding).toBeHidden();
+    await expect(panel.getByRole('tabpanel', { name: 'Rig' })).toBeVisible();
+
+    // The Overview lists the jobs and how many are done, once it is asked to,
+    // and ticks them off without opening any of them.
+    await strip.getByRole('tab', { name: 'Overview' }).click();
+    await panel.getByRole('button', { name: 'Add block' }).click();
+    await page.getByRole('menuitem', { name: 'Tab list' }).click();
+
+    const summary = panel.getByRole('region', { name: 'Tabs' });
+    await expect(summary.getByText('0/2')).toBeVisible();
+
+    const meshDone = summary.getByRole('checkbox', { name: 'Mesh done' });
+
+    await meshDone.click();
+    await expect(meshDone).toBeChecked();
+    await expect(summary.getByText('1/2')).toBeVisible();
+
+    // Kept for the next asset like it: the tabs and what they say, not the
+    // ticks.
+    // The save mark beside the + keeps it.
+    await strip.getByRole('button', { name: 'Save as a template' }).click();
+
+    const saving = page.getByRole('dialog', { name: 'Save as a template' });
+    await saving.getByLabel('Template name').fill('Prop');
+    await saving.getByRole('button', { name: 'Save template' }).click();
+    await expect(saving).toBeHidden();
 
     await panel.getByRole('button', { name: 'Close' }).click();
 
-    // On the tile, which is the whole reason to write the stages down: which of
+    // On the tile, which is the whole reason to break the work up: which of
     // forty assets are nearly there, without opening any of them.
     const tile = page.getByRole('button', { name: new RegExp(ASSET) });
 
     await expect(tile).toContainText('1/2');
 
-    // And off again, leaving the library as the rest of these tests found it. A
-    // stage is a working note with nowhere to be got back from, so each one is
-    // asked about first.
-    await tile.click();
+    // The template is the project's, kept from the library's header.
+    await page.getByRole('button', { name: 'Templates', exact: true }).click();
 
-    for (const name of ['Mesh', 'Texture']) {
-      await stages.getByRole('button', { name: `Remove ${name}` }).click();
-      await page
-        .getByRole('dialog', { name: `Remove ${name}?` })
-        .getByRole('button', { name: 'Remove' })
+    const kept = page.getByRole('dialog', { name: 'Templates' });
+    await expect(kept.getByText('Mesh, Rig')).toBeVisible();
+
+    // And off again, leaving the library as the rest of these tests found it.
+    await kept
+      .getByRole('listitem')
+      .filter({ hasText: 'Prop' })
+      .getByRole('button', { name: 'Delete template' })
+      .click();
+    await page
+      .getByRole('dialog', { name: 'Delete Prop?' })
+      .getByRole('button', { name: 'Delete template' })
+      .click();
+    await expect(kept.getByText('Mesh, Rig')).toBeHidden();
+    await kept.getByRole('button', { name: 'Close' }).click();
+
+    await tile.click();
+    await panel.getByRole('button', { name: 'Edit' }).click();
+
+    for (const name of ['Mesh', 'Rig']) {
+      await strip.getByRole('tab', { name }).click();
+      await panel
+        .getByRole('tabpanel', { name })
+        .getByRole('button', { name: 'Delete tab' })
         .click();
-      await expect(stages.getByText(name)).toBeHidden();
+      await page
+        .getByRole('dialog', { name: `Delete ${name}?` })
+        .getByRole('button', { name: 'Delete tab' })
+        .click();
+      await expect(strip.getByRole('tab', { name })).toBeHidden();
     }
 
     await panel.getByRole('button', { name: 'Close' }).click();
@@ -1014,6 +1098,9 @@ test.describe.serial('a studio setting up for the first time', () => {
     const panel = page.getByRole('dialog', { name: 'Asset' });
     const links = panel.getByRole('region', { name: 'Linked assets' });
 
+    await panel.getByRole('button', { name: 'Edit' }).click();
+    await panel.getByRole('button', { name: 'Add block' }).click();
+    await page.getByRole('menuitem', { name: 'Linked assets' }).click();
     await links.getByRole('button', { name: '+ Link' }).click();
     await links.getByLabel('Search assets').fill('bell');
     await links.getByRole('button', { name: new RegExp(LINKED_ASSET) }).click();
@@ -1034,12 +1121,16 @@ test.describe.serial('a studio setting up for the first time', () => {
 
     await expect(toWatchtower).toBeVisible();
 
-    // Let go of from this end, and the bell itself stays.
+    // Let go of from this end, and the bell itself stays. Another asset opens
+    // to be read, as every asset does, so this end is edited too.
+    await panel.getByRole('button', { name: 'Edit' }).click();
     await links.getByRole('button', { name: `Unlink ${ASSET}` }).click();
     await expect(toWatchtower).toBeHidden();
     await expect(panel.getByRole('heading', { name: LINKED_ASSET })).toBeVisible();
 
     // And gone, leaving the library as the rest of the journey found it.
+    // Deleting is done to the asset as it reads, not from inside an edit.
+    await panel.getByRole('button', { name: 'Cancel' }).click();
     await panel.getByRole('button', { name: 'Delete asset' }).click();
     await page
       .getByRole('dialog', { name: `Delete ${LINKED_ASSET}?` })
@@ -1307,8 +1398,8 @@ test.describe.serial('a studio setting up for the first time', () => {
     await expect(page.getByRole('button', { name: new RegExp(ASSET) })).toBeVisible();
 
     // A filter that matches nothing says so, and offers the way out. Nothing
-    // here is Final, and tags are combined with AND.
-    await filters.getByRole('button', { name: 'Final' }).click();
+    // here is in Production, and tags are combined with AND.
+    await filters.getByRole('button', { name: 'Production' }).click();
     await expect(page.getByText('No assets match these filters')).toBeVisible();
 
     await page.getByRole('button', { name: 'Clear all filters' }).click();

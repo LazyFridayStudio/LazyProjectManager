@@ -150,18 +150,23 @@ export function halt(element: HTMLElement): boolean {
 }
 
 /**
- * Moves an element from the width it was drawn at to the width it is now.
+ * Moves an element from the size it was drawn at to the size it is now.
  *
- * For something whose width is its stylesheet's to decide, like the sidebar
- * narrowing to its icons: the class changes, and this carries it across the
- * difference rather than letting it jump. `fromPx` is measured just before the
- * change, which is the only moment the old width can still be read.
+ * For something whose size is its contents' or its stylesheet's to decide,
+ * like the sidebar narrowing to its icons or a panel showing a shorter tab:
+ * whatever changes, changes, and this carries it across the difference rather
+ * than letting it jump. `fromPx` is measured just before the change, which is
+ * the only moment the old size can still be read.
  */
-export function resize(element: HTMLElement, fromPx: number): void {
+export function resize(
+  element: HTMLElement,
+  fromPx: number,
+  dimension: 'width' | 'height' = 'width',
+): void {
   halt(element);
-  element.style.removeProperty('width');
+  element.style.removeProperty(dimension);
 
-  const toPx = element.getBoundingClientRect().width;
+  const toPx = element.getBoundingClientRect()[dimension];
 
   if (prefersLessMotion() || fromPx === toPx) {
     settle(element);
@@ -169,10 +174,10 @@ export function resize(element: HTMLElement, fromPx: number): void {
     return;
   }
 
-  const from = { width: `${String(fromPx)}px` };
+  const from = { [dimension]: `${String(fromPx)}px` };
 
   applyStyles(element, from);
-  start(element, { from, to: { width: `${String(toPx)}px` }, way: 'arrive' }, () => {
+  start(element, { from, to: { [dimension]: `${String(toPx)}px` }, way: 'arrive' }, () => {
     settle(element);
   });
 }
@@ -404,5 +409,37 @@ export function useWidthFollows<T extends HTMLElement>(
     beforeChange: () => {
       widthBefore.current = ref.current?.getBoundingClientRect().width ?? null;
     },
+  };
+}
+
+/**
+ * An element whose height follows a value, tweened across each change.
+ *
+ * For a panel whose contents decide how tall it is, and change all at once:
+ * a different tab, or the same one being edited. The element is the caller's,
+ * because it is usually the dialog around whatever is changing.
+ *
+ * Call what this returns just before changing the value — in the click
+ * handler — so the height it is leaving can be read while it is still drawn.
+ */
+export function useHeightFollows<T extends HTMLElement>(
+  ref: React.RefObject<T | null>,
+  value: unknown,
+): () => void {
+  const heightBefore = useRef<number | null>(null);
+
+  useLayoutEffect(() => {
+    const element = ref.current;
+    const fromPx = heightBefore.current;
+
+    heightBefore.current = null;
+
+    if (element !== null && fromPx !== null) {
+      resize(element, fromPx, 'height');
+    }
+  }, [ref, value]);
+
+  return () => {
+    heightBefore.current = ref.current?.getBoundingClientRect().height ?? null;
   };
 }

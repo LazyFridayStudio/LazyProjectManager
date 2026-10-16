@@ -17,7 +17,13 @@ export const uploadTargetSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('projectKeyArt'), projectId: z.string().uuid() }),
   z.object({ kind: z.literal('projectLogo'), projectId: z.string().uuid() }),
   z.object({ kind: z.literal('assetReference'), assetId: z.string().uuid() }),
-  z.object({ kind: z.literal('assetFile'), assetId: z.string().uuid() }),
+  // A working file may say which of the asset's tabs it is for. It is the
+  // asset's either way.
+  z.object({
+    kind: z.literal('assetFile'),
+    assetId: z.string().uuid(),
+    assetTabId: z.string().uuid().optional(),
+  }),
   // Whoever is asking, so there is nothing to name. A person changes their own
   // picture and nobody else's — an id here would be an invitation to try.
   z.object({ kind: z.literal('userAvatar') }),

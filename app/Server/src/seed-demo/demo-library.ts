@@ -1,4 +1,4 @@
-import type { AssetStatus } from '@lpm/shared';
+import type { AssetPhase } from '@lpm/shared';
 
 /** Written this way because an escaped one keeps being eaten in transit. */
 const NEWLINE = String.fromCharCode(10);
@@ -15,7 +15,7 @@ const NEWLINE = String.fromCharCode(10);
 
 export interface DemoAsset {
   readonly name: string;
-  readonly status: AssetStatus;
+  readonly phase: AssetPhase;
   /** Minor units, as everywhere money is stored. Null is one nobody has costed. */
   readonly estimatedCostMinor: number | null;
   /** Days from the day the seed runs, so nothing ever looks stale. */
@@ -51,7 +51,7 @@ export const DEMO_CATEGORIES: readonly DemoCategory[] = [
     assets: [
       {
         name: 'Grass block',
-        status: 'final',
+        phase: 'production',
         estimatedCostMinor: 120_000,
         dueInDays: null,
         assignee: 'LT',
@@ -59,7 +59,7 @@ export const DEMO_CATEGORIES: readonly DemoCategory[] = [
       },
       {
         name: 'Stone and cobble',
-        status: 'approved',
+        phase: 'production',
         estimatedCostMinor: 95_000,
         dueInDays: -4,
         assignee: 'SB',
@@ -67,7 +67,7 @@ export const DEMO_CATEGORIES: readonly DemoCategory[] = [
       },
       {
         name: 'Oak log and planks',
-        status: 'review',
+        phase: 'dev',
         estimatedCostMinor: 140_000,
         dueInDays: 2,
         assignee: 'LT',
@@ -75,7 +75,7 @@ export const DEMO_CATEGORIES: readonly DemoCategory[] = [
       },
       {
         name: 'Sand and gravel',
-        status: 'wip',
+        phase: 'dev',
         estimatedCostMinor: 90_000,
         dueInDays: 6,
         assignee: 'SB',
@@ -83,7 +83,7 @@ export const DEMO_CATEGORIES: readonly DemoCategory[] = [
       },
       {
         name: 'Torch',
-        status: 'concept',
+        phase: 'pre_dev',
         estimatedCostMinor: null,
         dueInDays: 14,
         assignee: null,
@@ -100,7 +100,7 @@ export const DEMO_CATEGORIES: readonly DemoCategory[] = [
     assets: [
       {
         name: 'Slime',
-        status: 'review',
+        phase: 'dev',
         estimatedCostMinor: 320_000,
         dueInDays: 9,
         assignee: 'DO',
@@ -108,7 +108,7 @@ export const DEMO_CATEGORIES: readonly DemoCategory[] = [
       },
       {
         name: 'Lantern wisp',
-        status: 'wip',
+        phase: 'dev',
         estimatedCostMinor: 280_000,
         dueInDays: 21,
         assignee: 'DO',
@@ -116,7 +116,7 @@ export const DEMO_CATEGORIES: readonly DemoCategory[] = [
       },
       {
         name: 'Cave crawler',
-        status: 'concept',
+        phase: 'pre_dev',
         estimatedCostMinor: 210_000,
         dueInDays: null,
         assignee: null,
@@ -131,7 +131,7 @@ export const DEMO_CATEGORIES: readonly DemoCategory[] = [
     assets: [
       {
         name: 'Wooden pickaxe',
-        status: 'approved',
+        phase: 'production',
         estimatedCostMinor: 60_000,
         dueInDays: -11,
         assignee: 'JI',
@@ -139,7 +139,7 @@ export const DEMO_CATEGORIES: readonly DemoCategory[] = [
       },
       {
         name: 'Stone sword',
-        status: 'final',
+        phase: 'production',
         estimatedCostMinor: 55_000,
         dueInDays: null,
         assignee: 'JI',
@@ -147,7 +147,7 @@ export const DEMO_CATEGORIES: readonly DemoCategory[] = [
       },
       {
         name: 'Bucket',
-        status: 'concept',
+        phase: 'pre_dev',
         estimatedCostMinor: null,
         dueInDays: 30,
         assignee: null,
@@ -164,7 +164,7 @@ export const DEMO_CATEGORIES: readonly DemoCategory[] = [
     assets: [
       {
         name: 'Block break set',
-        status: 'wip',
+        phase: 'dev',
         estimatedCostMinor: 80_000,
         dueInDays: 4,
         assignee: 'MK',
@@ -172,7 +172,7 @@ export const DEMO_CATEGORIES: readonly DemoCategory[] = [
       },
       {
         name: 'Night ambience',
-        status: 'concept',
+        phase: 'pre_dev',
         estimatedCostMinor: null,
         dueInDays: null,
         assignee: 'MK',

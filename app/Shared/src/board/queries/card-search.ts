@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { defineQuery } from '../../envelope/query-definition.js';
-import { assetStatusSchema } from '../../assets/asset-vocabulary.js';
+import { assetPhaseSchema } from '../../assets/asset-vocabulary.js';
 import { cardTypeSchema } from '../board-vocabulary.js';
 
 /**
@@ -46,7 +46,7 @@ export const assetSuggestionSchema = z.object({
   assetKey: z.string(),
   name: z.string(),
   categoryName: z.string(),
-  status: assetStatusSchema,
+  phase: assetPhaseSchema,
 });
 
 export type AssetSuggestion = z.infer<typeof assetSuggestionSchema>;

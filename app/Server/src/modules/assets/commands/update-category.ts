@@ -7,6 +7,7 @@ import { isUniqueViolation } from '../../../cqrs/unique-violation.js';
 import {
   AssetCategoryNameTakenError,
   AssetCategoryNotInProjectError,
+  AssetTemplateNotFoundError,
   ProjectArchivedError,
 } from '../../../domain/index.js';
 import {
@@ -22,6 +23,7 @@ interface UpdateCategoryInput {
   name?: string;
   color?: string;
   budgetMinor?: number | null;
+  defaultTemplateId?: string | null;
 }
 
 /**
@@ -77,6 +79,10 @@ async function updateCategory({ transaction, input, actor }: UpdateRequest): Pro
     throw new ProjectArchivedError();
   }
 
+  if (input.defaultTemplateId !== undefined && input.defaultTemplateId !== null) {
+    await assertTemplateIsInProject(transaction, input.defaultTemplateId, category.projectId);
+  }
+
   try {
     await transaction.database
       .updateTable('assetCategory')
@@ -86,6 +92,9 @@ async function updateCategory({ transaction, input, actor }: UpdateRequest): Pro
         ...(input.name === undefined ? {} : { name: input.name }),
         ...(input.color === undefined ? {} : { color: input.color }),
         ...(input.budgetMinor === undefined ? {} : { budgetMinor: input.budgetMinor }),
+        ...(input.defaultTemplateId === undefined
+          ? {}
+          : { defaultTemplateId: input.defaultTemplateId }),
       })
       .where('id', '=', category.id)
       .execute();
@@ -106,4 +115,27 @@ async function updateCategory({ transaction, input, actor }: UpdateRequest): Pro
   });
 
   return undefined;
+}
+
+/**
+ * A category only offers one of its own project's templates.
+ *
+ * Another project's would start an asset here with tabs nobody on this project
+ * wrote, and could not be seen from here to be taken off again.
+ */
+async function assertTemplateIsInProject(
+  transaction: CommandTransaction,
+  templateId: string,
+  projectId: string,
+): Promise<void> {
+  const template = await transaction.database
+    .selectFrom('assetTemplate')
+    .select('id')
+    .where('id', '=', templateId)
+    .where('projectId', '=', projectId)
+    .executeTakeFirst();
+
+  if (template === undefined) {
+    throw new AssetTemplateNotFoundError();
+  }
 }
