@@ -1,5 +1,6 @@
 import { createTestDatabase, seedInstall, type TestDatabase } from '@lpm/database/testing';
 import {
+  MAXIMUM_ITEMS_PER_CHECKLIST,
   MAXIMUM_TABS_PER_ASSET,
   type AssetDetailView,
   type AssetLibraryView,
@@ -341,6 +342,29 @@ describe('GIVEN an asset worked in tabs', () => {
       expect(rig).toBeDefined();
     });
 
+    it('THEN a move between two tabs with no room left between them still lands there', async () => {
+      const assetId = await addAsset();
+      const mesh = await addTab(assetId, 'Mesh');
+      const uvs = await addTab(assetId, 'UVs');
+      const rig = await addTab(assetId, 'Rig');
+
+      // As close as halving the gap forty-odd times would leave them.
+      await testDatabase.database
+        .updateTable('assetTab')
+        .set({ position: 1 })
+        .where('id', '=', mesh)
+        .execute();
+      await testDatabase.database
+        .updateTable('assetTab')
+        .set({ position: 1.0000001 })
+        .where('id', '=', uvs)
+        .execute();
+
+      await command('assets.moveTab', { assetTabId: rig, afterTabId: mesh, beforeTabId: uvs });
+
+      expect(await titles(assetId)).toEqual(['Mesh', 'Rig', 'UVs']);
+    });
+
     it('THEN the tile counts them, so a library says how far along things are', async () => {
       const assetId = await addAsset();
       const mesh = await addTab(assetId, 'Mesh');
@@ -487,6 +511,28 @@ describe('GIVEN an asset worked in tabs', () => {
       const idle = await idOf(command('assets.addChecklistItem', { blockId, title: 'Idle' }));
 
       expect((await command('assets.updateChecklistItem', { itemId: idle })).statusCode).toBe(422);
+    });
+
+    it('THEN one past the most lines a checklist may have is refused', async () => {
+      const { assetId, blockId } = await checklistOn();
+
+      await testDatabase.database
+        .insertInto('assetTabChecklistItem')
+        .values(
+          Array.from({ length: MAXIMUM_ITEMS_PER_CHECKLIST }, (_, index) => ({
+            assetId,
+            tabId: null,
+            blockId,
+            title: `Clip ${String(index)}`,
+            position: index + 1,
+          })),
+        )
+        .execute();
+
+      const refused = await command('assets.addChecklistItem', { blockId, title: 'One more' });
+
+      expect(refused.statusCode).toBe(422);
+      expect(await items(assetId)).toHaveLength(MAXIMUM_ITEMS_PER_CHECKLIST);
     });
 
     it('THEN only a checklist takes lines', async () => {
@@ -853,6 +899,21 @@ describe('GIVEN an asset worked in tabs', () => {
       expect(view.templates[0]?.definition).toEqual(CREATURE);
     });
 
+    it('THEN the same save sent twice keeps one', async () => {
+      const commandId = nextCommandId();
+
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        await server.inject({
+          method: 'POST',
+          url: '/api/c/assets.createTemplate',
+          payload: { commandId, projectId, name: 'Creature', definition: CREATURE },
+          cookies: { lpm_session: ownerCookie },
+        });
+      }
+
+      expect((await templates()).templates).toHaveLength(1);
+    });
+
     it('THEN two with one name are refused', async () => {
       await createTemplate('Creature');
 
@@ -898,6 +959,36 @@ describe('GIVEN an asset worked in tabs', () => {
       );
     });
 
+    it('THEN one in a project the caller cannot reach reads as not there', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: `/api/q/assets.templates?projectId=${NOWHERE}`,
+        cookies: { lpm_session: ownerCookie },
+      });
+
+      expect(response.statusCode).toBe(404);
+    });
+
+    it('THEN one that no longer reads is refused in words rather than half applied', async () => {
+      const templateId = await createTemplate('Creature');
+      const assetId = await addAsset();
+
+      // Written by a build whose blocks this one does not know.
+      await testDatabase.database
+        .updateTable('assetTemplate')
+        .set({
+          definition: JSON.stringify({ tabs: [{ title: 'Rig', blocks: [{ kind: 'mocap' }] }] }),
+        })
+        .where('id', '=', templateId)
+        .execute();
+
+      const refused = await command('assets.applyTemplate', { assetId, templateId });
+
+      expect(refused.statusCode).toBe(422);
+      expect(refused.json<{ message: string }>().message).toContain('can no longer be read');
+      expect((await detail(assetId)).tabs).toEqual([]);
+    });
+
     it('THEN a member may start an asset from one, and may not keep them', async () => {
       const templateId = await createTemplate('Creature');
       const assetId = await addAsset();
@@ -934,6 +1025,48 @@ describe('GIVEN an asset worked in tabs', () => {
       expect(view.tabs[2]?.blocks).toMatchObject([
         { kind: 'notes', body: 'Humanoid skeleton.' },
         { kind: 'files' },
+      ]);
+    });
+
+    it('THEN the same apply sent twice adds its tabs once', async () => {
+      const templateId = await createTemplate('Creature');
+      const assetId = await addAsset();
+      const commandId = nextCommandId();
+
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        await server.inject({
+          method: 'POST',
+          url: '/api/c/assets.applyTemplate',
+          payload: { commandId, assetId, templateId },
+          cookies: { lpm_session: ownerCookie },
+        });
+      }
+
+      expect(await titles(assetId)).toEqual(['Mesh', 'Rig', 'Animation']);
+    });
+
+    it('THEN an Overview that shows everything it names gains nothing', async () => {
+      const templateId = await createTemplate('Prop', { tabs: [], overview: [{ kind: 'tags' }] });
+      const assetId = await addAsset();
+
+      await command('assets.addBlock', { assetId, kind: 'tags' });
+      await command('assets.applyTemplate', { assetId, templateId });
+
+      expect((await detail(assetId)).overview.map((block) => block.kind)).toEqual(['tags']);
+    });
+
+    it('THEN a checklist on the Overview comes with its lines, unticked', async () => {
+      const templateId = await createTemplate('Prop', {
+        tabs: [],
+        overview: [{ kind: 'checklist', items: ['Sign-off', 'In engine'] }],
+      });
+      const assetId = await addAsset();
+
+      await command('assets.applyTemplate', { assetId, templateId });
+
+      expect((await detail(assetId)).overview[0]?.items).toMatchObject([
+        { title: 'Sign-off', done: false },
+        { title: 'In engine', done: false },
       ]);
     });
 
@@ -996,6 +1129,15 @@ describe('GIVEN an asset worked in tabs', () => {
       await command('assets.updateCategory', { categoryId, defaultTemplateId: creature });
 
       expect(await titles(await addAsset('Crate', { templateId: prop }))).toEqual(['Model']);
+    });
+
+    it('THEN it can stop offering one', async () => {
+      const templateId = await createTemplate('Creature');
+
+      await command('assets.updateCategory', { categoryId, defaultTemplateId: templateId });
+      await command('assets.updateCategory', { categoryId, defaultTemplateId: null });
+
+      expect(await titles(await addAsset())).toEqual([]);
     });
 
     it('THEN a template of another project cannot be offered', async () => {
