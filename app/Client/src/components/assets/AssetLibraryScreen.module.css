@@ -75,11 +75,19 @@
 
   display: flex;
   flex-direction: column;
-  padding: 6px 22px 22px;
+  gap: 12px;
+  padding: 14px 22px 22px;
 }
 
-/* One section per category, divided by a line rather than by a gap: the library
-   is one list read top to bottom, not a set of separate panels. */
+/*
+ * One card per category at the top of the library, the plate every other
+ * screen draws its sections on: a hairline, rounded corners, the panel's
+ * ground and its highlight along the top — with the category's own colour as a
+ * band across it, which is what the heading and the tree inside it already say.
+ *
+ * The tiles inside are on the surface tone, a step lighter, so they read as
+ * cards laid on the category's card rather than as holes in it.
+ */
 .category {
   /*
    * What the tree is drawn in: the category's colour, quietened.
@@ -100,24 +108,31 @@
   --spine-ink: color-mix(in srgb, var(--category-color) 72%, transparent);
 
   position: relative;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--color-divider);
+  padding: 12px 16px 16px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  box-shadow:
+    var(--panel-inset-highlight),
+    inset 0 3px 0 color-mix(in srgb, var(--category-color) 70%, transparent);
 }
 
 /*
- * A sub-category is indented one step, and has no rule under it.
+ * A sub-category is indented one step inside its parent's card, and is not a
+ * card itself: a card inside a card inside a card is a wall of frames, and the
+ * tree down the left already says what belongs to what.
  *
  * One step rather than a depth multiplied out, because the sections are nested
  * inside each other — the indent of everything above it is already applied by
  * the time this one is laid out, and multiplying as well made the fourth level
  * sit a hundred and twenty pixels in.
- *
- * The rule is what separates one group from the next. Drawn under every heading
- * at every depth it stops separating anything and turns a tree into a ledger.
  */
 .categoryNested {
   padding: 0 0 6px var(--category-indent);
-  border-bottom: none;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
 }
 
 /*
