@@ -373,3 +373,48 @@
   color: var(--color-text-faint);
   overflow-wrap: anywhere;
 }
+
+/* --- People on a card ----------------------------------------------------- */
+
+.people {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* What they are to it on the left, who they are on the right. */
+.person {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: var(--font-size-small);
+}
+
+.personRole {
+  color: var(--color-text-muted);
+}
+
+.personName {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text);
+}
+
+.personNobody {
+  color: var(--color-text-faint);
+}
+
+/* The same round face the work log and the board draw a person with. */
+.face {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-divider);
+  border-radius: 50%;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-micro);
+}

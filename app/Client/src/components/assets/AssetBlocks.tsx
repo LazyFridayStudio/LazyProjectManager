@@ -16,9 +16,77 @@ import {
   useUpdateAssetTabBlock,
 } from '../../logic/assets/use-asset-tabs.js';
 import { MarkdownField, MarkdownText } from '../markdown/index.js';
-import { Button, ButtonIcon, PencilIcon, PlusIcon, TrashIcon, useDisplay } from '../ui/index.js';
+import {
+  Avatar,
+  Button,
+  ButtonIcon,
+  PencilIcon,
+  PlusIcon,
+  TrashIcon,
+  useDisplay,
+} from '../ui/index.js';
 import { AssetChecklist } from './AssetChecklist.js';
 import styles from './AssetTabs.module.css';
+
+/**
+ * One card on the panel: the same frame a block has, for what is not a block.
+ *
+ * The asset's name, its description and its people are on every asset and
+ * cannot be taken off, but they read as cards like everything under them. A
+ * column where half the things are framed and half are not reads as two
+ * columns laid over each other.
+ */
+export function AssetCard({
+  label,
+  children,
+}: {
+  /** What a screen reader calls the card. */
+  readonly label: string;
+  readonly children: ReactNode;
+}): React.JSX.Element {
+  return (
+    <section className={styles.block} aria-label={label}>
+      {children}
+    </section>
+  );
+}
+
+/**
+ * Somebody named on an asset or a tab: their picture, their name, and what
+ * they are to it.
+ *
+ * The picture as everywhere else a person is drawn, and their initials while
+ * they have none, so a row of people is recognised before it is read.
+ */
+export function AssetPerson({
+  role,
+  person,
+  nobody,
+}: {
+  /** What they are to it: Assignee, Reporter. */
+  readonly role: string;
+  readonly person: {
+    readonly displayName: string;
+    readonly initials: string;
+    readonly avatarUrl: string | null;
+  } | null;
+  /** What to say when nobody is: Nobody yet, Unknown. */
+  readonly nobody: string;
+}): React.JSX.Element {
+  return (
+    <div className={styles.person}>
+      <span className={styles.personRole}>{role}</span>
+      {person === null ? (
+        <span className={styles.personNobody}>{nobody}</span>
+      ) : (
+        <span className={styles.personName}>
+          <Avatar url={person.avatarUrl} initials={person.initials} className={styles.face} />
+          {person.displayName}
+        </span>
+      )}
+    </div>
+  );
+}
 
 /**
  * Where a set of blocks lives: one of the asset's tabs, or its Overview.

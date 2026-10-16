@@ -13,6 +13,7 @@ import {
   useHeightFollows,
   useModalDialog,
 } from '../ui/index.js';
+import { AssetCard } from './AssetBlocks.js';
 import { AssetOverview, type AssetFormState } from './AssetOverview.js';
 import { AssetTabPanel } from './AssetTabPanel.js';
 import { AssetTabStrip, OVERVIEW } from './AssetTabStrip.js';
@@ -363,13 +364,13 @@ function PanelHead({
 /** What the asset is called and which phase it is in, over whichever tab is open. */
 function Heading({ asset }: { readonly asset: AssetDetailView }): React.JSX.Element {
   return (
-    <div>
+    <AssetCard label="Asset">
       <h2 className={styles.detailName}>{asset.name}</h2>
       <div className={styles.detailStatus}>
         <span className={styles.phaseDot} data-phase={asset.phase} aria-hidden />
         <span className={styles.phaseName}>{describeAssetPhase(asset.phase)}</span>
         <span className={styles.detailStamp}>· updated {formatTimeAgo(asset.updatedAt)}</span>
       </div>
-    </div>
+    </AssetCard>
   );
 }

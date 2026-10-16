@@ -16,7 +16,13 @@ import {
 import { PersonPicker } from '../projects/index.js';
 import { Field, PencilIcon, TrashIcon, useDisplay } from '../ui/index.js';
 import { WorkLog } from '../work/index.js';
-import { AssetBlockAdder, AssetBlockList, type BlockPlace } from './AssetBlocks.js';
+import {
+  AssetBlockAdder,
+  AssetBlockList,
+  AssetCard,
+  AssetPerson,
+  type BlockPlace,
+} from './AssetBlocks.js';
 import { AssetFiles } from './AssetFiles.js';
 import styles from './AssetTabs.module.css';
 
@@ -48,15 +54,17 @@ export function AssetTabPanel({
 
   return (
     <div className={styles.panel} role="tabpanel" aria-label={tab.title}>
-      <TabHead
-        asset={asset}
-        tab={tab}
-        projectSlug={projectSlug}
-        canWrite={canWrite}
-        onGone={onGone}
-      />
+      <AssetCard label="Tab">
+        <TabHead
+          asset={asset}
+          tab={tab}
+          projectSlug={projectSlug}
+          canWrite={canWrite}
+          onGone={onGone}
+        />
 
-      <TabFacts asset={asset} tab={tab} projectSlug={projectSlug} canWrite={canWrite} />
+        <TabFacts asset={asset} tab={tab} projectSlug={projectSlug} canWrite={canWrite} />
+      </AssetCard>
 
       {tab.blocks.length === 0 && (
         <p className={styles.empty}>
@@ -307,17 +315,17 @@ function TabFacts(props: TabPartProps): React.JSX.Element {
 /** The same three facts as text, while the asset is being read. */
 function TabFactsRead({ tab }: { readonly tab: AssetTab }): React.JSX.Element {
   return (
-    <p className={styles.readFacts}>
-      <span>
-        <strong>{tab.done ? 'Done' : 'Not done yet'}</strong>
-      </span>
-      <span>
-        Assignee <strong>{tab.assignee?.displayName ?? 'nobody yet'}</strong>
-      </span>
-      <span>
-        Due <strong>{tab.dueOn ?? 'no date'}</strong>
-      </span>
-    </p>
+    <div className={styles.people}>
+      <p className={styles.readFacts}>
+        <span>
+          <strong>{tab.done ? 'Done' : 'Not done yet'}</strong>
+        </span>
+        <span>
+          Due <strong>{tab.dueOn ?? 'no date'}</strong>
+        </span>
+      </p>
+      <AssetPerson role="Assignee" person={tab.assignee} nobody="Nobody yet" />
+    </div>
   );
 }
 

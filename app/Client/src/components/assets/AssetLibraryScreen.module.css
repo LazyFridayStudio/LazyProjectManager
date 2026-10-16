@@ -950,19 +950,15 @@
 }
 
 /*
- * The number a producer opens an asset to find, given a box of its own.
+ * The number a producer opens an asset to find.
  *
- * Set on the panel's own ground rather than the surface a tile uses, so it
- * reads as a plate laid on the panel rather than as another card.
+ * Drawn straight onto the block it is in: the block is its card, and a box
+ * inside that would be a card inside a card.
  */
 .estimate {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding: 12px;
-  border: 1px solid var(--color-divider);
-  border-radius: var(--radius-panel);
-  background: var(--color-surface);
 }
 
 .estimateLabel {
@@ -1023,37 +1019,6 @@
   font-size: var(--font-size-h3);
   font-weight: var(--font-title-weight);
   line-height: var(--font-heading-line-height);
-}
-
-/*
- * Label on the left, value on the right, one ruled row each.
- *
- * A grid rather than rows of flex, so every value lines up down one edge — the
- * whole use of this block is being able to run an eye down it.
- */
-.facts {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  margin: 0;
-  border-top: 1px solid var(--color-divider);
-  font-size: var(--font-size-small);
-}
-
-.factLabel,
-.factValue {
-  padding: 7px 0;
-  border-bottom: 1px solid var(--color-hairline);
-}
-
-.factLabel {
-  color: var(--color-text-muted);
-}
-
-.factValue {
-  margin: 0;
-  text-align: right;
-  font-family: var(--font-mono);
-  font-size: var(--font-size-small);
 }
 
 .detailHeading {

@@ -15,7 +15,14 @@ import { MarkdownField, MarkdownText } from '../markdown/index.js';
 import { PersonPicker } from '../projects/index.js';
 import { Field, Select } from '../ui/index.js';
 import { WorkLog } from '../work/index.js';
-import { AssetBlockAdder, AssetBlockList, type BlockPlace } from './AssetBlocks.js';
+import {
+  AssetBlockAdder,
+  AssetBlockList,
+  AssetCard,
+  AssetPerson,
+  type BlockPlace,
+} from './AssetBlocks.js';
+import tabStyles from './AssetTabs.module.css';
 import { AssetFiles } from './AssetFiles.js';
 import { AssetLinks } from './AssetLinks.js';
 import { AssetTabsSummary, AssetTemplateActions } from './AssetTabsSummary.js';
@@ -126,29 +133,21 @@ export function AssetOverview({
 function Core({ asset }: { readonly asset: AssetDetailView }): React.JSX.Element {
   return (
     <>
-      <section>
-        <h3 className={styles.detailHeading}>Description</h3>
+      <AssetCard label="Description">
+        <h3 className={tabStyles.blockHeading}>Description</h3>
         {asset.description === null ? (
           <p className={styles.missing}>No description provided.</p>
         ) : (
           <MarkdownText source={asset.description} />
         )}
-      </section>
+      </AssetCard>
 
-      <dl className={styles.facts}>
-        <Fact label="Assignee" value={asset.assignee?.displayName ?? null} />
-        <Fact label="Reporter" value={asset.reporter?.displayName ?? null} />
-      </dl>
-    </>
-  );
-}
-
-/** A value, or a dash — an empty row is harder to read than one that says so. */
-function Fact({ label, value }: { label: string; value: string | null }): React.JSX.Element {
-  return (
-    <>
-      <dt className={styles.factLabel}>{label}</dt>
-      <dd className={styles.factValue}>{value ?? '—'}</dd>
+      <AssetCard label="People">
+        <div className={tabStyles.people}>
+          <AssetPerson role="Assignee" person={asset.assignee} nobody="Nobody yet" />
+          <AssetPerson role="Reporter" person={asset.reporter} nobody="Unknown" />
+        </div>
+      </AssetCard>
     </>
   );
 }
@@ -387,82 +386,88 @@ function CoreFields({
 
   return (
     <>
-      <Field
-        label="Name"
-        autoFocus
-        value={form.name}
-        onChange={(event) => {
-          set('name', event.target.value);
-        }}
-        problem={problems.name}
-      />
-
-      <div className={styles.dialogPair}>
-        <Select
-          label="Phase"
-          options={PHASE_OPTIONS}
-          value={form.phase}
+      <AssetCard label="Name and phase">
+        <Field
+          label="Name"
+          autoFocus
+          value={form.name}
           onChange={(event) => {
-            set('phase', event.target.value as AssetPhase);
+            set('name', event.target.value);
           }}
+          problem={problems.name}
         />
-      </div>
 
-      {/* Both, and in this order, because the library is read the way the board
+        <div className={styles.dialogPair}>
+          <Select
+            label="Phase"
+            options={PHASE_OPTIONS}
+            value={form.phase}
+            onChange={(event) => {
+              set('phase', event.target.value as AssetPhase);
+            }}
+          />
+        </div>
+      </AssetCard>
+
+      <AssetCard label="People">
+        {/* Both, and in this order, because the library is read the way the board
           is: who is making it is the question asked of a row, and who wanted it
           is the question asked when the brief turns out to be thin. */}
-      <div className={styles.dialogPair}>
-        <PersonPicker
-          label="Assignee"
-          nobody="Nobody yet"
-          projectId={asset.project.id}
-          value={form.assigneeId}
-          was={asset.assignee}
-          problem={problems.assignee}
-          onChange={(event) => {
-            set('assigneeId', event.target.value);
-          }}
-        />
+        <div className={styles.dialogPair}>
+          <PersonPicker
+            label="Assignee"
+            nobody="Nobody yet"
+            projectId={asset.project.id}
+            value={form.assigneeId}
+            was={asset.assignee}
+            problem={problems.assignee}
+            onChange={(event) => {
+              set('assigneeId', event.target.value);
+            }}
+          />
 
-        <PersonPicker
-          label="Reporter"
-          nobody="Unknown"
-          projectId={asset.project.id}
-          value={form.reporterId}
-          was={asset.reporter}
-          problem={problems.reporter}
-          onChange={(event) => {
-            set('reporterId', event.target.value);
-          }}
-        />
-      </div>
+          <PersonPicker
+            label="Reporter"
+            nobody="Unknown"
+            projectId={asset.project.id}
+            value={form.reporterId}
+            was={asset.reporter}
+            problem={problems.reporter}
+            onChange={(event) => {
+              set('reporterId', event.target.value);
+            }}
+          />
+        </div>
+      </AssetCard>
 
-      {/* Not a `label`, because the field has buttons of its own and a label
+      <AssetCard label="Description">
+        {/* Not a `label`, because the field has buttons of its own and a label
           wrapping them would press one every time somebody clicked it. The box
           names itself instead. */}
-      <div className={styles.detailDescription}>
-        <span className={styles.dialogLabel}>Description</span>
-        <MarkdownField
-          label="Description"
-          className={joinClassNames(styles.dialogTextArea, styles.detailDescriptionBox)}
-          value={form.description}
-          files={{
-            uploadTo: { kind: 'assetFile', assetId: asset.id },
-            onInsert: (markdown: string) => {
-              onChange((current) => ({
-                ...current,
-                description: appendBlock(current.description, markdown),
-              }));
-            },
-          }}
-          onChange={(event) => {
-            set('description', event.target.value);
-          }}
-          onReplace={(next: string) => {
-            set('description', next);
-          }}
-        />
-      </div>
+        <div className={styles.detailDescription}>
+          <span className={styles.dialogLabel}>Description</span>
+          <MarkdownField
+            label="Description"
+            className={joinClassNames(styles.dialogTextArea, styles.detailDescriptionBox)}
+            value={form.description}
+            files={{
+              uploadTo: { kind: 'assetFile', assetId: asset.id },
+              onInsert: (markdown: string) => {
+                onChange((current) => ({
+                  ...current,
+                  description: appendBlock(current.description, markdown),
+                }));
+              },
+            }}
+            onChange={(event) => {
+              set('description', event.target.value);
+            }}
+            onReplace={(next: string) => {
+              set('description', next);
+            }}
+          />
+        </div>
+      </AssetCard>
     </>
   );
 }
