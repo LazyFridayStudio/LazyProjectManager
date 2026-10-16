@@ -1004,6 +1004,19 @@
   margin-left: auto;
 }
 
+/*
+ * The tabs, between what the asset is filed as and what can be done to it.
+ *
+ * Takes what the bar has left, so the controls stay at the right edge however
+ * many tabs there are, and wraps onto a second line rather than pushing them
+ * off it.
+ */
+.detailTabs {
+  flex: 1;
+  min-width: 0;
+  margin-left: 12px;
+}
+
 .detailName {
   margin: 0;
   font-family: var(--font-heading);

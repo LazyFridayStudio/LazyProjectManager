@@ -29,9 +29,8 @@ export interface AssetChecklistProps {
  * sentence — "Charge, the run held for the length of the charge" — and a row of
  * chips wraps a sentence into something nobody can scan.
  *
- * Live without pressing Edit, as everything on a tab is: ticking a clip off is
- * what somebody does while looking at it, and a trip through a form is enough
- * friction to stop them writing it down at all.
+ * Only changeable while the asset is being edited, as everything on the panel
+ * is; while it is read, the boxes show what is done and do nothing.
  */
 export function AssetChecklist({
   blockId,

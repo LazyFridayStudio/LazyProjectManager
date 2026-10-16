@@ -5,15 +5,13 @@
  *
  * A creature's row is five or six short words, and a strip that scrolled would
  * hide the one somebody is looking for behind an arrow. Wrapped, a long row is
- * two lines and every tab is still in sight.
+ * two lines of the panel's top bar and every tab is still in sight.
  */
 .strip {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--color-divider);
 }
 
 .tab {
@@ -241,6 +239,21 @@
   font-size: var(--font-size-small);
   font-style: italic;
   color: var(--color-text-faint);
+}
+
+/* What a tab says about itself while it is being read: done, by whom, by when. */
+.readFacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.readFacts strong {
+  font-weight: normal;
+  color: var(--color-text);
 }
 
 /* --- The Overview's list of tabs ------------------------------------------ */

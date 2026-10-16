@@ -49,9 +49,10 @@ export interface AssetTabPanelProps {
 /**
  * One job inside an asset: who is doing it, by when, and what it is built from.
  *
- * Everything here is live, without pressing Edit. A tab is where somebody works
- * on the thing, and ticking a clip off or logging an afternoon should not need
- * a form opened first. Edit is for what the asset itself is called and costs.
+ * Read as text until the asset is being edited, as the rest of the panel is:
+ * opening an asset to look at it should not put a row of buttons and armed
+ * checkboxes under every glance. In edit mode each change saves as it is made,
+ * because a tab has no form of its own to submit.
  */
 export function AssetTabPanel({
   asset,
@@ -306,7 +307,28 @@ function TabControls({
  * form here to submit, and a date chosen and then lost because nobody pressed
  * Save is a date nobody trusts.
  */
-function TabFacts({ asset, tab, projectSlug, canWrite }: TabPartProps): React.JSX.Element {
+function TabFacts(props: TabPartProps): React.JSX.Element {
+  return props.canWrite ? <TabFactsEditing {...props} /> : <TabFactsRead tab={props.tab} />;
+}
+
+/** The same three facts as text, while the asset is being read. */
+function TabFactsRead({ tab }: { readonly tab: AssetTab }): React.JSX.Element {
+  return (
+    <p className={styles.readFacts}>
+      <span>
+        <strong>{tab.done ? 'Done' : 'Not done yet'}</strong>
+      </span>
+      <span>
+        Assignee <strong>{tab.assignee?.displayName ?? 'nobody yet'}</strong>
+      </span>
+      <span>
+        Due <strong>{tab.dueOn ?? 'no date'}</strong>
+      </span>
+    </p>
+  );
+}
+
+function TabFactsEditing({ asset, tab, projectSlug, canWrite }: TabPartProps): React.JSX.Element {
   const display = useDisplay();
   const update = useUpdateAssetTab(projectSlug, asset.id);
   const inFlight = update.isPending ? update.variables : undefined;

@@ -12,6 +12,7 @@ import { appendBlock } from '../../logic/markdown/index.js';
 import {
   Button,
   ButtonIcon,
+  CloseIcon,
   Field,
   Loading,
   PencilIcon,
@@ -183,11 +184,15 @@ function AssetForm({
   const updateAsset = useUpdateAsset(projectSlug, asset.id);
   const problems = readFieldProblems(updateAsset.error);
   const canWrite = !asset.project.archived;
+  // Only in edit mode. Reading an asset is reading it: nothing on the panel
+  // changes anything until somebody has said they mean to.
+  const canChange = canWrite && isEditing;
   const askToDelete = useAskToDeleteAsset(projectSlug, onDone);
   // The Overview until somebody picks a tab, and the Overview again if the tab
   // they were reading goes — deleted here, or by somebody else meanwhile.
   const [chosenTab, setChosenTab] = useState<string>(OVERVIEW);
   const selected = asset.tabs.some((tab) => tab.id === chosenTab) ? chosenTab : OVERVIEW;
+  const tab = asset.tabs.find((each) => each.id === selected);
 
   // A refetch after saving, or somebody else's change arriving, is the authority
   // on what the asset is. Keyed off `updatedAt` so typing is not interrupted by
@@ -196,9 +201,19 @@ function AssetForm({
     setForm(toForm(asset));
   }, [asset.updatedAt]);
 
+  const stopEditing = (): void => {
+    setForm(toForm(asset));
+    updateAsset.reset();
+    setIsEditing(false);
+  };
+
   const submit = (): void => {
     updateAsset.mutate(fromForm(asset.id, form), {
-      onSuccess: onDone,
+      // Back to reading the asset, which is what saving was for. The panel
+      // stays open: what was just saved is usually what somebody checks next.
+      onSuccess: () => {
+        setIsEditing(false);
+      },
       // A problem with a field stays on that field, where the thing to change
       // is. Anything else — a refused write, a server that went away — has
       // nowhere to be but the display.
@@ -214,18 +229,21 @@ function AssetForm({
         submit();
       }}
     >
-      <div className={styles.detailHead}>
-        <span
-          className={styles.detailCategory}
-          style={{ '--category-color': asset.category.color } as React.CSSProperties}
-        >
-          <span className={styles.detailCategoryDot} aria-hidden />
-          {asset.category.name}
-        </span>
-        {/* What it is called out loud, in the slot the design draws it in. */}
-        <span className={styles.detailKey}>{asset.assetKey}</span>
-        <Button onClick={onDone}>Close</Button>
-      </div>
+      <PanelHead
+        asset={asset}
+        projectSlug={projectSlug}
+        selected={selected}
+        canWrite={canWrite}
+        isEditing={isEditing}
+        onSelect={setChosenTab}
+        onEdit={() => {
+          setIsEditing(true);
+        }}
+        onDelete={() => {
+          askToDelete(asset);
+        }}
+        onClose={onDone}
+      />
 
       <div className={styles.detailBody}>
         {/* The sheet stays put while the right-hand column is being edited: the
@@ -234,150 +252,162 @@ function AssetForm({
           assetId={asset.id}
           projectSlug={projectSlug}
           references={asset.references}
-          canWrite={canWrite}
+          canWrite={canChange}
         />
 
         <div className={styles.detailSide}>
-          {isEditing ? (
-            <Editing form={form} problems={problems} asset={asset} onChange={setForm} />
-          ) : (
-            <Reading
+          <Heading asset={asset} />
+
+          {tab === undefined ? (
+            <Overview
               asset={asset}
               projectSlug={projectSlug}
-              canWrite={canWrite}
-              selected={selected}
+              canWrite={canChange}
               onSelect={setChosenTab}
+              editing={
+                isEditing ? (
+                  <Editing form={form} problems={problems} asset={asset} onChange={setForm} />
+                ) : null
+              }
               {...openers}
+            />
+          ) : (
+            <AssetTabPanel
+              // Keyed, so a rename half typed on one tab does not follow
+              // somebody to the next.
+              key={tab.id}
+              asset={asset}
+              tab={tab}
+              projectSlug={projectSlug}
+              canWrite={canChange}
+              onGone={() => {
+                setChosenTab(OVERVIEW);
+              }}
             />
           )}
 
-          <div className={styles.detailActions}>
-            {canWrite && !isEditing && (
-              <>
-                <Advance asset={asset} projectSlug={projectSlug} />
-                <Button
-                  aria-label="Edit"
-                  title="Edit"
-                  onClick={() => {
-                    setIsEditing(true);
-                  }}
-                >
-                  <ButtonIcon>
-                    <PencilIcon size={14} />
-                  </ButtonIcon>
-                </Button>
-                {asset.canDelete && (
-                  // Beside Edit, as a card's is: these are the two things
-                  // somebody does to the asset itself, and the red is what
-                  // tells them apart.
-                  <Button
-                    tone="stop"
-                    aria-label="Delete asset"
-                    title="Delete asset"
-                    onClick={() => {
-                      askToDelete(asset);
-                    }}
-                  >
-                    <ButtonIcon>
-                      <TrashIcon size={14} />
-                    </ButtonIcon>
-                  </Button>
-                )}
-              </>
-            )}
-            {canWrite && isEditing && (
-              <>
-                <Button tone="go" type="submit" busy={updateAsset.isPending} busyLabel="Saving…">
-                  Save changes
-                </Button>
-                <Button
-                  tone="stop"
-                  onClick={() => {
-                    setForm(toForm(asset));
-                    setIsEditing(false);
-                  }}
-                >
-                  Cancel
-                </Button>
-              </>
-            )}
-          </div>
+          {canChange && (
+            <div className={styles.detailActions}>
+              <Button tone="go" type="submit" busy={updateAsset.isPending} busyLabel="Saving…">
+                Save changes
+              </Button>
+              <Button tone="stop" onClick={stopEditing}>
+                Cancel
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </form>
   );
 }
 
-interface ReadingProps extends Openers {
+interface PanelHeadProps {
   readonly asset: AssetDetailView;
   readonly projectSlug: string;
-  readonly canWrite: boolean;
   /** The tab being read, or the Overview. */
   readonly selected: string;
+  readonly canWrite: boolean;
+  readonly isEditing: boolean;
   readonly onSelect: (tabId: string) => void;
+  readonly onEdit: () => void;
+  readonly onDelete: () => void;
+  readonly onClose: () => void;
 }
 
 /**
- * The asset as it reads, which is what opening one is usually for.
+ * Everything about the panel itself, on one bar across the top: what the asset
+ * is filed as, which part of it is open, and what can be done to it.
  *
- * Its name and phase on top whichever tab is open, then the row of tabs, then
- * the one chosen: the Overview, which is the asset itself, or one of the jobs
- * inside it.
+ * The tabs are here rather than in a column, because they are how the whole
+ * panel is read, the pictures included. Edit and Delete sit beside the cross
+ * that closes it, as the three things done to the panel rather than in it.
  */
-function Reading({
+function PanelHead({
   asset,
   projectSlug,
-  canWrite,
   selected,
+  canWrite,
+  isEditing,
   onSelect,
-  ...openers
-}: ReadingProps): React.JSX.Element {
-  const tab = asset.tabs.find((each) => each.id === selected);
-
+  onEdit,
+  onDelete,
+  onClose,
+}: PanelHeadProps): React.JSX.Element {
   return (
-    <>
-      <div>
-        <h2 className={styles.detailName}>{asset.name}</h2>
-        <div className={styles.detailStatus}>
-          <span className={styles.phaseDot} data-phase={asset.phase} aria-hidden />
-          <span className={styles.phaseName}>{describeAssetPhase(asset.phase)}</span>
-          <span className={styles.detailStamp}>· updated {formatTimeAgo(asset.updatedAt)}</span>
-        </div>
+    <div className={styles.detailHead}>
+      <span
+        className={styles.detailCategory}
+        style={{ '--category-color': asset.category.color } as React.CSSProperties}
+      >
+        <span className={styles.detailCategoryDot} aria-hidden />
+        {asset.category.name}
+      </span>
+      {/* What it is called out loud, in the slot the design draws it in. */}
+      <span className={styles.detailKey}>{asset.assetKey}</span>
+
+      <div className={styles.detailTabs}>
+        <AssetTabStrip
+          assetId={asset.id}
+          projectSlug={projectSlug}
+          tabs={asset.tabs}
+          selected={selected}
+          canWrite={canWrite && isEditing}
+          onSelect={onSelect}
+        />
       </div>
 
-      <AssetTabStrip
-        assetId={asset.id}
-        projectSlug={projectSlug}
-        tabs={asset.tabs}
-        selected={selected}
-        canWrite={canWrite}
-        onSelect={onSelect}
-      />
-
-      {tab === undefined ? (
-        <Overview
-          asset={asset}
-          projectSlug={projectSlug}
-          canWrite={canWrite}
-          onSelect={onSelect}
-          {...openers}
-        />
-      ) : (
-        <AssetTabPanel
-          // Keyed, so a rename half typed on one tab does not follow somebody
-          // to the next.
-          key={tab.id}
-          asset={asset}
-          tab={tab}
-          projectSlug={projectSlug}
-          canWrite={canWrite}
-          onGone={() => {
-            onSelect(OVERVIEW);
-          }}
-        />
+      {canWrite && !isEditing && (
+        <Button aria-label="Edit" title="Edit" onClick={onEdit}>
+          <ButtonIcon>
+            <PencilIcon size={14} />
+          </ButtonIcon>
+        </Button>
       )}
-    </>
+      {canWrite && !isEditing && asset.canDelete && (
+        // Beside Edit, as a card's is: these are the two things somebody
+        // does to the asset itself, and the red is what tells them apart.
+        <Button tone="stop" aria-label="Delete asset" title="Delete asset" onClick={onDelete}>
+          <ButtonIcon>
+            <TrashIcon size={14} />
+          </ButtonIcon>
+        </Button>
+      )}
+      <Button aria-label="Close" title="Close" onClick={onClose}>
+        <ButtonIcon>
+          <CloseIcon size={14} />
+        </ButtonIcon>
+      </Button>
+    </div>
   );
+}
+
+/** What the asset is called and which phase it is in, over whichever tab is open. */
+function Heading({ asset }: { readonly asset: AssetDetailView }): React.JSX.Element {
+  return (
+    <div>
+      <h2 className={styles.detailName}>{asset.name}</h2>
+      <div className={styles.detailStatus}>
+        <span className={styles.phaseDot} data-phase={asset.phase} aria-hidden />
+        <span className={styles.phaseName}>{describeAssetPhase(asset.phase)}</span>
+        <span className={styles.detailStamp}>· updated {formatTimeAgo(asset.updatedAt)}</span>
+      </div>
+    </div>
+  );
+}
+
+interface OverviewProps extends Openers {
+  readonly asset: AssetDetailView;
+  readonly projectSlug: string;
+  /** Only in edit mode: reading an asset changes nothing. */
+  readonly canWrite: boolean;
+  readonly onSelect: (tabId: string) => void;
+  /**
+   * The asset's own fields as a form, while it is being edited, in place of
+   * the estimate, the description and the facts they would otherwise be read
+   * as. Null while it is being read.
+   */
+  readonly editing: React.ReactNode;
 }
 
 /**
@@ -389,24 +419,16 @@ function Overview({
   projectSlug,
   canWrite,
   onSelect,
+  editing,
   onOpenCard,
   onOpenAsset,
-}: Omit<ReadingProps, 'selected'>): React.JSX.Element {
+}: OverviewProps): React.JSX.Element {
   // So the asset's own lists can say which tab a file is for.
   const tabNames = new Map(asset.tabs.map((tab) => [tab.id, tab.title]));
 
   return (
     <>
-      <Estimate asset={asset} />
-
-      <section>
-        <h3 className={styles.detailHeading}>Description</h3>
-        {asset.description === null ? (
-          <p className={styles.missing}>No description provided.</p>
-        ) : (
-          <MarkdownText source={asset.description} />
-        )}
-      </section>
+      {editing ?? <About asset={asset} />}
 
       <AssetTabsSummary
         asset={asset}
@@ -422,22 +444,7 @@ function Overview({
         canWrite={canWrite}
       />
 
-      <dl className={styles.facts}>
-        <Fact label="Category" value={asset.category.name} />
-        <Fact label="Phase" value={describeAssetPhase(asset.phase)} />
-        <Fact
-          label="Estimated cost"
-          value={
-            asset.estimatedCostMinor === null
-              ? null
-              : formatMoney(asset.estimatedCostMinor, asset.project.currency)
-          }
-        />
-        <Fact label="Target date" value={asset.dueOn} />
-        <Fact label="Assignee" value={asset.assignee?.displayName ?? null} />
-        <Fact label="Reporter" value={asset.reporter?.displayName ?? null} />
-        <Fact label="Reference images" value={String(asset.references.length)} />
-      </dl>
+      {editing === null && <Facts asset={asset} />}
 
       <AssetFiles
         assetId={asset.id}
@@ -468,6 +475,46 @@ function Overview({
   );
 }
 
+/** What it costs and what it is, as they read. */
+function About({ asset }: { readonly asset: AssetDetailView }): React.JSX.Element {
+  return (
+    <>
+      <Estimate asset={asset} />
+
+      <section>
+        <h3 className={styles.detailHeading}>Description</h3>
+        {asset.description === null ? (
+          <p className={styles.missing}>No description provided.</p>
+        ) : (
+          <MarkdownText source={asset.description} />
+        )}
+      </section>
+    </>
+  );
+}
+
+/** Label on the left, value on the right: the asset's facts as they read. */
+function Facts({ asset }: { readonly asset: AssetDetailView }): React.JSX.Element {
+  return (
+    <dl className={styles.facts}>
+      <Fact label="Category" value={asset.category.name} />
+      <Fact label="Phase" value={describeAssetPhase(asset.phase)} />
+      <Fact
+        label="Estimated cost"
+        value={
+          asset.estimatedCostMinor === null
+            ? null
+            : formatMoney(asset.estimatedCostMinor, asset.project.currency)
+        }
+      />
+      <Fact label="Target date" value={asset.dueOn} />
+      <Fact label="Assignee" value={asset.assignee?.displayName ?? null} />
+      <Fact label="Reporter" value={asset.reporter?.displayName ?? null} />
+      <Fact label="Reference images" value={String(asset.references.length)} />
+    </dl>
+  );
+}
+
 /**
  * What the asset is estimated to cost, given its own box.
  *
@@ -490,46 +537,6 @@ function Estimate({ asset }: { asset: AssetDetailView }): React.JSX.Element {
         {asset.dueOn === null ? '' : ` · wanted by ${asset.dueOn}`}
       </div>
     </div>
-  );
-}
-
-/**
- * Moves the asset on to its next phase.
- *
- * An asset goes through the same three phases everywhere, so unlike a card
- * there is always exactly one thing "onwards" means — which is why this is one
- * button and not the strip of lists a card gets.
- *
- * Live outside edit mode, as the card's is: it changes how far along a thing is
- * rather than what it says, and making somebody open a form to say a model has
- * gone into production is how a library stops being kept up to date.
- */
-function Advance({
-  asset,
-  projectSlug,
-}: {
-  asset: AssetDetailView;
-  projectSlug: string;
-}): React.JSX.Element | null {
-  const updateAsset = useUpdateAsset(projectSlug, asset.id);
-  const next = ASSET_PHASES[ASSET_PHASES.indexOf(asset.phase) + 1];
-
-  if (next === undefined) {
-    // In production. There is nowhere further for it to go.
-    return null;
-  }
-
-  return (
-    <Button
-      tone="go"
-      busy={updateAsset.isPending}
-      busyLabel="Saving…"
-      onClick={() => {
-        updateAsset.mutate({ assetId: asset.id, phase: next }, {});
-      }}
-    >
-      {`Move to ${describeAssetPhase(next).toLowerCase()}`}
-    </Button>
   );
 }
 

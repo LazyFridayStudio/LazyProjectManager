@@ -711,6 +711,10 @@ test.describe.serial('a studio setting up for the first time', () => {
 
     await expect(panel.getByText('no reference images yet')).toBeVisible();
 
+    // Opened to be read: nothing here changes the asset until Edit says so.
+    await expect(panel.getByRole('button', { name: 'Upload' })).toHaveCount(0);
+    await panel.getByRole('button', { name: 'Edit' }).click();
+
     // Three at once, because that is how reference arrives: somebody finishes a
     // pass and has a handful of images, not one.
     await panel.getByLabel('Reference images').setInputFiles(
@@ -778,10 +782,6 @@ test.describe.serial('a studio setting up for the first time', () => {
 
     await expect(panel.getByRole('button', { name: /pasted/ })).toBeVisible();
 
-    // Said once, on the other side of the panel. The sheet used to count itself
-    // as well, which was two places for one number to be wrong in.
-    await expect(panel.getByText('Reference images')).toBeVisible();
-
     // A source file dropped here is left out and named, rather than becoming a
     // tile with a filename on it where the asset's thumbnail should be.
     await panel.getByLabel('Reference images').setInputFiles({
@@ -804,6 +804,12 @@ test.describe.serial('a studio setting up for the first time', () => {
     await page.getByRole('button', { name: 'Dismiss' }).click();
     await expect(problem).toBeHidden();
 
+    // Back to reading it. Said once, on the other side of the panel: the sheet
+    // used to count itself as well, which was two places for one number to be
+    // wrong in.
+    await panel.getByRole('button', { name: 'Cancel' }).click();
+    await expect(panel.getByText('Reference images')).toBeVisible();
+
     await panel.getByRole('button', { name: 'Close' }).click();
 
     // And the tile behind it counts them, rather than the panel being the only
@@ -821,6 +827,7 @@ test.describe.serial('a studio setting up for the first time', () => {
     const panel = page.getByRole('dialog', { name: 'Asset' });
     const files = panel.getByRole('region', { name: 'Files' });
 
+    await panel.getByRole('button', { name: 'Edit' }).click();
     await expect(files.getByText(/Nothing yet/)).toBeVisible();
 
     await files.getByLabel('Upload files').setInputFiles({
@@ -866,6 +873,7 @@ test.describe.serial('a studio setting up for the first time', () => {
 
     const tags = panel.getByRole('region', { name: 'Tags' });
 
+    await panel.getByRole('button', { name: 'Edit' }).click();
     await tags.getByRole('button', { name: 'Add tag' }).click();
 
     // Typed as somebody would, stored as one tag: `Act 1` and `act-1` are the
@@ -890,6 +898,7 @@ test.describe.serial('a studio setting up for the first time', () => {
 
     // And off again.
     await tile.click();
+    await panel.getByRole('button', { name: 'Edit' }).click();
     await tags.getByRole('button', { name: 'Remove act-1' }).click();
     await expect(tags.getByText('act-1')).toBeHidden();
     await panel.getByRole('button', { name: 'Close' }).click();
@@ -908,6 +917,10 @@ test.describe.serial('a studio setting up for the first time', () => {
       'aria-selected',
       'true',
     );
+
+    // Opened to be read, the row offers nothing to press but the tabs.
+    await expect(strip.getByRole('button', { name: 'Add tab' })).toHaveCount(0);
+    await panel.getByRole('button', { name: 'Edit' }).click();
 
     // A new tab opens as soon as it exists: the next thing anybody does with a
     // tab called Mesh is put something on it.
@@ -994,6 +1007,7 @@ test.describe.serial('a studio setting up for the first time', () => {
     await kept.getByRole('button', { name: 'Close' }).click();
 
     await tile.click();
+    await panel.getByRole('button', { name: 'Edit' }).click();
 
     for (const name of ['Mesh', 'Rig']) {
       await strip.getByRole('tab', { name }).click();
@@ -1069,6 +1083,7 @@ test.describe.serial('a studio setting up for the first time', () => {
     const panel = page.getByRole('dialog', { name: 'Asset' });
     const links = panel.getByRole('region', { name: 'Linked assets' });
 
+    await panel.getByRole('button', { name: 'Edit' }).click();
     await links.getByRole('button', { name: '+ Link' }).click();
     await links.getByLabel('Search assets').fill('bell');
     await links.getByRole('button', { name: new RegExp(LINKED_ASSET) }).click();
@@ -1089,12 +1104,16 @@ test.describe.serial('a studio setting up for the first time', () => {
 
     await expect(toWatchtower).toBeVisible();
 
-    // Let go of from this end, and the bell itself stays.
+    // Let go of from this end, and the bell itself stays. Another asset opens
+    // to be read, as every asset does, so this end is edited too.
+    await panel.getByRole('button', { name: 'Edit' }).click();
     await links.getByRole('button', { name: `Unlink ${ASSET}` }).click();
     await expect(toWatchtower).toBeHidden();
     await expect(panel.getByRole('heading', { name: LINKED_ASSET })).toBeVisible();
 
     // And gone, leaving the library as the rest of the journey found it.
+    // Deleting is done to the asset as it reads, not from inside an edit.
+    await panel.getByRole('button', { name: 'Cancel' }).click();
     await panel.getByRole('button', { name: 'Delete asset' }).click();
     await page
       .getByRole('dialog', { name: `Delete ${LINKED_ASSET}?` })
