@@ -429,6 +429,7 @@ export function AssetBlockAdder({
   readonly projectSlug: string;
 }): React.JSX.Element | null {
   const [isOpen, setIsOpen] = useState(false);
+  const [where, setWhere] = useState<React.CSSProperties>({});
   const menu = usePresence<HTMLDivElement>(isOpen, 'menu');
   const holder = useRef<HTMLDivElement>(null);
   const display = useDisplay();
@@ -457,7 +458,20 @@ export function AssetBlockAdder({
   }
 
   return (
-    <div ref={holder} className={styles.adder}>
+    <div
+      ref={holder}
+      className={styles.adder}
+      onKeyDown={(event) => {
+        // Escape closes the list rather than the panel it is in. Held back
+        // here, from the button as well as the list, because the panel takes
+        // Escape from wherever focus is.
+        if (event.key === 'Escape' && isOpen) {
+          event.preventDefault();
+          event.stopPropagation();
+          setIsOpen(false);
+        }
+      }}
+    >
       <Button
         tone="go"
         size="compact"
@@ -466,7 +480,8 @@ export function AssetBlockAdder({
         aria-haspopup="menu"
         aria-expanded={isOpen}
         disabled={add.isPending}
-        onClick={() => {
+        onClick={(event) => {
+          setWhere(placeTheList(event.currentTarget, kinds.length));
           setIsOpen((open) => !open);
         }}
       >
@@ -479,19 +494,7 @@ export function AssetBlockAdder({
       </Button>
 
       {menu.isPresent && (
-        <div
-          ref={menu.ref}
-          className={styles.menu}
-          role="menu"
-          aria-label="Blocks"
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') {
-              // The menu, not the panel it is in.
-              event.stopPropagation();
-              setIsOpen(false);
-            }
-          }}
-        >
+        <div ref={menu.ref} className={styles.menu} style={where} role="menu" aria-label="Blocks">
           {kinds.map((kind) => (
             <button
               key={kind}
@@ -519,4 +522,23 @@ export function AssetBlockAdder({
       )}
     </div>
   );
+}
+
+/** Roughly how tall one row of the list is, to know whether it fits below. */
+const ROW_PX = 34;
+
+/**
+ * Where the list goes: against the window rather than the panel, because the
+ * panel's column scrolls and would cut a list off at its edge. Under the button
+ * when it fits, and over it when it does not — the button is usually at the
+ * foot of what somebody is looking at.
+ */
+function placeTheList(button: HTMLElement, rows: number): React.CSSProperties {
+  const box = button.getBoundingClientRect();
+  const height = rows * ROW_PX + 10;
+  const fitsBelow = box.bottom + 4 + height <= window.innerHeight;
+
+  return fitsBelow
+    ? { left: box.left, top: box.bottom + 4 }
+    : { left: box.left, bottom: window.innerHeight - box.top + 4 };
 }
