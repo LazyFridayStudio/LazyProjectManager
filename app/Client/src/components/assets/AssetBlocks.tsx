@@ -472,11 +472,11 @@ export function AssetBlockAdder({
         }
       }}
     >
-      <Button
-        tone="go"
-        size="compact"
-        aria-label="Add block"
-        title="Add block"
+      {/* Drawn as the next card in the stack, empty, so pressing it reads as
+          adding one more — green, as anything that makes something is. */}
+      <button
+        type="button"
+        className={styles.addCard}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         disabled={add.isPending}
@@ -485,13 +485,9 @@ export function AssetBlockAdder({
           setIsOpen((open) => !open);
         }}
       >
-        <span className={styles.addLabel}>
-          <ButtonIcon>
-            <PlusIcon size={12} />
-          </ButtonIcon>
-          Add block
-        </span>
-      </Button>
+        <PlusIcon size={14} />
+        Add block
+      </button>
 
       {menu.isPresent && (
         <div ref={menu.ref} className={styles.menu} style={where} role="menu" aria-label="Blocks">

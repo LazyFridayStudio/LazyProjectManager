@@ -99,7 +99,8 @@ function TabButton({
  * from a template — and keeping this asset's tabs as a template.
  *
  * Marks rather than words, because they sit among tabs and a word there reads
- * as one more tab.
+ * as one more tab — and the size the panel's own Close is, so the bar's
+ * buttons are one set.
  */
 function RowActions({
   asset,
@@ -120,7 +121,6 @@ function RowActions({
     <span className={styles.rowActions}>
       <Button
         tone="go"
-        size="compact"
         aria-label="Add tab"
         title="Add a tab, or start from a template"
         onClick={() => {
@@ -128,14 +128,13 @@ function RowActions({
         }}
       >
         <ButtonIcon>
-          <PlusIcon size={13} />
+          <PlusIcon size={14} />
         </ButtonIcon>
       </Button>
 
       {canSave && (
         <Button
           tone="go"
-          size="compact"
           aria-label="Save as a template"
           title="Save as a template"
           onClick={() => {
@@ -143,7 +142,7 @@ function RowActions({
           }}
         >
           <ButtonIcon>
-            <SaveIcon size={13} />
+            <SaveIcon size={14} />
           </ButtonIcon>
         </Button>
       )}

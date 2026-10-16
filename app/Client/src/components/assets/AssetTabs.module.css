@@ -458,7 +458,45 @@
 /* The button, and the list that falls open under it. */
 .adder {
   position: relative;
-  align-self: flex-start;
+}
+
+/*
+ * The empty card at the foot of the stack that a new block goes into.
+ *
+ * The shape of the blocks above it with a dashed edge, because it is the slot
+ * for one rather than one; green, because pressing it makes something.
+ */
+.addCard {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  border: 1px dashed color-mix(in srgb, var(--color-ok) 60%, transparent);
+  border-radius: var(--radius-panel);
+  background: transparent;
+  font: inherit;
+  font-size: var(--font-size-small);
+  color: var(--color-ok);
+  cursor: pointer;
+}
+
+.addCard:hover:not(:disabled),
+.addCard[aria-expanded='true'] {
+  border-style: solid;
+  border-color: var(--color-ok);
+  background: color-mix(in srgb, var(--color-ok) 10%, transparent);
+}
+
+.addCard:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.addCard:disabled {
+  cursor: default;
+  opacity: 0.6;
 }
 
 /* Placed against the window by the component, which knows where the button is. */
