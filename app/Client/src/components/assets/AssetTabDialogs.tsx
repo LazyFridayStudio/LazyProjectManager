@@ -7,8 +7,17 @@ import {
   useApplyAssetTemplate,
   useAssetTemplates,
   useCreateAssetTemplate,
+  useDeleteAssetTemplate,
 } from '../../logic/assets/use-asset-tabs.js';
-import { Button, Field, Select, useDisplay, useModalDialog } from '../ui/index.js';
+import {
+  Button,
+  ButtonIcon,
+  Field,
+  Select,
+  TrashIcon,
+  useDisplay,
+  useModalDialog,
+} from '../ui/index.js';
 import styles from './AssetLibraryScreen.module.css';
 
 export interface AddTabDialogProps {
@@ -118,6 +127,7 @@ function FromATemplate({
 }): React.JSX.Element | null {
   const templates = useAssetTemplates(asset.project.id);
   const apply = useApplyAssetTemplate(projectSlug, asset.id);
+  const remove = useDeleteAssetTemplate(asset.project.id);
   const display = useDisplay();
   const offered = templates.data?.templates ?? [];
   const [chosen, setChosen] = useState('');
@@ -142,6 +152,45 @@ function FromATemplate({
         }}
       />
       <div className={styles.dialogActions}>
+        {/* Deleted where it is chosen, by whoever keeps the project's
+            templates: a template somebody is looking at and no longer wants is
+            the one they will reach for the bin beside. */}
+        {templates.data?.canManage === true && (
+          <Button
+            tone="stop"
+            aria-label="Delete template"
+            title={`Delete ${picked.name}`}
+            busy={remove.isPending}
+            onClick={() => {
+              void (async () => {
+                const said = await display.askToConfirm({
+                  question: `Delete ${picked.name}?`,
+                  consequence:
+                    'Assets started from it keep their tabs, and a category that offered it offers nothing. It is not kept in the bin.',
+                  confirmLabel: 'Delete template',
+                });
+
+                if (!said) return;
+
+                remove.mutate(
+                  { templateId: picked.id },
+                  {
+                    onSuccess: () => {
+                      setChosen('');
+                    },
+                    onError: (error) => {
+                      display.showError(describeFailure(error));
+                    },
+                  },
+                );
+              })();
+            }}
+          >
+            <ButtonIcon>
+              <TrashIcon size={14} />
+            </ButtonIcon>
+          </Button>
+        )}
         <Button
           tone="go"
           busy={apply.isPending}

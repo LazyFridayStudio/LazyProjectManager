@@ -7,14 +7,13 @@ import {
 import { useState } from 'react';
 
 import { describeFailure } from '../../api/failure-messages.js';
-import { joinClassNames } from '../../lib/join-class-names.js';
 import {
   useDeleteAssetTab,
   useMoveAssetTab,
   useUpdateAssetTab,
 } from '../../logic/assets/use-asset-tabs.js';
 import { PersonPicker } from '../projects/index.js';
-import { Field, PencilIcon, TrashIcon, useDisplay } from '../ui/index.js';
+import { Button, ButtonIcon, Field, PencilIcon, TrashIcon, useDisplay } from '../ui/index.js';
 import { WorkLog } from '../work/index.js';
 import {
   AssetBlockAdder,
@@ -265,21 +264,20 @@ function TabControls({
       >
         →
       </button>
-      <button
-        type="button"
-        className={styles.quiet}
-        aria-label="Rename tab"
-        title="Rename tab"
-        onClick={onRename}
-      >
-        <PencilIcon size={13} />
-      </button>
-      <button
-        type="button"
-        className={joinClassNames(styles.quiet, styles.quietStop)}
+      {/* Buttons rather than the quiet marks beside them: renaming and deleting
+          the tab are the two things somebody comes to a tab's card to do, and
+          a faint bin in a corner is one they cannot find. */}
+      <Button size="compact" aria-label="Rename tab" title="Rename tab" onClick={onRename}>
+        <ButtonIcon>
+          <PencilIcon size={13} />
+        </ButtonIcon>
+      </Button>
+      <Button
+        tone="stop"
+        size="compact"
         aria-label="Delete tab"
         title="Delete tab"
-        disabled={remove.isPending}
+        busy={remove.isPending}
         onClick={() => {
           void (async () => {
             const said = await display.askToConfirm({
@@ -295,8 +293,10 @@ function TabControls({
           })();
         }}
       >
-        <TrashIcon size={13} />
-      </button>
+        <ButtonIcon>
+          <TrashIcon size={13} />
+        </ButtonIcon>
+      </Button>
     </>
   );
 }
