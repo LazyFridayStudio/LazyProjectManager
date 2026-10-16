@@ -14,6 +14,7 @@ import {
 } from '../../../cqrs/request-context.js';
 import { InvariantViolatedError, type PermittedAction } from '../../../domain/index.js';
 import { assertProjectPermission, loadMembershipRole } from '../../projects/project-access.js';
+import { showOnTheOverview } from '../../assets/asset-access.js';
 import { DeletedThingNotFoundError } from '../recovery-errors.js';
 import {
   describeKind,
@@ -46,6 +47,10 @@ export const restoreDeletedThingHandler = defineCommandHandler({
         const binned = await take(transaction, actor, input.deletedThingId);
 
         await restoreFrom(transaction, binned);
+
+        if (binned.kind === 'card') {
+          await showTheCardOnItsAssets(transaction, binned.subjectId);
+        }
 
         transaction.appendEvent({
           accountId: actor.accountId,
@@ -199,4 +204,27 @@ function whatItHappenedTo(binned: {
     aggregateId:
       aggregateType === 'project' ? (binned.projectId ?? binned.subjectId) : binned.subjectId,
   };
+}
+
+/**
+ * A restored card is linked to its assets again, and each shows it.
+ *
+ * The links come back as rows rather than through the command that makes
+ * one, so the Linked work an asset's Overview would have gained by a fresh
+ * link is added here — an asset whose card came back and did not say so
+ * would be the link nobody looking at the asset could find.
+ */
+async function showTheCardOnItsAssets(
+  transaction: CommandTransaction,
+  cardId: string,
+): Promise<void> {
+  const links = await transaction.database
+    .selectFrom('cardAssetLink')
+    .select('assetId')
+    .where('cardId', '=', cardId)
+    .execute();
+
+  for (const link of links) {
+    await showOnTheOverview(transaction.database, link.assetId, 'cards');
+  }
 }

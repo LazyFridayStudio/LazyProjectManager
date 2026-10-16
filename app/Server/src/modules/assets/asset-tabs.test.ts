@@ -850,6 +850,35 @@ describe('GIVEN an asset worked in tabs', () => {
       expect(await overviewKinds(helm)).toEqual(['assets', 'cards']);
     });
 
+    it('THEN a card about it, put back from the bin, shows on it again', async () => {
+      const assetId = await addAsset();
+      const list = await testDatabase.database
+        .selectFrom('list')
+        .select('id')
+        .orderBy('position')
+        .executeTakeFirstOrThrow();
+      const cardId = await idOf(
+        command('board.createCard', { projectId, listId: list.id, title: 'Model it', type: 'art' }),
+      );
+
+      await command('assets.linkCard', { cardId, assetId });
+      await command('board.deleteCard', { cardId });
+
+      const linkedWork = (await detail(assetId)).overview.find((block) => block.kind === 'cards');
+
+      // Somebody took the section off while the card was in the bin.
+      await command('assets.removeBlock', { blockId: linkedWork?.id });
+
+      const card = (await query<DeletedThingsView>('recovery.deletedThings')).things.find(
+        (thing) => thing.what === 'Card',
+      );
+
+      await command('recovery.restore', { deletedThingId: card?.id });
+
+      expect(await overviewKinds(assetId)).toEqual(['cards']);
+      expect((await detail(assetId)).cards).toMatchObject([{ cardId }]);
+    });
+
     it('THEN deleting a tab leaves the Overview alone', async () => {
       const assetId = await addAsset();
       const rig = await addTab(assetId, 'Rig');

@@ -472,11 +472,16 @@ export function AssetBlockAdder({
         }
       }}
     >
-      {/* Drawn as the next card in the stack, empty, so pressing it reads as
-          adding one more — green, as anything that makes something is. */}
+      {/* Drawn as the next card in the stack, empty but for a plus, so pressing
+          it reads as adding one more — green, as anything that makes something
+          is. */}
       <button
         type="button"
         className={styles.addCard}
+        // The mark alone on the card; the words are what a screen reader says
+        // and what a hover shows.
+        aria-label="Add block"
+        title="Add block"
         aria-haspopup="menu"
         aria-expanded={isOpen}
         disabled={add.isPending}
@@ -485,8 +490,7 @@ export function AssetBlockAdder({
           setIsOpen((open) => !open);
         }}
       >
-        <PlusIcon size={14} />
-        Add block
+        <PlusIcon size={18} />
       </button>
 
       {menu.isPresent && (
