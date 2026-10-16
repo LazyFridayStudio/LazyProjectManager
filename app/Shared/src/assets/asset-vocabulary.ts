@@ -29,7 +29,9 @@ export function describeAssetPhase(phase: AssetPhase): string {
 }
 
 /**
- * Everything an asset's tabs and its Overview can be built from.
+ * Everything an asset's tabs and its Overview can be built from, and each at
+ * most once in each place: one checklist on a tab, one set of notes. A second
+ * of a kind is a second place to look for the same thing.
  *
  * Notes and a checklist hold what somebody wrote. The rest hold nothing of their
  * own: each shows something the asset already has — its files and hours, its
@@ -98,20 +100,6 @@ export function describeAssetBlockKind(kind: AssetBlockKind): string {
   return BLOCK_LABELS[kind];
 }
 
-/**
- * Blocks that show something the asset already has, so a tab or an Overview
- * has at most one of each: a second would show the same things twice.
- */
-export const ASSET_VIEW_BLOCK_KINDS: readonly AssetBlockKind[] = [
-  'files',
-  'work',
-  'estimate',
-  'tabs',
-  'tags',
-  'cards',
-  'assets',
-];
-
 /** What a tab is called: Mesh, UVs, Rig. Short, because it sits in a row of them. */
 export const assetTabTitleSchema = z.string().trim().min(1, 'Name the tab.').max(60);
 
@@ -129,14 +117,21 @@ export const assetChecklistItemTitleSchema = z
 export const assetTemplateNameSchema = z.string().trim().min(1, 'Name the template.').max(100);
 
 /**
- * The most tabs one asset has, and the most blocks one tab has.
+ * The most tabs one asset has, and the most lines one checklist has.
  *
  * Not a rule about how anybody should work — past these a row of tabs is a
- * scrolling strip, and a tab is a page nobody reads to the bottom of.
+ * scrolling strip, and a checklist is a page nobody reads to the bottom of.
+ * How many blocks a place has needs no number: one of each kind.
  */
 export const MAXIMUM_TABS_PER_ASSET = 30;
-export const MAXIMUM_BLOCKS_PER_TAB = 20;
 export const MAXIMUM_ITEMS_PER_CHECKLIST = 100;
+
+/** Blocks with no kind twice, as a tab and an Overview hold them. */
+function oneOfEachKind(blocks: readonly { readonly kind: string }[]): boolean {
+  return new Set(blocks.map((block) => block.kind)).size === blocks.length;
+}
+
+const ONE_OF_EACH = 'A place has one block of each kind.';
 
 /**
  * One block as a template keeps it.
@@ -192,7 +187,7 @@ export const assetTemplateDefinitionSchema = z.object({
     .array(
       z.object({
         title: assetTabTitleSchema,
-        blocks: z.array(assetTemplateBlockSchema).max(MAXIMUM_BLOCKS_PER_TAB),
+        blocks: z.array(assetTemplateBlockSchema).refine(oneOfEachKind, ONE_OF_EACH),
       }),
     )
     .max(MAXIMUM_TABS_PER_ASSET),
@@ -201,7 +196,10 @@ export const assetTemplateDefinitionSchema = z.object({
    *
    * Defaulted, so a template saved before the Overview had blocks still reads.
    */
-  overview: z.array(assetTemplateOverviewBlockSchema).max(MAXIMUM_BLOCKS_PER_TAB).default([]),
+  overview: z
+    .array(assetTemplateOverviewBlockSchema)
+    .refine(oneOfEachKind, ONE_OF_EACH)
+    .default([]),
 });
 
 export type AssetTemplateDefinition = z.infer<typeof assetTemplateDefinitionSchema>;

@@ -88,9 +88,8 @@ export const deleteAssetTabCommand = defineCommand(
  * `assetTabId` for a tab and `assetId` for the Overview, and exactly one. A tab
  * takes notes, a checklist, files and work; the Overview takes those and the
  * asset's own sections — its estimate, tab list, tags and links. A notes block
- * may arrive with what it says; every other kind starts empty. A block that
- * shows something the asset has is there at most once in each place, because a
- * second would show it twice.
+ * may arrive with what it says; every other kind starts empty. Each kind is
+ * there at most once in each place: one checklist on a tab, one set of notes.
  */
 export const addAssetTabBlockCommand = defineCommand(
   'assets.addBlock',

@@ -3,10 +3,8 @@ import {
   addAssetTabBlockCommand,
   addAssetTabCommand,
   ASSET_TAB_BLOCK_KINDS,
-  ASSET_VIEW_BLOCK_KINDS,
   createCommandSuccess,
   deleteAssetTabCommand,
-  MAXIMUM_BLOCKS_PER_TAB,
   MAXIMUM_ITEMS_PER_CHECKLIST,
   MAXIMUM_TABS_PER_ASSET,
   moveAssetTabBlockCommand,
@@ -458,9 +456,8 @@ export const addAssetTabBlockHandler = defineCommandHandler({
 });
 
 /**
- * Refuses a block that does not belong where it is going, one past the most a
- * place may have, and a second of a block that shows something the asset has,
- * which would show the same things as the first.
+ * Refuses a block that does not belong where it is going, and a second of a
+ * kind the place already has: one checklist on a tab, one set of notes.
  *
  * Asked before the insert rather than left to the constraints, because they can
  * only say "check violation" or "duplicate key" and this can say which block.
@@ -486,13 +483,7 @@ async function assertRoomForBlock(
     place.tabId === null ? query.where('tabId', 'is', null) : query.where('tabId', '=', place.tabId)
   ).execute();
 
-  if (blocks.length >= MAXIMUM_BLOCKS_PER_TAB) {
-    throw new InvariantViolatedError(
-      `${place.called} can have ${String(MAXIMUM_BLOCKS_PER_TAB)} blocks at most. Remove one first.`,
-    );
-  }
-
-  if (ASSET_VIEW_BLOCK_KINDS.includes(kind) && blocks.some((block) => block.kind === kind)) {
+  if (blocks.some((block) => block.kind === kind)) {
     throw new InvariantViolatedError(`${place.called} already has a ${label} block.`);
   }
 }

@@ -95,6 +95,32 @@ describe('GIVEN a template saved before the Overview had blocks', () => {
   });
 });
 
+describe('GIVEN a template written by hand', () => {
+  describe('WHEN it names a kind twice in one place', () => {
+    it('THEN it is refused, because a place has one block of each kind', () => {
+      const doubled = {
+        tabs: [
+          {
+            title: 'Rig',
+            blocks: [
+              { kind: 'checklist', items: [] },
+              { kind: 'checklist', items: [] },
+            ],
+          },
+        ],
+      };
+
+      expect(assetTemplateDefinitionSchema.safeParse(doubled).success).toBe(false);
+      expect(
+        assetTemplateDefinitionSchema.safeParse({
+          tabs: [],
+          overview: [{ kind: 'tags' }, { kind: 'tags' }],
+        }).success,
+      ).toBe(false);
+    });
+  });
+});
+
 describe('GIVEN a template', () => {
   describe('WHEN a picker says what it would make', () => {
     it('THEN it reads as the tab titles, in order', () => {

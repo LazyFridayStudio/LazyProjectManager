@@ -1,8 +1,6 @@
 import { sql } from '@lpm/database';
 import {
   assetTemplateDefinitionSchema,
-  ASSET_VIEW_BLOCK_KINDS,
-  MAXIMUM_BLOCKS_PER_TAB,
   type AssetTemplateDefinition,
   type AssetTemplateOverviewBlock,
 } from '@lpm/shared';
@@ -127,9 +125,8 @@ export async function addTabsFromTemplate(
 /**
  * The Overview's blocks a template names, on the end of what the asset shows.
  *
- * A section the asset shows already is left where it is rather than added a
- * second time; notes and checklists are what somebody wrote, and always come.
- * More than an Overview may hold is refused before anything is written.
+ * A kind the Overview has already is left as it is rather than added a second
+ * time: it keeps its own notes or checklist rather than gaining the template's.
  */
 async function addOverviewFromTemplate(
   transaction: CommandTransaction,
@@ -145,20 +142,10 @@ async function addOverviewFromTemplate(
     .orderBy('position')
     .execute();
 
-  const adding = wanted.filter(
-    (block) =>
-      !ASSET_VIEW_BLOCK_KINDS.includes(block.kind) ||
-      !shown.some((already) => already.kind === block.kind),
-  );
+  const adding = wanted.filter((block) => !shown.some((already) => already.kind === block.kind));
 
   if (adding.length === 0) {
     return;
-  }
-
-  if (shown.length + adding.length > MAXIMUM_BLOCKS_PER_TAB) {
-    throw new InvariantViolatedError(
-      `That would give the Overview more than ${String(MAXIMUM_BLOCKS_PER_TAB)} blocks.`,
-    );
   }
 
   const last = shown.length === 0 ? 0 : Number(shown[shown.length - 1]?.position ?? 0);

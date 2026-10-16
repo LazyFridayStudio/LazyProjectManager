@@ -123,7 +123,7 @@ export async function showOnTheOverview(
     select ${assetId}, null, ${kind}, coalesce(max(shown.position), 0) + 1
     from asset_tab_block as shown
     where shown.asset_id = ${assetId} and shown.tab_id is null
-    on conflict (asset_id, kind) where tab_id is null and kind not in ('notes', 'checklist')
+    on conflict (asset_id, kind) where tab_id is null
     do nothing
   `.execute(database);
 }

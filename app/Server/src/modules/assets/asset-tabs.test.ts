@@ -396,27 +396,23 @@ describe('GIVEN an asset worked in tabs', () => {
       ).toBe(422);
     });
 
-    it('THEN a tab has one files block and one work block at most', async () => {
+    it('THEN a tab has one block of each kind', async () => {
       const assetId = await addAsset();
       const rig = await addTab(assetId, 'Rig');
 
-      await addBlock(rig, 'files');
-      await addBlock(rig, 'work');
+      for (const kind of ['notes', 'checklist', 'files', 'work']) {
+        await addBlock(rig, kind);
+      }
 
-      const files = await command('assets.addBlock', { assetTabId: rig, kind: 'files' });
-      const work = await command('assets.addBlock', { assetTabId: rig, kind: 'work' });
+      for (const kind of ['notes', 'checklist', 'files', 'work']) {
+        const second = await command('assets.addBlock', { assetTabId: rig, kind });
 
-      // A second would show the same files twice.
-      expect(files.statusCode).toBe(422);
-      expect(files.json<{ message: string }>().message).toContain('files block');
-      expect(work.statusCode).toBe(422);
-      // Notes and checklists are what somebody wrote, and there can be several.
-      expect(
-        (await command('assets.addBlock', { assetTabId: rig, kind: 'notes' })).statusCode,
-      ).toBe(200);
-      expect(
-        (await command('assets.addBlock', { assetTabId: rig, kind: 'notes' })).statusCode,
-      ).toBe(200);
+        // A second is a second place to look for the same thing.
+        expect(second.statusCode).toBe(422);
+        expect(second.json<{ message: string }>().message).toContain(`${kind} block`);
+      }
+
+      expect((await detail(assetId)).tabs[0]?.blocks).toHaveLength(4);
     });
 
     it('THEN a block can be moved up its tab, and taken off it', async () => {
@@ -725,16 +721,18 @@ describe('GIVEN an asset worked in tabs', () => {
       expect((await detail(assetId)).overview[0]?.body).toBe('Hero prop.');
     });
 
-    it('THEN a section the asset has is shown once, and what is written can be several', async () => {
+    it('THEN it has one block of each kind, sections and what is written alike', async () => {
       const assetId = await addAsset();
 
       await addToOverview(assetId, 'tags');
-      const second = await addToOverview(assetId, 'tags');
+      await addToOverview(assetId, 'checklist');
 
-      expect(second.statusCode).toBe(422);
-      expect(second.json<{ message: string }>().message).toContain('tags block');
-      expect((await addToOverview(assetId, 'checklist')).statusCode).toBe(200);
-      expect((await addToOverview(assetId, 'checklist')).statusCode).toBe(200);
+      const tags = await addToOverview(assetId, 'tags');
+      const checklist = await addToOverview(assetId, 'checklist');
+
+      expect(tags.statusCode).toBe(422);
+      expect(tags.json<{ message: string }>().message).toContain('tags block');
+      expect(checklist.statusCode).toBe(422);
     });
 
     it('THEN a checklist on it takes lines like one on a tab', async () => {

@@ -1,5 +1,4 @@
 import {
-  ASSET_VIEW_BLOCK_KINDS,
   describeAssetBlockKind,
   type AssetBlockKind,
   type AssetDetailView,
@@ -343,8 +342,7 @@ function NotesBlock({
 /**
  * What a place can be built from, one button each.
  *
- * A block that shows something the asset has is offered only while the place
- * does not show it already: a second would show the same things twice.
+ * A place has one block of each kind, so a kind it has already is not offered.
  */
 export function AssetBlockAdder({
   place,
@@ -360,10 +358,7 @@ export function AssetBlockAdder({
 }): React.JSX.Element {
   const display = useDisplay();
   const add = useAddAssetTabBlock(projectSlug, place.asset.id);
-  const kinds = offered.filter(
-    (kind) =>
-      !ASSET_VIEW_BLOCK_KINDS.includes(kind) || !blocks.some((block) => block.kind === kind),
-  );
+  const kinds = offered.filter((kind) => !blocks.some((block) => block.kind === kind));
 
   return (
     <div className={styles.actions}>
